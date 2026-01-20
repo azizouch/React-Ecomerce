@@ -2,12 +2,31 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Admin client with service role key for admin operations
+export const supabaseAdmin = supabaseServiceRoleKey
+  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        storageKey: 'supabase-admin-auth'
+      }
+    })
+  : null;
+
+// Debug logging
+console.log('🔧 Supabase Configuration:');
+console.log('- URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
+console.log('- Anon Key:', supabaseAnonKey ? '✅ Set' : '❌ Missing');
+console.log('- Service Role Key:', supabaseServiceRoleKey ? '✅ Set' : '❌ Missing');
+console.log('- Admin Client:', supabaseAdmin ? '✅ Created' : '❌ Failed to create');
 
 export type Profile = {
   id: string;

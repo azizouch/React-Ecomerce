@@ -2,12 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase, Order, OrderItem } from '../../lib/supabase';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
-import { Page } from '../../components/Router';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-
-interface OrdersProps {
-  onNavigate: (page: Page) => void;
-}
 
 interface OrderWithItems extends Order {
   order_items?: OrderItem[];
@@ -17,30 +12,56 @@ interface OrderWithItems extends Order {
   };
 }
 
-export default function Orders({ onNavigate }: OrdersProps) {
+export default function Orders() {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
+  const [profiles, setProfiles] = useState<{[key: string]: {email: string, full_name: string | null}}>({});
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   useEffect(() => {
-    loadOrders();
+    loadData();
   }, []);
 
-  const loadOrders = async () => {
+  const loadData = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch orders with order items and products
+      const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
           *,
-          profiles(email, full_name),
           order_items(*, products(*))
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setOrders(data || []);
+      if (ordersError) throw ordersError;
+
+      // Fetch all profiles for mapping
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name');
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to profile
+      const profilesMap: {[key: string]: {email: string, full_name: string | null}} = {};
+      profilesData?.forEach(profile => {
+        profilesMap[profile.id] = {
+          email: profile.email,
+          full_name: profile.full_name
+        };
+      });
+
+      setProfiles(profilesMap);
+
+      // Combine orders with profile information
+      const ordersWithProfiles = ordersData?.map(order => ({
+        ...order,
+        profiles: profilesMap[order.user_id] || { email: 'Unknown', full_name: null }
+      })) || [];
+
+      setOrders(ordersWithProfiles);
     } catch (error) {
-      console.error('Error loading orders:', error);
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -54,7 +75,7 @@ export default function Orders({ onNavigate }: OrdersProps) {
         .eq('id', orderId);
 
       if (error) throw error;
-      loadOrders();
+      loadData();
     } catch (error) {
       console.error('Error updating order status:', error);
       alert('Failed to update order status');
@@ -73,9 +94,9 @@ export default function Orders({ onNavigate }: OrdersProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar onNavigate={onNavigate} />
+      <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AdminNav onNavigate={onNavigate} currentPage="admin-orders" />
+        <AdminNav currentPage="admin-orders" />
 
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Orders Management</h1>
 

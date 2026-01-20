@@ -1,15 +1,37 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase, Product, Category } from '../lib/supabase';
 import { useCart } from '../hooks/useCart';
+import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
-import { Page } from '../components/Router';
+import Carousel from '../components/Carousel';
+import Footer from '../components/Footer';
 import { ShoppingCart, Search } from 'lucide-react';
 
+export type Page =
+  | 'login'
+  | 'signup'
+  | 'home'
+  | 'product'
+  | 'cart'
+  | 'admin-dashboard'
+  | 'admin-products'
+  | 'admin-orders';
+
 interface HomeProps {
-  onNavigate: (page: Page, params?: { productId?: string }) => void;
+  onNavigate?: (page: Page, params?: { productId?: string }) => void;
 }
 
-export default function Home({ onNavigate }: HomeProps) {
+export default function Home({ onNavigate }: HomeProps = {}) {
+  const navigate = useNavigate();
+  const { user, profile, loading: authLoading } = useAuth();
+
+  // Redirect admin users to dashboard immediately
+  useEffect(() => {
+    if (user && profile?.is_admin) {
+      navigate('/admin');
+    }
+  }, [user, profile, navigate]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -20,6 +42,13 @@ export default function Home({ onNavigate }: HomeProps) {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    // Redirect admin users to dashboard
+    if (user && profile?.is_admin) {
+      navigate('/admin');
+    }
+  }, [user, profile, navigate]);
 
   const loadData = async () => {
     try {
@@ -49,6 +78,20 @@ export default function Home({ onNavigate }: HomeProps) {
     }
   };
 
+
+
+  // Show loading while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   const filteredProducts = products.filter((product) => {
     const matchesCategory = selectedCategory === 'all' || product.category_id === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,7 +101,8 @@ export default function Home({ onNavigate }: HomeProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar onNavigate={onNavigate} />
+      <Navbar />
+      <Carousel />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -122,7 +166,7 @@ export default function Home({ onNavigate }: HomeProps) {
               >
                 <div
                   className="relative h-56 bg-gray-200 cursor-pointer overflow-hidden"
-                  onClick={() => onNavigate('product', { productId: product.id })}
+                  onClick={() => navigate(`/product/${product.id}`)}
                 >
                   {product.image_url ? (
                     <img
@@ -145,7 +189,7 @@ export default function Home({ onNavigate }: HomeProps) {
                 <div className="p-4">
                   <h3
                     className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1 cursor-pointer hover:text-blue-600"
-                    onClick={() => onNavigate('product', { productId: product.id })}
+                    onClick={() => navigate(`/product/${product.id}`)}
                   >
                     {product.name}
                   </h3>
@@ -174,6 +218,8 @@ export default function Home({ onNavigate }: HomeProps) {
           </div>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 }

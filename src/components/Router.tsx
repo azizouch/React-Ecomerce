@@ -7,6 +7,7 @@ import ProductDetail from '../pages/ProductDetail';
 import Cart from '../pages/Cart';
 import AdminDashboard from '../pages/admin/Dashboard';
 import AdminProducts from '../pages/admin/Products';
+import AdminCategories from '../pages/admin/Categories';
 import AdminOrders from '../pages/admin/Orders';
 
 export type Page =
@@ -26,7 +27,7 @@ interface RouterProps {
 }
 
 export function Router({ page, params, onNavigate }: RouterProps) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -39,8 +40,14 @@ export function Router({ page, params, onNavigate }: RouterProps) {
     );
   }
 
-  if (!user && page !== 'login' && page !== 'signup') {
+  if (!user && page !== 'login' && page !== 'signup' && page !== 'home') {
     return <Login onNavigate={onNavigate} />;
+  }
+
+  // Redirect admin users to admin dashboard on login
+  if (user && profile?.is_admin && page === 'home') {
+    onNavigate('admin-dashboard');
+    return <AdminDashboard />;
   }
 
   switch (page) {
@@ -55,11 +62,13 @@ export function Router({ page, params, onNavigate }: RouterProps) {
     case 'cart':
       return <Cart onNavigate={onNavigate} />;
     case 'admin-dashboard':
-      return <AdminDashboard onNavigate={onNavigate} />;
+      return <AdminDashboard />;
     case 'admin-products':
-      return <AdminProducts onNavigate={onNavigate} />;
+      return <AdminProducts />;
+    case 'admin-categories':
+      return <AdminCategories />;
     case 'admin-orders':
-      return <AdminOrders onNavigate={onNavigate} />;
+      return <AdminOrders />;
     default:
       return <Home onNavigate={onNavigate} />;
   }

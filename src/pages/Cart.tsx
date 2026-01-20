@@ -1,16 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
-import { Page } from '../components/Router';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 
-interface CartProps {
-  onNavigate: (page: Page) => void;
-}
-
-export default function Cart({ onNavigate }: CartProps) {
+export default function Cart() {
+  const navigate = useNavigate();
   const { cartItems, updateQuantity, removeFromCart, clearCart, cartTotal } = useCart();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -47,7 +44,7 @@ export default function Cart({ onNavigate }: CartProps) {
 
       await clearCart();
       alert('Order placed successfully!');
-      onNavigate('home');
+      navigate('/');
     } catch (error) {
       console.error('Error placing order:', error);
       alert('Failed to place order');
@@ -58,7 +55,7 @@ export default function Cart({ onNavigate }: CartProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar onNavigate={onNavigate} />
+      <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
@@ -69,7 +66,7 @@ export default function Cart({ onNavigate }: CartProps) {
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
             <p className="text-gray-600 mb-6">Add some products to get started</p>
             <button
-              onClick={() => onNavigate('home')}
+              onClick={() => navigate('/')}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
             >
               Continue Shopping
@@ -155,7 +152,7 @@ export default function Cart({ onNavigate }: CartProps) {
               </button>
 
               <button
-                onClick={() => onNavigate('home')}
+                onClick={() => navigate('/')}
                 className="w-full mt-3 bg-gray-200 text-gray-700 py-4 rounded-lg font-semibold hover:bg-gray-300 transition"
               >
                 Continue Shopping

@@ -1,16 +1,19 @@
-import { LayoutDashboard, Package, ShoppingBag } from 'lucide-react';
-import { Page } from './Router';
+import { useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Package, ShoppingBag, Tag, Users } from 'lucide-react';
 
 interface AdminNavProps {
-  onNavigate: (page: Page) => void;
-  currentPage: Page;
+  currentPage: string;
 }
 
-export default function AdminNav({ onNavigate, currentPage }: AdminNavProps) {
+export default function AdminNav({ currentPage }: AdminNavProps) {
+  const navigate = useNavigate();
+
   const navItems = [
-    { page: 'admin-dashboard' as Page, label: 'Dashboard', icon: LayoutDashboard },
-    { page: 'admin-products' as Page, label: 'Products', icon: Package },
-    { page: 'admin-orders' as Page, label: 'Orders', icon: ShoppingBag },
+    { page: 'admin-dashboard', path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { page: 'admin-products', path: '/admin/products', label: 'Products', icon: Package },
+    { page: 'admin-categories', path: '/admin/categories', label: 'Categories', icon: Tag },
+    { page: 'admin-orders', path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
+    { page: 'admin-users', path: '/admin/users', label: 'Users', icon: Users },
   ];
 
   return (
@@ -19,7 +22,7 @@ export default function AdminNav({ onNavigate, currentPage }: AdminNavProps) {
         {navItems.map((item) => (
           <button
             key={item.page}
-            onClick={() => onNavigate(item.page)}
+            onClick={() => navigate(item.path)}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
               currentPage === item.page
                 ? 'bg-blue-600 text-white'

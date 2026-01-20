@@ -2,14 +2,9 @@ import { useState, useEffect, FormEvent } from 'react';
 import { supabase, Product, Category } from '../../lib/supabase';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
-import { Page } from '../../components/Router';
 import { Plus, Edit, Trash2, X } from 'lucide-react';
 
-interface ProductsProps {
-  onNavigate: (page: Page) => void;
-}
-
-export default function Products({ onNavigate }: ProductsProps) {
+export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,9 +112,9 @@ export default function Products({ onNavigate }: ProductsProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar onNavigate={onNavigate} />
+      <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AdminNav onNavigate={onNavigate} currentPage="admin-products" />
+        <AdminNav currentPage="admin-products" />
 
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Products Management</h1>

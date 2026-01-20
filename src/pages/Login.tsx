@@ -1,18 +1,27 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Page } from '../components/Router';
 import { ShoppingBag } from 'lucide-react';
 
-interface LoginProps {
-  onNavigate: (page: Page) => void;
-}
-
-export default function Login({ onNavigate }: LoginProps) {
+export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
+  const { signIn, profile, user } = useAuth();
+
+  useEffect(() => {
+    if (justLoggedIn && user && profile) {
+      if (profile.is_admin) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
+      setJustLoggedIn(false);
+    }
+  }, [justLoggedIn, user, profile, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -21,7 +30,7 @@ export default function Login({ onNavigate }: LoginProps) {
 
     try {
       await signIn(email, password);
-      onNavigate('home');
+      setJustLoggedIn(true);
     } catch (err) {
       setError('Invalid email or password');
     } finally {
@@ -90,7 +99,7 @@ export default function Login({ onNavigate }: LoginProps) {
           <p className="text-gray-600">
             Don't have an account?{' '}
             <button
-              onClick={() => onNavigate('signup')}
+              onClick={() => navigate('/signup')}
               className="text-blue-600 hover:text-blue-700 font-semibold"
             >
               Sign Up

@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, Product } from '../lib/supabase';
 import { useCart } from '../hooks/useCart';
 import Navbar from '../components/Navbar';
-import { Page } from '../components/Router';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
 
-interface ProductDetailProps {
-  productId: string;
-  onNavigate: (page: Page) => void;
-}
-
-export default function ProductDetail({ productId, onNavigate }: ProductDetailProps) {
+export default function ProductDetail() {
+  const { productId } = useParams<{ productId: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -43,7 +40,7 @@ export default function ProductDetail({ productId, onNavigate }: ProductDetailPr
     try {
       await addToCart(product.id, quantity);
       alert('Product added to cart!');
-      onNavigate('cart');
+      navigate('/cart');
     } catch (error) {
       alert('Failed to add product to cart');
     }
@@ -52,7 +49,7 @@ export default function ProductDetail({ productId, onNavigate }: ProductDetailPr
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar onNavigate={onNavigate} />
+        <Navbar />
         <div className="max-w-7xl mx-auto px-4 py-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading product...</p>
@@ -64,11 +61,11 @@ export default function ProductDetail({ productId, onNavigate }: ProductDetailPr
   if (!product) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar onNavigate={onNavigate} />
+        <Navbar />
         <div className="max-w-7xl mx-auto px-4 py-8 text-center">
           <p className="text-gray-600">Product not found</p>
           <button
-            onClick={() => onNavigate('home')}
+            onClick={() => navigate('/')}
             className="mt-4 text-blue-600 hover:text-blue-700 font-semibold"
           >
             Back to Home
@@ -80,11 +77,11 @@ export default function ProductDetail({ productId, onNavigate }: ProductDetailPr
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar onNavigate={onNavigate} />
+      <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <button
-          onClick={() => onNavigate('home')}
+          onClick={() => navigate('/')}
           className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-6 transition"
         >
           <ArrowLeft className="w-5 h-5" />
