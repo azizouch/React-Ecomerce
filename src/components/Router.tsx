@@ -9,6 +9,8 @@ import AdminDashboard from '../pages/admin/Dashboard';
 import AdminProducts from '../pages/admin/Products';
 import AdminCategories from '../pages/admin/Categories';
 import AdminOrders from '../pages/admin/Orders';
+import AdminProfile from '../pages/admin/Profile';
+import AdminNotifications from '../pages/admin/Notifications';
 
 export type Page =
   | 'login'
@@ -18,7 +20,9 @@ export type Page =
   | 'cart'
   | 'admin-dashboard'
   | 'admin-products'
-  | 'admin-orders';
+  | 'admin-orders'
+  | 'admin-profile'
+  | 'admin-notifications';
 
 interface RouterProps {
   page: Page;
@@ -69,6 +73,10 @@ export function Router({ page, params, onNavigate }: RouterProps) {
       return <AdminCategories />;
     case 'admin-orders':
       return <AdminOrders />;
+    case 'admin-profile':
+      return <AdminProfile />;
+    case 'admin-notifications':
+      return <AdminNotifications />;
     default:
       return <Home onNavigate={onNavigate} />;
   }

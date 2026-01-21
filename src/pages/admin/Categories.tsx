@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react';
 import { supabase, Category } from '../../lib/supabase';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
-import { Plus, Edit, Trash2, Tag } from 'lucide-react';
+import AdminFooter from '../../components/AdminFooter';
+import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SoftCard from '../../components/ui/SoftCard';
+import { Plus, Edit, Trash2, Tag, X } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -57,9 +61,17 @@ export default function AdminCategories() {
       setEditingCategory(null);
       setFormData({ name: '', description: '' });
       loadCategories();
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: editingCategory ? 'Category updated successfully!' : 'Category created successfully!',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (error) {
       console.error('Error saving category:', error);
-      alert('Error saving category');
+      Swal.fire('Error', 'Failed to save category', 'error');
     }
   };
 
@@ -73,7 +85,17 @@ export default function AdminCategories() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'You won\'t be able to revert this!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       const { error } = await supabase
@@ -83,9 +105,17 @@ export default function AdminCategories() {
 
       if (error) throw error;
       loadCategories();
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: 'Category has been deleted.',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (error) {
       console.error('Error deleting category:', error);
-      alert('Error deleting category');
+      Swal.fire('Error', 'Failed to delete category', 'error');
     }
   };
 
@@ -96,117 +126,137 @@ export default function AdminCategories() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <AdminNav currentPage="admin-categories" />
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Categories Management</h1>
-            <button
-              onClick={openAddModal}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add Category</span>
-            </button>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Categories</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage product categories</p>
           </div>
+          <button
+            onClick={openAddModal}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2 font-medium shadow-sm"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add Category</span>
+          </button>
+        </div>
 
-          {loading ? (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <SkeletonLoader count={6} height="h-32" />
+          </div>
+        ) : categories.length === 0 ? (
+          <SoftCard>
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading categories...</p>
+              <Tag className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+              <h3 className="text-sm font-medium text-gray-900">No categories found</h3>
+              <p className="text-sm text-gray-500 mt-1">Create your first category to get started.</p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <Tag className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-semibold text-gray-900">{category.name}</h3>
+          </SoftCard>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categories.map((category) => (
+              <SoftCard key={category.id} hoverable>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Tag className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEdit(category)}
-                        className="text-blue-600 hover:text-blue-800 transition"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(category.id)}
-                        className="text-red-600 hover:text-red-800 transition"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">{category.name}</h3>
                     </div>
                   </div>
-                  {category.description && (
-                    <p className="text-gray-600 text-sm">{category.description}</p>
-                  )}
+                  <div className="flex space-x-2 ml-2">
+                    <button
+                      onClick={() => handleEdit(category)}
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition p-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                      title="Edit"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editingCategory ? 'Edit Category' : 'Add Category'}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Name *
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition"
-                >
-                  {editingCategory ? 'Update' : 'Add'}
-                </button>
-              </div>
-            </form>
+                {category.description && (
+                  <p className="text-gray-600 text-sm line-clamp-2">{category.description}</p>
+                )}
+              </SoftCard>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Add/Edit Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {editingCategory ? 'Edit Category' : 'Add Category'}
+                </h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Category Name *
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  />
+                </div>
+                <div className="flex space-x-3 pt-6 border-t border-gray-200">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    {editingCategory ? 'Update' : 'Add'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+      <AdminFooter />
     </div>
   );
 }

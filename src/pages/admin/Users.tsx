@@ -2,8 +2,15 @@ import { useState, useEffect } from 'react';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
-import { Users, UserCheck, UserX, Crown, Mail, Calendar, Plus, Edit, Trash2, X } from 'lucide-react';
+import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SoftCard from '../../components/ui/SoftCard';
+import StatusBadge from '../../components/ui/StatusBadge';
+import AdminFooter from '../../components/AdminFooter';
+import Pagination from '../../components/ui/Pagination';
+import { Users, Crown, Mail, Calendar, Plus, Edit, Trash2, X, Search } from 'lucide-react';
 import Swal from 'sweetalert2';
+
+const DEFAULT_ITEMS_PER_PAGE = 10;
 
 interface UserProfile {
   id: string;
@@ -18,6 +25,9 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
@@ -48,8 +58,6 @@ export default function AdminUsers() {
       setLoading(false);
     }
   };
-
-
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +95,6 @@ export default function AdminUsers() {
     } catch (error: any) {
       console.error('Error creating user:', error);
 
-      // Handle specific Supabase auth errors with user-friendly messages
       let errorMessage = 'Failed to create user. Please try again.';
       if (error.message) {
         if (error.message.includes('already registered') || error.message.includes('User already registered')) {
@@ -103,7 +110,6 @@ export default function AdminUsers() {
         } else if (error.message.includes('rate limit')) {
           errorMessage = 'Too many requests. Please wait a moment and try again.';
         } else {
-          // For unknown errors, provide a generic message but log the details
           console.error('Unknown error details:', error.message);
           errorMessage = 'An unexpected error occurred. Please check your input and try again.';
         }
@@ -122,7 +128,6 @@ export default function AdminUsers() {
     e.preventDefault();
     if (!editingUser) return;
 
-    // Validate password confirmation if password is being changed
     if (formData.password && formData.password !== formData.confirmPassword) {
       await Swal.fire({
         icon: 'error',
@@ -133,97 +138,58 @@ export default function AdminUsers() {
     }
 
     try {
-      let hasChanges = false;
-
-      // Update password if provided
       if (formData.password) {
-        console.log('Updating password for user:', editingUser.id);
         const { error: passwordError } = await supabase.auth.admin.updateUserById(editingUser.id, {
           password: formData.password,
         });
-        if (passwordError) {
-          console.error('Password update error:', passwordError);
-          throw passwordError;
-        }
-        hasChanges = true;
+        if (passwordError) throw passwordError;
       }
 
-      // Update email if changed
       if (formData.email !== editingUser.email) {
-        console.log('Updating email for user:', editingUser.id, 'from', editingUser.email, 'to', formData.email);
         const { error: emailError } = await supabase.auth.admin.updateUserById(editingUser.id, {
           email: formData.email,
         });
-        if (emailError) {
-          console.error('Email update error:', emailError);
-          throw emailError;
-        }
-        hasChanges = true;
+        if (emailError) throw emailError;
       }
 
-      // First check if profile exists
-      console.log('Checking if profile exists for user:', editingUser.id);
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', editingUser.id)
         .single();
 
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found"
-        console.error('Error checking profile:', checkError);
+      if (checkError && checkError.code !== 'PGRST116') {
         throw checkError;
       }
 
-      console.log('Existing profile:', existingProfile);
-
-      // Always update profile information (full_name, is_admin)
-      console.log('Updating profile for user:', editingUser.id, 'full_name:', formData.full_name, 'is_admin:', formData.is_admin);
       const updateData = {
         full_name: formData.full_name,
         is_admin: formData.is_admin,
-        email: formData.email, // Update email in profile too
+        email: formData.email,
       };
 
-      console.log('Update data:', updateData);
-
-      let profileResult;
       if (existingProfile) {
-        // Update existing profile
-        const { error: profileError, data: profileData } = await supabase
+        const { error: profileError } = await supabase
           .from('profiles')
           .update(updateData)
-          .eq('id', editingUser.id)
-          .select();
+          .eq('id', editingUser.id);
 
-        if (profileError) {
-          console.error('Profile update error:', profileError);
-          throw profileError;
-        }
-        profileResult = profileData;
+        if (profileError) throw profileError;
       } else {
-        // Create new profile if it doesn't exist
-        console.log('Profile not found, creating new profile');
-        const { error: profileError, data: profileData } = await supabase
+        const { error: profileError } = await supabase
           .from('profiles')
           .insert({
             id: editingUser.id,
             ...updateData,
-          })
-          .select();
+          });
 
-        if (profileError) {
-          console.error('Profile insert error:', profileError);
-          throw profileError;
-        }
-        profileResult = profileData;
+        if (profileError) throw profileError;
       }
-
-      console.log('Profile operation result:', profileResult);
 
       setShowEditModal(false);
       setEditingUser(null);
       setFormData({ email: '', password: '', confirmPassword: '', full_name: '', is_admin: false });
-      await loadUsers(); // Wait for reload
+      await loadUsers();
       await Swal.fire({
         icon: 'success',
         title: 'Success!',
@@ -255,7 +221,6 @@ export default function AdminUsers() {
 
     if (!result.isConfirmed) return;
 
-    // Check if admin client is available
     if (!supabaseAdmin) {
       await Swal.fire({
         icon: 'error',
@@ -281,7 +246,6 @@ export default function AdminUsers() {
     } catch (error: any) {
       console.error('Error deleting user:', error);
 
-      // Handle specific Supabase admin errors
       let errorMessage = 'Failed to delete user. Please try again.';
       if (error.message) {
         if (error.message.includes('User not allowed') || error.message.includes('not allowed')) {
@@ -322,147 +286,218 @@ export default function AdminUsers() {
     setShowEditModal(false);
   };
 
-  const filteredUsers = users.filter((user) =>
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch = user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = selectedRole === 'all' || 
+      (selectedRole === 'admin' && user.is_admin) || 
+      (selectedRole === 'customer' && !user.is_admin);
+    return matchesSearch && matchesRole;
+  });
+
+  // Paginate filtered users
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to page 1 when filtering changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedRole]);
 
   const adminCount = users.filter(user => user.is_admin).length;
   const totalUsers = users.length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <AdminNav currentPage="admin-users" />
 
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <div className="flex space-x-4">
-            <div className="bg-white px-4 py-2 rounded-lg shadow">
-              <span className="text-sm text-gray-600">Total Users:</span>
-              <span className="ml-2 font-semibold text-gray-900">{totalUsers}</span>
-            </div>
-            <div className="bg-white px-4 py-2 rounded-lg shadow">
-              <span className="text-sm text-gray-600">Admins:</span>
-              <span className="ml-2 font-semibold text-blue-600">{adminCount}</span>
-            </div>
+          <div>
+            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Users</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage user accounts and permissions</p>
           </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2 font-medium shadow-sm"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add User</span>
+          </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 max-w-md">
-              <input
-                type="text"
-                placeholder="Search users by email or name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <SoftCard>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Users</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{totalUsers}</p>
+              </div>
+              <Users className="w-10 h-10 text-gray-300 dark:text-gray-600" />
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Create User
-            </button>
-          </div>
+          </SoftCard>
+          <SoftCard>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Admin Users</p>
+                <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400 mt-1">{adminCount}</p>
+              </div>
+              <Crown className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+            </div>
+          </SoftCard>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading users...</p>
+        <SoftCard>
+          {/* Filters Bar - Like the image layout */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            {/* Left: Search and Filters */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
+              <div className="relative w-full sm:w-56">
+                <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Rechercher..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm"
+                />
+              </div>
+              {/* Role Filter */}
+              <select
+                value={selectedRole}
+                onChange={(e) => {
+                  setSelectedRole(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm appearance-none cursor-pointer pr-8 bg-no-repeat bg-right bg-contain min-w-[180px]"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/csvg%3e")`
+                }}
+              >
+                <option value="all">Tous les rôles</option>
+                <option value="admin">Admin</option>
+                <option value="customer">Client</option>
+              </select>
+            </div>
+
+            {/* Right: Items Per Page and Total */}
+            <div className="flex gap-2 items-center text-sm whitespace-nowrap">
+              <span className="text-gray-600 dark:text-gray-400">Afficher</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition appearance-none cursor-pointer pr-6 bg-no-repeat bg-right bg-contain"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/csvg%3e")`
+                }}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="text-gray-600 dark:text-gray-400">entrées</span>
+              <span className="text-gray-600 dark:text-gray-400 font-medium">Total: {filteredUsers.length}</span>
+            </div>
           </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+
+          {loading ? (
+            <SkeletonLoader count={5} height="h-16" />
+          ) : filteredUsers.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+              <h3 className="text-sm font-medium text-gray-900">No users found</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                {searchQuery ? 'Try adjusting your search terms.' : 'No users have registered yet.'}
+              </p>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-slate-600">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Role
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Joined
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Sign In
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      Last Active
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                              <Users className="h-5 w-5 text-gray-600" />
-                            </div>
+                <tbody>
+                  {paginatedUsers.map((user, index) => (
+                    <tr
+                      key={user.id}
+                      className={`hover:bg-blue-50 dark:hover:bg-slate-700 transition ${
+                        index !== filteredUsers.length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''
+                      }`}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-semibold text-sm">
+                              {(user.full_name?.charAt(0) || user.email.charAt(0)).toUpperCase()}
+                            </span>
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white">
                               {user.full_name || 'No name'}
                             </div>
-                            <div className="text-sm text-gray-500 flex items-center">
-                              <Mail className="h-4 w-4 mr-1" />
+                            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-1">
+                              <Mail className="h-3 w-3 mr-1" />
                               {user.email}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.is_admin
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {user.is_admin ? (
-                            <>
-                              <Crown className="h-3 w-3 mr-1" />
-                              Admin
-                            </>
-                          ) : (
-                            'Customer'
-                          )}
-                        </span>
+                      <td className="px-6 py-4">
+                        {user.is_admin ? (
+                          <StatusBadge status="active" label="Admin" />
+                        ) : (
+                          <StatusBadge status="inactive" label="Customer" />
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
+                      <td className="px-6 py-4">
+                        <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                          <Calendar className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
                           {new Date(user.created_at).toLocaleDateString()}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.last_sign_in_at
-                          ? new Date(user.last_sign_in_at).toLocaleDateString()
-                          : 'Never'
-                        }
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                          {user.last_sign_in_at
+                            ? new Date(user.last_sign_in_at).toLocaleDateString()
+                            : '—'
+                          }
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end space-x-2">
                           <button
                             onClick={() => openEditModal(user)}
-                            className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                            className="text-blue-600 hover:text-blue-700 transition font-medium text-sm"
                           >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition"
+                            className="text-red-600 hover:text-red-700 transition font-medium text-sm"
                           >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -471,35 +506,37 @@ export default function AdminUsers() {
                 </tbody>
               </table>
             </div>
+          )}
 
-            {filteredUsers.length === 0 && (
-              <div className="text-center py-12">
-                <Users className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {searchQuery ? 'Try adjusting your search terms.' : 'No users have registered yet.'}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredUsers.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          )}
+        </SoftCard>
 
         {/* Create User Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <div className="flex items-center justify-between mb-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg">
+              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">Create New User</h3>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 transition"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
               <form onSubmit={handleCreateUser} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email *
                   </label>
                   <input
@@ -507,11 +544,11 @@ export default function AdminUsers() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Password *
                   </label>
                   <input
@@ -520,21 +557,21 @@ export default function AdminUsers() {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
                     minLength={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name
                   </label>
                   <input
                     type="text"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center pt-2">
                   <input
                     type="checkbox"
                     id="is_admin"
@@ -546,7 +583,7 @@ export default function AdminUsers() {
                     Admin User
                   </label>
                 </div>
-                <div className="flex space-x-3 pt-4">
+                <div className="flex space-x-3 pt-6 border-t border-gray-200">
                   <button
                     type="submit"
                     className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition font-medium"
@@ -568,31 +605,31 @@ export default function AdminUsers() {
 
         {/* Edit User Modal */}
         {showEditModal && editingUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <div className="flex items-center justify-between mb-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg">
+              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">Edit User</h3>
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 transition"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
               <form onSubmit={handleEditUser} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email
                   </label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     New Password (leave empty to keep current)
                   </label>
                   <input
@@ -600,12 +637,12 @@ export default function AdminUsers() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     minLength={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
                 {formData.password && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Confirm New Password
                     </label>
                     <input
@@ -613,22 +650,22 @@ export default function AdminUsers() {
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                       minLength={6}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     />
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name
                   </label>
                   <input
                     type="text"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center pt-2">
                   <input
                     type="checkbox"
                     id="edit_is_admin"
@@ -640,7 +677,7 @@ export default function AdminUsers() {
                     Admin User
                   </label>
                 </div>
-                <div className="flex space-x-3 pt-4">
+                <div className="flex space-x-3 pt-6 border-t border-gray-200">
                   <button
                     type="submit"
                     className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition font-medium"
@@ -660,6 +697,7 @@ export default function AdminUsers() {
           </div>
         )}
       </div>
+      <AdminFooter />
     </div>
   );
 }

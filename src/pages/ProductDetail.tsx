@@ -48,11 +48,11 @@ export default function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
         <Navbar />
         <div className="max-w-7xl mx-auto px-4 py-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading product...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading product...</p>
         </div>
       </div>
     );
@@ -60,13 +60,13 @@ export default function ProductDetail() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
         <Navbar />
         <div className="max-w-7xl mx-auto px-4 py-8 text-center">
-          <p className="text-gray-600">Product not found</p>
+          <p className="text-gray-600 dark:text-gray-400">Product not found</p>
           <button
             onClick={() => navigate('/')}
-            className="mt-4 text-blue-600 hover:text-blue-700 font-semibold"
+            className="mt-4 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold"
           >
             Back to Home
           </button>
@@ -76,7 +76,7 @@ export default function ProductDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

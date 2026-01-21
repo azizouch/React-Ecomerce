@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, Product, Category } from '../lib/supabase';
 import { useCart } from '../hooks/useCart';
+import { useTheme } from '../contexts/ThemeContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { ShoppingCart, Search, Filter } from 'lucide-react';
+import { ShoppingCart, Search, Filter, ChevronDown } from 'lucide-react';
 
 export default function Shop() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { isDark } = useTheme();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -16,7 +18,9 @@ export default function Shop() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [sortBy, setSortBy] = useState<string>('name');
   const [loading, setLoading] = useState(true);
+  const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
   const { addToCart } = useCart();
+  const categoriesDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
@@ -28,6 +32,18 @@ export default function Shop() {
       setSelectedCategory(categoryParam);
     }
   }, [searchParams]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (categoriesDropdownRef.current && !categoriesDropdownRef.current.contains(event.target as Node)) {
+        setShowCategoriesDropdown(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -78,42 +94,107 @@ export default function Shop() {
     });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Shop All Products</h1>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Shop All Products</h1>
+
+            {/* Shop Header Controls */}
+            <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+              {/* Categories Dropdown */}
+              <div className="relative" ref={categoriesDropdownRef}>
+                <button
+                  onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition text-gray-700 dark:text-gray-300 font-medium min-w-[200px] justify-between"
+                >
+                  <span>{categories.find(c => c.id === selectedCategory)?.name || 'All Categories'}</span>
+                  <ChevronDown className={`w-4 h-4 transition ${showCategoriesDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Categories Dropdown Menu */}
+                {showCategoriesDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg shadow-lg z-50">
+                    <button
+                      onClick={() => {
+                        setSelectedCategory('all');
+                        setSearchParams({});
+                        setShowCategoriesDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm transition ${
+                        selectedCategory === 'all'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      All Categories
+                    </button>
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => {
+                          setSelectedCategory(category.id);
+                          setSearchParams({ category: category.id });
+                          setShowCategoriesDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm transition ${
+                          selectedCategory === category.id
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Search Input */}
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                />
+              </div>
+            </div>
+          </div>
 
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Filters Sidebar */}
             <div className="lg:w-1/4">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 dark:shadow-lg dark:border dark:border-slate-700">
+                <h3 className="text-lg font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
                   <Filter className="w-5 h-5 mr-2" />
                   Filters
                 </h3>
 
                 {/* Search */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Search Products
                   </label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                     <input
                       type="text"
                       placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     />
                   </div>
                 </div>
 
                 {/* Categories */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Categories
                   </label>
                   <div className="space-y-2">
@@ -125,7 +206,7 @@ export default function Shop() {
                       className={`w-full text-left px-3 py-2 rounded-lg transition ${
                         selectedCategory === 'all'
                           ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
                       }`}
                     >
                       All Categories
@@ -140,7 +221,7 @@ export default function Shop() {
                         className={`w-full text-left px-3 py-2 rounded-lg transition ${
                           selectedCategory === category.id
                             ? 'bg-blue-600 text-white'
-                            : 'text-gray-700 hover:bg-gray-100'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
                         }`}
                       >
                         {category.name}
@@ -151,7 +232,7 @@ export default function Shop() {
 
                 {/* Price Range */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Price Range: ${priceRange[0]} - ${priceRange[1]}
                   </label>
                   <div className="space-y-2">
@@ -161,7 +242,7 @@ export default function Shop() {
                       max="1000"
                       value={priceRange[0]}
                       onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                      className="w-full"
+                      className="w-full accent-blue-600"
                     />
                     <input
                       type="range"
@@ -169,7 +250,7 @@ export default function Shop() {
                       max="1000"
                       value={priceRange[1]}
                       onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                      className="w-full"
+                      className="w-full accent-blue-600"
                     />
                   </div>
                 </div>
@@ -180,13 +261,13 @@ export default function Shop() {
             <div className="lg:w-3/4">
               {/* Sort */}
               <div className="flex justify-between items-center mb-6">
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-400">
                   Showing {filteredProducts.length} products
                 </p>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 >
                   <option value="name">Sort by Name</option>
                   <option value="price-low">Price: Low to High</option>
@@ -197,21 +278,21 @@ export default function Shop() {
               {loading ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Loading products...</p>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">Loading products...</p>
                 </div>
               ) : filteredProducts.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-600 text-lg">No products found</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-lg">No products found</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredProducts.map((product) => (
                     <div
                       key={product.id}
-                      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition group"
+                      className="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-lg dark:border dark:border-slate-700 overflow-hidden hover:shadow-xl dark:hover:shadow-xl transition group"
                     >
                       <div
-                        className="relative h-56 bg-gray-200 cursor-pointer overflow-hidden"
+                        className="relative h-56 bg-gray-200 dark:bg-slate-700 cursor-pointer overflow-hidden"
                         onClick={() => navigate(`/product/${product.id}`)}
                       >
                         {product.image_url ? (
@@ -222,7 +303,7 @@ export default function Shop() {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <ShoppingCart className="w-16 h-16 text-gray-400" />
+                            <ShoppingCart className="w-16 h-16 text-gray-400 dark:text-gray-600" />
                           </div>
                         )}
                         {product.stock === 0 && (
@@ -234,28 +315,28 @@ export default function Shop() {
 
                       <div className="p-4">
                         <h3
-                          className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1 cursor-pointer hover:text-blue-600"
+                          className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
                           onClick={() => navigate(`/product/${product.id}`)}
                         >
                           {product.name}
                         </h3>
-                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
                           {product.description}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-2xl font-bold text-blue-600">
+                          <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                             ${product.price.toFixed(2)}
                           </span>
                           <button
                             onClick={() => handleAddToCart(product.id)}
                             disabled={product.stock === 0}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                           >
                             <ShoppingCart className="w-4 h-4" />
                             <span>Add</span>
                           </button>
                         </div>
-                        <p className="text-sm text-gray-500 mt-2">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                           {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
                         </p>
                       </div>

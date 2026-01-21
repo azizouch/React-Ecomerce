@@ -1,19 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Moon, Sun, ChevronDown, Bell, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../hooks/useCart';
+import { useTheme } from '../contexts/ThemeContext';
 import { supabase, Category } from '../lib/supabase';
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const { cartCount } = useCart();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsDropdownRef = useRef<HTMLDivElement>(null);
+  const accountDropdownRef = useRef<HTMLDivElement>(null);
+  const categoriesDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadCategories();
+    if (!profile?.is_admin) {
+      loadCategories();
+    }
+  }, [profile?.is_admin]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+      if (notificationsDropdownRef.current && !notificationsDropdownRef.current.contains(event.target as Node)) {
+        setShowNotificationsDropdown(false);
+      }
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target as Node)) {
+        setShowAccountDropdown(false);
+      }
+      if (categoriesDropdownRef.current && !categoriesDropdownRef.current.contains(event.target as Node)) {
+        setShowCategoriesDropdown(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const loadCategories = async () => {
@@ -42,93 +76,288 @@ export default function Navbar() {
   };
 
   const isAdmin = profile?.is_admin;
+  const shopHubColor = isDark ? 'text-blue-600' : 'text-black';
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50">
+    <nav className="bg-white dark:bg-slate-900 shadow-md sticky top-0 z-50 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
+          {/* Left Section - Logo + Navigation Links */}
           <div className="flex items-center space-x-8">
             <button
               onClick={() => navigate(isAdmin ? '/admin' : '/')}
-              className="text-2xl font-bold text-blue-600 hover:text-blue-700 transition"
+              className={`text-2xl font-bold hover:opacity-80 transition ${shopHubColor}`}
             >
               ShopHub
             </button>
 
+            {/* Client Navigation Links - Visible for all clients */}
             {!isAdmin && (
               <div className="hidden md:flex items-center space-x-6">
+                {/* Shop Link */}
                 <button
                   onClick={() => navigate('/shop')}
-                  className="text-gray-700 hover:text-blue-600 transition font-medium"
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
                 >
                   Shop
                 </button>
-                {categories.slice(0, 4).map((category) => (
+
+                {/* Categories Dropdown */}
+                <div className="relative" ref={categoriesDropdownRef}>
                   <button
-                    key={category.id}
-                    onClick={() => navigate(`/?category=${category.id}`)}
-                    className="text-gray-700 hover:text-blue-600 transition font-medium"
+                    onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium flex items-center space-x-1"
                   >
-                    {category.name}
+                    <span>Categories</span>
+                    <ChevronDown className="w-4 h-4" />
                   </button>
-                ))}
+
+                  {/* Categories Dropdown Menu */}
+                  {showCategoriesDropdown && (
+                    <div className="absolute left-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
+                      <div className="py-2">
+                        {categories.map((category) => (
+                          <button
+                            key={category.id}
+                            onClick={() => {
+                              navigate(`/shop?category=${category.id}`);
+                              setShowCategoriesDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                          >
+                            {category.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Deals Link */}
+                <button
+                  onClick={() => navigate('/shop')}
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
+                >
+                  Deals
+                </button>
+
+                {/* What's New Link */}
+                <button
+                  onClick={() => navigate('/shop')}
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
+                >
+                  What's New
+                </button>
+
+                {/* Delivery Link */}
+                <button
+                  onClick={() => navigate('/shop')}
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
+                >
+                  Delivery
+                </button>
               </div>
             )}
           </div>
 
-          <div className="flex items-center space-x-6">
+          {/* Right Section */}
+          <div className="flex items-center space-x-4">
+            {/* Search Input - Client Only */}
+            {!isAdmin && (
+              <div className="hidden md:flex items-center bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-2">
+                <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent ml-2 text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none w-40"
+                />
+              </div>
+            )}
+
+            {/* Theme Toggle - For all users */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-300"
+              title={isDark ? 'Light mode' : 'Dark mode'}
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+
+            {/* Notifications (Admin Only) */}
+            {isAdmin && (
+              <div className="relative" ref={notificationsDropdownRef}>
+                <button
+                  onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+                  className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-300"
+                  title="Notifications"
+                >
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+
+                {/* Notifications Dropdown */}
+                {showNotificationsDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Notifications</p>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                        <p className="text-sm">No new notifications</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigate('/admin/notifications');
+                        setShowNotificationsDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition border-t border-gray-200 dark:border-slate-700 font-medium"
+                    >
+                      View All Notifications
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cart Icon (Client Only) */}
+            {!isAdmin && (
+              <button
+                onClick={() => navigate('/cart')}
+                className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition relative"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* Account/Profile Dropdown */}
             {user ? (
               <>
-                {!isAdmin && (
-                  <button
-                    onClick={() => navigate('/cart')}
-                    className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition relative"
-                  >
-                    <ShoppingCart className="w-5 h-5" />
-                    {cartCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {cartCount}
-                      </span>
-                    )}
-                    <span className="hidden sm:inline">Cart</span>
-                  </button>
-                )}
+                {isAdmin ? (
+                  <div className="relative" ref={profileDropdownRef}>
+                    <button
+                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 p-2"
+                    >
+                      <User className="w-5 h-5" />
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
 
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-2 text-gray-700">
-                    <User className="w-5 h-5" />
-                    <span className="hidden sm:inline text-sm">{profile?.full_name || profile?.email}</span>
+                    {/* Admin Profile Dropdown Menu */}
+                    {showProfileDropdown && (
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
+                        <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile?.full_name || 'Admin User'}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{profile?.email}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigate('/admin/profile');
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>View Profile</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowLogoutModal(true);
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <button
-                    onClick={() => setShowLogoutModal(true)}
-                    className="flex items-center space-x-1 text-gray-700 hover:text-red-600 transition"
-                  >
-                    <LogOut className="w-5 h-5" />
-                    <span className="hidden sm:inline">Logout</span>
-                  </button>
-                </div>
+                ) : (
+                  /* Client Account Dropdown */
+                  <div className="relative" ref={accountDropdownRef}>
+                    <button
+                      onClick={() => setShowAccountDropdown(!showAccountDropdown)}
+                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 p-2"
+                    >
+                      <User className="w-5 h-5" />
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+
+                    {/* Client Account Dropdown Menu - Logged In */}
+                    {showAccountDropdown && (
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
+                        <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile?.full_name || 'Customer'}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{profile?.email}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowAccountDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2"
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                          <span>My Orders</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowLogoutModal(true);
+                            setShowAccountDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             ) : (
-              <div className="flex space-x-4">
+              /* Not Logged In - Account Dropdown */
+              <div className="relative" ref={accountDropdownRef}>
                 <button
-                  onClick={() => navigate('/cart')}
-                  className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition relative"
+                  onClick={() => setShowAccountDropdown(!showAccountDropdown)}
+                  className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 p-2"
                 >
-                  <ShoppingCart className="w-5 h-5" />
-                  <span className="hidden sm:inline">Cart</span>
+                  <User className="w-5 h-5" />
+                  <ChevronDown className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => navigate('/login')}
-                  className="text-gray-700 hover:text-blue-600 transition font-medium"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => navigate('/signup')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
-                >
-                  Sign Up
-                </button>
+
+                {/* Account Dropdown - Not Logged In */}
+                {showAccountDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
+                    <button
+                      onClick={() => {
+                        navigate('/login');
+                        setShowAccountDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>Sign In</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/signup');
+                        setShowAccountDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>Sign Up</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -138,13 +367,13 @@ export default function Navbar() {
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Logout</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to log out?</p>
+          <div className="bg-white dark:bg-slate-900 rounded-lg p-6 max-w-md w-full mx-4 border dark:border-slate-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Logout</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Are you sure you want to log out?</p>
             <div className="flex space-x-4">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition"
+                className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition"
               >
                 Cancel
               </button>

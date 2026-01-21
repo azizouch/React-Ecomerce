@@ -6,23 +6,9 @@ import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
 import Carousel from '../components/Carousel';
 import Footer from '../components/Footer';
-import { ShoppingCart, Search } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 
-export type Page =
-  | 'login'
-  | 'signup'
-  | 'home'
-  | 'product'
-  | 'cart'
-  | 'admin-dashboard'
-  | 'admin-products'
-  | 'admin-orders';
-
-interface HomeProps {
-  onNavigate?: (page: Page, params?: { productId?: string }) => void;
-}
-
-export default function Home({ onNavigate }: HomeProps = {}) {
+export default function Home() {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
 
@@ -35,7 +21,6 @@ export default function Home({ onNavigate }: HomeProps = {}) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
 
@@ -83,7 +68,7 @@ export default function Home({ onNavigate }: HomeProps = {}) {
   // Show loading while auth is loading
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -94,32 +79,17 @@ export default function Home({ onNavigate }: HomeProps = {}) {
 
   const filteredProducts = products.filter((product) => {
     const matchesCategory = selectedCategory === 'all' || product.category_id === selectedCategory;
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesCategory;
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
       <Navbar />
       <Carousel />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Discover Products</h1>
-
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">Discover Products</h1>
 
           <div className="flex flex-wrap gap-2">
             <button
@@ -127,7 +97,7 @@ export default function Home({ onNavigate }: HomeProps = {}) {
               className={`px-4 py-2 rounded-lg font-medium transition ${
                 selectedCategory === 'all'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
               }`}
             >
               All Products

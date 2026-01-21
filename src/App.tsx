@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Lazy load components for better performance
@@ -14,16 +14,40 @@ const AdminProducts = lazy(() => import('./pages/admin/Products'));
 const AdminCategories = lazy(() => import('./pages/admin/Categories'));
 const AdminOrders = lazy(() => import('./pages/admin/Orders'));
 const AdminUsers = lazy(() => import('./pages/admin/Users'));
+const AdminProfile = lazy(() => import('./pages/admin/Profile'));
+const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
 
-function AppContent() {
-  const { loading } = useAuth();
+// Protected route for admin pages
+function AdminRoute({ element }: { element: React.ReactElement }) {
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !profile?.is_admin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return element;
+}
+
+function AppContent() {
+  const { loading, user, profile } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
         </div>
       </div>
     );
@@ -31,17 +55,22 @@ function AppContent() {
 
   return (
     <Routes>
+      {/* Client Routes */}
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/shop" element={<Shop />} />
       <Route path="/product/:productId" element={<ProductDetail />} />
       <Route path="/cart" element={<Cart />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/products" element={<AdminProducts />} />
-      <Route path="/admin/categories" element={<AdminCategories />} />
-      <Route path="/admin/orders" element={<AdminOrders />} />
-      <Route path="/admin/users" element={<AdminUsers />} />
+
+      {/* Admin Routes - Protected */}
+      <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
+      <Route path="/admin/products" element={<AdminRoute element={<AdminProducts />} />} />
+      <Route path="/admin/categories" element={<AdminRoute element={<AdminCategories />} />} />
+      <Route path="/admin/orders" element={<AdminRoute element={<AdminOrders />} />} />
+      <Route path="/admin/users" element={<AdminRoute element={<AdminUsers />} />} />
+      <Route path="/admin/profile" element={<AdminRoute element={<AdminProfile />} />} />
+      <Route path="/admin/notifications" element={<AdminRoute element={<AdminNotifications />} />} />
     </Routes>
   );
 }

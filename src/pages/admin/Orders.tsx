@@ -2,7 +2,14 @@ import { useState, useEffect } from 'react';
 import { supabase, Order, OrderItem } from '../../lib/supabase';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import AdminFooter from '../../components/AdminFooter';
+import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SoftCard from '../../components/ui/SoftCard';
+import StatusBadge from '../../components/ui/StatusBadge';
+import Pagination from '../../components/ui/Pagination';
+import { ChevronDown, ChevronUp, Search } from 'lucide-react';
+
+const DEFAULT_ITEMS_PER_PAGE = 10;
 
 interface OrderWithItems extends Order {
   order_items?: OrderItem[];
@@ -17,6 +24,10 @@ export default function Orders() {
   const [profiles, setProfiles] = useState<{[key: string]: {email: string, full_name: string | null}}>({});
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
 
   useEffect(() => {
     loadData();
@@ -92,107 +103,207 @@ export default function Orders() {
     });
   };
 
+  // Filter orders based on search query and status
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch = 
+      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.profiles?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Paginate filtered orders
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to page 1 when filtering changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedStatus, itemsPerPage]);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <AdminNav currentPage="admin-orders" />
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Orders Management</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Orders</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage customer orders and shipments</p>
+        </div>
+
+        {/* Search and Filter Bar */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          {/* Left: Search and Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
+            <div className="relative w-full sm:w-56">
+              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400 dark:text-gray-500" />
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
+              />
+            </div>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm appearance-none cursor-pointer pr-8 bg-no-repeat bg-right bg-contain min-w-[180px]"
+              style={{
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/csvg%3e")`
+              }}
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="pending">En attente</option>
+              <option value="processing">Traitement</option>
+              <option value="shipped">Expédié</option>
+              <option value="delivered">Livré</option>
+              <option value="cancelled">Annulé</option>
+            </select>
+          </div>
+
+          {/* Right: Items Per Page and Total */}
+          <div className="flex gap-2 items-center text-sm whitespace-nowrap">
+            <span className="text-gray-600 dark:text-gray-400">Afficher</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm appearance-none cursor-pointer pr-6 bg-no-repeat bg-right bg-contain"
+              style={{
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/csvg%3e")`
+              }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+            <span className="text-gray-600 dark:text-gray-400">entrées</span>
+            <span className="text-gray-600 dark:text-gray-400 font-medium">Total: {filteredOrders.length}</span>
+          </div>
+        </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading orders...</p>
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-md p-12 text-center">
-            <p className="text-gray-600 text-lg">No orders found</p>
-          </div>
+          <SkeletonLoader count={5} height="h-20" className="space-y-3" />
+        ) : filteredOrders.length === 0 ? (
+          <SoftCard>
+            <div className="text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400 text-lg">
+                {searchQuery || selectedStatus !== 'all' ? 'No orders match your filters' : 'No orders found'}
+              </p>
+            </div>
+          </SoftCard>
         ) : (
-          <div className="space-y-4">
-            {orders.map((order) => (
-              <div key={order.id} className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="space-y-3">
+            {paginatedOrders.map((order) => (
+              <SoftCard key={order.id} hoverable>
                 <div
-                  className="p-6 cursor-pointer hover:bg-gray-50 transition"
+                  className="cursor-pointer py-1"
                   onClick={() =>
                     setExpandedOrder(expandedOrder === order.id ? null : order.id)
                   }
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div>
-                        <p className="text-sm text-gray-600">Order ID</p>
-                        <p className="font-semibold text-gray-900">
-                          #{order.id.slice(0, 8)}
+                        <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Order ID</p>
+                        <p className="font-semibold text-gray-900 dark:text-white mt-1">
+                          #{order.id.slice(0, 8).toUpperCase()}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Customer</p>
-                        <p className="font-semibold text-gray-900">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Customer</p>
+                        <p className="font-semibold text-gray-900 dark:text-white mt-1">
                           {order.profiles?.full_name || order.profiles?.email}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Total</p>
-                        <p className="font-semibold text-blue-600">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Total</p>
+                        <p className="font-semibold text-blue-600 dark:text-blue-400 mt-1">
                           ${order.total_amount.toFixed(2)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Date</p>
-                        <p className="font-semibold text-gray-900">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Date</p>
+                        <p className="font-semibold text-gray-900 dark:text-white mt-1 text-sm">
                           {formatDate(order.created_at)}
                         </p>
                       </div>
+                      <div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Status</p>
+                        <div className="mt-1">
+                          <StatusBadge status={order.status} />
+                        </div>
+                      </div>
                     </div>
-                    <button className="ml-4 text-gray-400 hover:text-gray-600">
+                    <button className="ml-4 text-gray-400 hover:text-gray-600 transition">
                       {expandedOrder === order.id ? (
-                        <ChevronUp className="w-6 h-6" />
+                        <ChevronUp className="w-5 h-5" />
                       ) : (
-                        <ChevronDown className="w-6 h-6" />
+                        <ChevronDown className="w-5 h-5" />
                       )}
                     </button>
                   </div>
 
-                  <div className="mt-4 flex items-center space-x-4">
-                    <span className="text-sm text-gray-600">Status:</span>
-                    <select
-                      value={order.status}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleStatusChange(order.id, e.target.value);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-blue-500 ${
-                        order.status === 'completed'
-                          ? 'bg-green-100 text-green-800'
-                          : order.status === 'processing'
-                          ? 'bg-blue-100 text-blue-800'
-                          : order.status === 'cancelled'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="processing">Processing</option>
-                      <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
+                  {expandedOrder !== order.id && (
+                    <div className="mt-4 flex items-center space-x-4 pt-4 border-t border-gray-100">
+                      <span className="text-xs text-gray-600 uppercase tracking-wider font-semibold">Update Status:</span>
+                      <select
+                        value={order.status}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleStatusChange(order.id, e.target.value);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="px-3 py-1 rounded-lg text-xs font-medium border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {expandedOrder === order.id && order.order_items && (
-                  <div className="border-t border-gray-200 p-6 bg-gray-50">
-                    <h3 className="font-semibold text-gray-900 mb-4">Order Items</h3>
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-gray-900">Order Items</h3>
+                      <div className="flex items-center space-x-4">
+                        <span className="text-xs text-gray-600 uppercase tracking-wider font-semibold">Update Status:</span>
+                        <select
+                          value={order.status}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(order.id, e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-3 py-1 rounded-lg text-xs font-medium border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="processing">Processing</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                    </div>
                     <div className="space-y-3">
-                      {order.order_items.map((item) => (
+                      {order.order_items.map((item, index) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between bg-white p-4 rounded-lg"
+                          className={`flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100 ${
+                            index !== order.order_items!.length - 1 ? '' : ''
+                          }`}
                         >
-                          <div className="flex items-center space-x-4">
-                            <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                          <div className="flex items-center space-x-3 flex-1">
+                            <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                               {item.products?.image_url && (
                                 <img
                                   src={item.products.image_url}
@@ -202,11 +313,11 @@ export default function Orders() {
                               )}
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">
+                              <p className="font-medium text-gray-900">
                                 {item.products?.name}
                               </p>
-                              <p className="text-sm text-gray-600">
-                                Quantity: {item.quantity}
+                              <p className="text-xs text-gray-600">
+                                Qty: {item.quantity}
                               </p>
                             </div>
                           </div>
@@ -214,7 +325,7 @@ export default function Orders() {
                             <p className="font-semibold text-gray-900">
                               ${(item.price * item.quantity).toFixed(2)}
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-xs text-gray-500">
                               ${item.price.toFixed(2)} each
                             </p>
                           </div>
@@ -223,11 +334,24 @@ export default function Orders() {
                     </div>
                   </div>
                 )}
-              </div>
+              </SoftCard>
             ))}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredOrders.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={setItemsPerPage}
+              />
+            )}
           </div>
         )}
       </div>
+      <AdminFooter />
     </div>
   );
 }

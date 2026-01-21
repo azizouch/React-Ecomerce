@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, Tag, Users } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Tag, Users, Bell } from 'lucide-react';
 
 interface AdminNavProps {
   currentPage: string;
@@ -14,10 +14,11 @@ export default function AdminNav({ currentPage }: AdminNavProps) {
     { page: 'admin-categories', path: '/admin/categories', label: 'Categories', icon: Tag },
     { page: 'admin-orders', path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
     { page: 'admin-users', path: '/admin/users', label: 'Users', icon: Users },
+    { page: 'admin-notifications', path: '/admin/notifications', label: 'Notifications', icon: Bell },
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-md mb-6 p-2">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md mb-6 p-2 transition-colors border border-gray-100 dark:border-slate-700">
       <div className="flex flex-wrap gap-2">
         {navItems.map((item) => (
           <button
@@ -25,8 +26,8 @@ export default function AdminNav({ currentPage }: AdminNavProps) {
             onClick={() => navigate(item.path)}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
               currentPage === item.page
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? 'bg-black text-white dark:bg-[hsl(217.2,91.2%,59.8%)] dark:text-[hsl(222.2,47.4%,11.2%)]'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
             }`}
           >
             <item.icon className="w-5 h-5" />
