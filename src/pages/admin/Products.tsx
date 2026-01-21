@@ -3,6 +3,7 @@ import { supabase, Product, Category } from '../../lib/supabase';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
 import { Plus, Edit, Trash2, X } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -80,7 +81,7 @@ export default function Products() {
       loadData();
     } catch (error) {
       console.error('Error saving product:', error);
-      alert('Failed to save product');
+      Swal.fire('Error', 'Failed to save product', 'error');
     }
   };
 
@@ -98,15 +99,26 @@ export default function Products() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'You won\'t be able to revert this!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) throw error;
       loadData();
+      Swal.fire('Deleted!', 'Product has been deleted.', 'success');
     } catch (error) {
       console.error('Error deleting product:', error);
-      alert('Failed to delete product');
+      Swal.fire('Error', 'Failed to delete product', 'error');
     }
   };
 
