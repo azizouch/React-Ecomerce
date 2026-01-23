@@ -67,24 +67,8 @@ export default function Pagination({
 
   return (
     <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-      <div className="flex items-center space-x-4">
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {totalItems} total results
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <label className="text-sm text-gray-600 dark:text-gray-400">Items per page:</label>
-          <select
-            value={itemsPerPage}
-            onChange={(e) => onItemsPerPageChange(parseInt(e.target.value))}
-            className="px-3 py-1 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-          >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-          </select>
-        </div>
+      <div className="text-sm text-gray-600 dark:text-gray-400">
+        Showing {totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} results
       </div>
 
       <div className="flex items-center space-x-2">
@@ -124,6 +108,10 @@ export default function Pagination({
           <span className="hidden sm:inline">Next</span>
           <ChevronRight className="w-4 h-4" />
         </button>
+      </div>
+
+      <div className="text-sm text-gray-600 dark:text-gray-400">
+        Page {currentPage} sur {totalPages}
       </div>
     </div>
   );

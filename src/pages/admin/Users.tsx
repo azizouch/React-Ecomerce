@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { calculateTotalPages } from '../../lib/pagination';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
@@ -28,6 +29,7 @@ export default function AdminUsers() {
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
@@ -290,7 +292,7 @@ export default function AdminUsers() {
   });
 
   // Paginate filtered users
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const totalPages = calculateTotalPages(filteredUsers.length, itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 

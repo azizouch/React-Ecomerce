@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, Product, Category } from '../lib/supabase';
+import { getPaginationParams, calculateTotalPages } from '../lib/pagination';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { ShoppingCart, Search, Filter, ChevronDown } from 'lucide-react';
@@ -11,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+
+const ITEMS_PER_PAGE = 12;
 
 export default function Shop() {
   const navigate = useNavigate();
@@ -23,17 +26,24 @@ export default function Shop() {
   const [sortBy, setSortBy] = useState<string>('name');
   const [loading, setLoading] = useState(true);
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
   const { addToCart } = useCart();
   const categoriesDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadData();
+    loadCategories();
   }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [currentPage, selectedCategory, searchQuery, priceRange, sortBy]);
 
   useEffect(() => {
     const categoryParam = searchParams.get('category');
     if (categoryParam) {
       setSelectedCategory(categoryParam);
+      setCurrentPage(1);
     }
   }, [searchParams]);
 
@@ -49,20 +59,71 @@ export default function Shop() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadData = async () => {
+  const loadCategories = async () => {
     try {
-      const [productsRes, categoriesRes] = await Promise.all([
-        supabase.from('products').select('*').order('created_at', { ascending: false }),
-        supabase.from('categories').select('*').order('name'),
-      ]);
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
 
-      if (productsRes.error) throw productsRes.error;
-      if (categoriesRes.error) throw categoriesRes.error;
-
-      setProducts(productsRes.data || []);
-      setCategories(categoriesRes.data || []);
+      if (error) throw error;
+      setCategories(data || []);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading categories:', error);
+    }
+  };
+
+  const loadProducts = async () => {
+    setLoading(true);
+    try {
+      const { offset, limit } = getPaginationParams(currentPage, ITEMS_PER_PAGE);
+
+      // Build the query with filters
+      let query = supabase
+        .from('products')
+        .select('*', { count: 'exact' });
+
+      // Filter by category
+      if (selectedCategory !== 'all') {
+        query = query.eq('category_id', selectedCategory);
+      }
+
+      // Filter by price range
+      query = query
+        .gte('price', priceRange[0])
+        .lte('price', priceRange[1]);
+
+      // Filter by search query
+      if (searchQuery.trim()) {
+        query = query.or(
+          `name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`
+        );
+      }
+
+      // Apply sorting
+      switch (sortBy) {
+        case 'price-low':
+          query = query.order('price', { ascending: true });
+          break;
+        case 'price-high':
+          query = query.order('price', { ascending: false });
+          break;
+        case 'name':
+        default:
+          query = query.order('name', { ascending: true });
+      }
+
+      // Apply pagination
+      query = query.range(offset, offset + limit - 1);
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      setProducts(data || []);
+      setTotalProducts(count || 0);
+    } catch (error) {
+      console.error('Error loading products:', error);
     } finally {
       setLoading(false);
     }
@@ -77,25 +138,7 @@ export default function Shop() {
     }
   };
 
-  const filteredProducts = products
-    .filter((product) => {
-      const matchesCategory = selectedCategory === 'all' || product.category_id === selectedCategory;
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
-      return matchesCategory && matchesSearch && matchesPrice;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'price-low':
-          return a.price - b.price;
-        case 'price-high':
-          return b.price - a.price;
-        case 'name':
-        default:
-          return a.name.localeCompare(b.name);
-      }
-    });
+  const totalPages = calculateTotalPages(totalProducts, ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
@@ -266,9 +309,12 @@ export default function Shop() {
               {/* Sort */}
               <div className="flex justify-between items-center mb-6">
                 <p className="text-gray-600 dark:text-gray-400">
-                  Showing {filteredProducts.length} products
+                  Showing {products.length} of {totalProducts} products
                 </p>
-                <Select value={sortBy} onValueChange={setSortBy}>
+                <Select value={sortBy} onValueChange={(value) => {
+                  setSortBy(value);
+                  setCurrentPage(1);
+                }}>
                   <SelectTrigger className="w-[200px]">
                     <SelectValue placeholder="Sort by..." />
                   </SelectTrigger>
@@ -285,69 +331,108 @@ export default function Shop() {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                   <p className="mt-4 text-gray-600 dark:text-gray-400">Loading products...</p>
                 </div>
-              ) : filteredProducts.length === 0 ? (
+              ) : products.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-gray-600 dark:text-gray-400 text-lg">No products found</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      className="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-lg dark:border dark:border-slate-700 overflow-hidden hover:shadow-xl dark:hover:shadow-xl transition group"
-                    >
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {products.map((product) => (
                       <div
-                        className="relative h-56 bg-gray-200 dark:bg-slate-700 cursor-pointer overflow-hidden"
-                        onClick={() => navigate(`/product/${product.id}`)}
+                        key={product.id}
+                        className="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-lg dark:border dark:border-slate-700 overflow-hidden hover:shadow-xl dark:hover:shadow-xl transition group"
                       >
-                        {product.image_url ? (
-                          <img
-                            src={product.image_url}
-                            alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ShoppingCart className="w-16 h-16 text-gray-400 dark:text-gray-600" />
-                          </div>
-                        )}
-                        {product.stock === 0 && (
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                            <span className="text-white font-bold text-lg">Out of Stock</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="p-4">
-                        <h3
-                          className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
+                        <div
+                          className="relative h-56 bg-gray-200 dark:bg-slate-700 cursor-pointer overflow-hidden"
                           onClick={() => navigate(`/product/${product.id}`)}
                         >
-                          {product.name}
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
-                          {product.description}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                            ${product.price.toFixed(2)}
-                          </span>
-                          <button
-                            onClick={() => handleAddToCart(product.id)}
-                            disabled={product.stock === 0}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                          >
-                            <ShoppingCart className="w-4 h-4" />
-                            <span>Add</span>
-                          </button>
+                          {product.image_url ? (
+                            <img
+                              src={product.image_url}
+                              alt={product.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ShoppingCart className="w-16 h-16 text-gray-400 dark:text-gray-600" />
+                            </div>
+                          )}
+                          {product.stock === 0 && (
+                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                              <span className="text-white font-bold text-lg">Out of Stock</span>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                          {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-                        </p>
+
+                        <div className="p-4">
+                          <h3
+                            className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
+                            onClick={() => navigate(`/product/${product.id}`)}
+                          >
+                            {product.name}
+                          </h3>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
+                            {product.description}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                              ${product.price.toFixed(2)}
+                            </span>
+                            <button
+                              onClick={() => handleAddToCart(product.id)}
+                              disabled={product.stock === 0}
+                              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                            >
+                              <ShoppingCart className="w-4 h-4" />
+                              <span>Add</span>
+                            </button>
+                          </div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                          </p>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="mt-8 flex justify-center items-center gap-4">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        Previous
+                      </button>
+                      
+                      <div className="flex gap-2">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-2 rounded-lg transition ${
+                              currentPage === page
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-300 dark:border-slate-600 hover:border-blue-500'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        Next
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </div>
           </div>

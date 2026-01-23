@@ -1,18 +1,24 @@
 import { useState, useEffect } from 'react';
 import { supabase, Category } from '../../lib/supabase';
+import { calculateTotalPages } from '../../lib/pagination';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
 import AdminFooter from '../../components/AdminFooter';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
+import Pagination from '../../components/ui/Pagination';
 import { Plus, Edit, Trash2, Tag, X } from 'lucide-react';
 import Swal from 'sweetalert2';
+
+const DEFAULT_ITEMS_PER_PAGE = 12;
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -125,6 +131,16 @@ export default function AdminCategories() {
     setShowModal(true);
   };
 
+  // Paginate categories
+  const totalPages = calculateTotalPages(categories.length, itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedCategories = categories.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to page 1 when items per page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [itemsPerPage]);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <Navbar />
@@ -158,41 +174,57 @@ export default function AdminCategories() {
             </div>
           </SoftCard>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.map((category) => (
-              <SoftCard key={category.id} hoverable>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-3 flex-1">
-                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Tag className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginatedCategories.map((category) => (
+                <SoftCard key={category.id} hoverable>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-3 flex-1">
+                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Tag className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">{category.name}</h3>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">{category.name}</h3>
+                    <div className="flex space-x-2 ml-2">
+                      <button
+                        onClick={() => handleEdit(category)}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition p-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(category.id)}
+                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex space-x-2 ml-2">
-                    <button
-                      onClick={() => handleEdit(category)}
-                      className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition p-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
-                      title="Edit"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(category.id)}
-                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                {category.description && (
-                  <p className="text-gray-600 text-sm line-clamp-2">{category.description}</p>
-                )}
-              </SoftCard>
-            ))}
-          </div>
+                  {category.description && (
+                    <p className="text-gray-600 text-sm line-clamp-2">{category.description}</p>
+                  )}
+                </SoftCard>
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={categories.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
+              </div>
+            )}
+          </>
         )}
 
         {/* Add/Edit Modal */}

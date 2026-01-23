@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, Order, OrderItem } from '../../lib/supabase';
+import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
 import AdminFooter from '../../components/AdminFooter';
@@ -34,6 +35,7 @@ export default function Orders() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
+  const [totalOrders, setTotalOrders] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -82,6 +84,24 @@ export default function Orders() {
     }
   };
 
+  useEffect(() => {
+    loadFilteredOrders();
+  }, [currentPage, itemsPerPage, searchQuery, selectedStatus]);
+
+  const loadFilteredOrders = () => {
+    // Filter orders based on search query and status
+    const filteredOrders = orders.filter((order) => {
+      const matchesSearch = 
+        order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.profiles?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
+      return matchesSearch && matchesStatus;
+    });
+
+    setTotalOrders(filteredOrders.length);
+  };
+
   const handleStatusChange = async (orderId: string, status: string) => {
     try {
       const { error } = await supabase
@@ -118,14 +138,9 @@ export default function Orders() {
   });
 
   // Paginate filtered orders
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const totalPages = calculateTotalPages(filteredOrders.length, itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
-
-  // Reset to page 1 when filtering changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedStatus, itemsPerPage]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">

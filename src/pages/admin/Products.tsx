@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { supabase, Product, Category } from '../../lib/supabase';
+import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
 import AdminFooter from '../../components/AdminFooter';
@@ -29,6 +30,7 @@ export default function Products() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -39,23 +41,56 @@ export default function Products() {
   });
 
   useEffect(() => {
-    loadData();
+    loadCategories();
   }, []);
 
-  const loadData = async () => {
+  useEffect(() => {
+    loadProducts();
+  }, [currentPage, itemsPerPage, searchQuery, selectedCategory]);
+
+  const loadCategories = async () => {
     try {
-      const [productsRes, categoriesRes] = await Promise.all([
-        supabase.from('products').select('*').order('created_at', { ascending: false }),
-        supabase.from('categories').select('*').order('name'),
-      ]);
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
 
-      if (productsRes.error) throw productsRes.error;
-      if (categoriesRes.error) throw categoriesRes.error;
-
-      setProducts(productsRes.data || []);
-      setCategories(categoriesRes.data || []);
+      if (error) throw error;
+      setCategories(data || []);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading categories:', error);
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const { offset, limit } = getPaginationParams(currentPage, itemsPerPage);
+
+      let query = supabase
+        .from('products')
+        .select('*', { count: 'exact' });
+
+      if (selectedCategory !== 'all') {
+        query = query.eq('category_id', selectedCategory);
+      }
+
+      if (searchQuery.trim()) {
+        query = query.or(
+          `name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`
+        );
+      }
+
+      const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) throw error;
+
+      setProducts(data || []);
+      setTotalProducts(count || 0);
+    } catch (error) {
+      console.error('Error loading products:', error);
     } finally {
       setLoading(false);
     }
@@ -96,7 +131,7 @@ export default function Products() {
         category_id: '',
         stock: '',
       });
-      loadData();
+      loadProducts();
     } catch (error) {
       console.error('Error saving product:', error);
       Swal.fire('Error', 'Failed to save product', 'error');
@@ -132,7 +167,7 @@ export default function Products() {
     try {
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) throw error;
-      loadData();
+      loadProducts();
       Swal.fire('Deleted!', 'Product has been deleted.', 'success');
     } catch (error) {
       console.error('Error deleting product:', error);
@@ -153,17 +188,10 @@ export default function Products() {
   };
 
   // Filter products based on search query and category
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category_id === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProducts = products;
 
-  // Paginate filtered products
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  // Calculate total pages
+  const totalPages = calculateTotalPages(totalProducts, itemsPerPage);
 
   // Reset to page 1 when filtering changes
   useEffect(() => {
@@ -177,10 +205,7 @@ export default function Products() {
         <AdminNav currentPage="admin-products" />
 
         <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Products</h1>
-            <p className="text-gray-600 dark:text-gray-400">Manage your product catalog</p>
-          </div>
+          <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">List Products</h1>
           <button
             onClick={() => {
               setEditingProduct(null);
@@ -232,7 +257,7 @@ export default function Products() {
 
           {/* Right: Items Per Page and Total */}
           <div className="flex gap-2 items-center text-sm whitespace-nowrap">
-            <span className="text-gray-600 dark:text-gray-400">Afficher</span>
+            <span className="text-gray-600 dark:text-gray-400">Show</span>
             <Select
               value={itemsPerPage.toString()}
               onValueChange={(value) => {
@@ -250,18 +275,18 @@ export default function Products() {
                 <SelectItem value="50">50</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-gray-600 dark:text-gray-400">entrées</span>
-            <span className="text-gray-600 dark:text-gray-400 font-medium">Total: {filteredProducts.length}</span>
+            <span className="text-gray-600 dark:text-gray-400">items</span>
+            <span className="text-gray-600 dark:text-gray-400 font-medium">Total: {totalProducts}</span>
           </div>
         </div>
 
         {loading ? (
           <SkeletonLoader count={6} height="h-16" className="space-y-3" />
         ) : (
-          <SoftCard>
+          <SoftCard className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead>
+                <thead className="bg-slate-100 dark:bg-slate-100">
                   <tr className="border-b border-gray-200 dark:border-slate-600">
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Product
@@ -281,11 +306,11 @@ export default function Products() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedProducts.map((product, index) => (
+                  {products.map((product, index) => (
                     <tr
                       key={product.id}
                       className={`hover:bg-blue-50 dark:hover:bg-slate-700 transition ${
-                        index !== paginatedProducts.length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''
+                        index !== products.length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''
                       }`}
                     >
                       <td className="px-6 py-4">
@@ -357,10 +382,9 @@ export default function Products() {
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  totalItems={filteredProducts.length}
+                  totalItems={totalProducts}
                   itemsPerPage={itemsPerPage}
                   onPageChange={setCurrentPage}
-                  onItemsPerPageChange={setItemsPerPage}
                 />
               )}
             </div>
