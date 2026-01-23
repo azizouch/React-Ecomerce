@@ -11,13 +11,16 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.2.6",
     "@supabase/supabase-js": "^2.57.4",
+    "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.12.0",
-    "sweetalert2": "^11.26.17"
+    "sweetalert2": "^11.26.17",
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

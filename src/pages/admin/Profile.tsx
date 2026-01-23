@@ -8,7 +8,7 @@ import { User, Mail, Calendar, Shield, Edit2, Check, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 export default function AdminProfile() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -56,9 +56,6 @@ export default function AdminProfile() {
         .eq('id', user?.id);
 
       if (updateError) throw updateError;
-
-      // Refresh profile context
-      await refreshProfile?.();
 
       setSuccess('Profile updated successfully!');
       setIsEditing(false);
@@ -179,16 +176,14 @@ export default function AdminProfile() {
               <div>
                 <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Calendar className="w-4 h-4 mr-2" />
-                  Last Sign In
+                  Member Since
                 </label>
                 <p className="text-gray-900 dark:text-gray-100">
-                  {profile?.last_sign_in_at
-                    ? new Date(profile.last_sign_in_at).toLocaleDateString('en-US', {
+                  {user?.created_at
+                    ? new Date(user.created_at).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
                       })
                     : 'N/A'}
                 </p>

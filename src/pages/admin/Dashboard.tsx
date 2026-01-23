@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, Order, OrderItem } from '../../lib/supabase';
+import { supabase, Order } from '../../lib/supabase';
 import Navbar from '../../components/Navbar';
 import AdminNav from '../../components/AdminNav';
 import AdminFooter from '../../components/AdminFooter';
@@ -8,7 +8,7 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
 import StatusBadge from '../../components/ui/StatusBadge';
 import CircularChart from '../../components/ui/CircularChart';
-import { Package, ShoppingCart, DollarSign, Users, Tag, AlertTriangle, Clock, TrendingUp, ArrowRight } from 'lucide-react';
+import { Package, ShoppingCart, DollarSign, Users, Tag, AlertTriangle, Clock, ArrowRight } from 'lucide-react';
 
 interface Stats {
   totalProducts: number;

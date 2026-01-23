@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 
 // Lazy load components for better performance
 const Login = lazy(() => import('./pages/Login'));
@@ -22,14 +23,7 @@ function AdminRoute({ element }: { element: React.ReactElement }) {
   const { user, profile, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!user || !profile?.is_admin) {
@@ -40,38 +34,33 @@ function AdminRoute({ element }: { element: React.ReactElement }) {
 }
 
 function AppContent() {
-  const { loading, user, profile } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
-    <Routes>
-      {/* Client Routes */}
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/shop" element={<Shop />} />
-      <Route path="/product/:productId" element={<ProductDetail />} />
-      <Route path="/cart" element={<Cart />} />
+    <Suspense fallback={<LoadingSpinner />}>
+      <Routes>
+        {/* Client Routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/product/:productId" element={<ProductDetail />} />
+        <Route path="/cart" element={<Cart />} />
 
-      {/* Admin Routes - Protected */}
-      <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
-      <Route path="/admin/products" element={<AdminRoute element={<AdminProducts />} />} />
-      <Route path="/admin/categories" element={<AdminRoute element={<AdminCategories />} />} />
-      <Route path="/admin/orders" element={<AdminRoute element={<AdminOrders />} />} />
-      <Route path="/admin/users" element={<AdminRoute element={<AdminUsers />} />} />
-      <Route path="/admin/profile" element={<AdminRoute element={<AdminProfile />} />} />
-      <Route path="/admin/notifications" element={<AdminRoute element={<AdminNotifications />} />} />
-    </Routes>
+        {/* Admin Routes - Protected */}
+        <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
+        <Route path="/admin/products" element={<AdminRoute element={<AdminProducts />} />} />
+        <Route path="/admin/categories" element={<AdminRoute element={<AdminCategories />} />} />
+        <Route path="/admin/orders" element={<AdminRoute element={<AdminOrders />} />} />
+        <Route path="/admin/users" element={<AdminRoute element={<AdminUsers />} />} />
+        <Route path="/admin/profile" element={<AdminRoute element={<AdminProfile />} />} />
+        <Route path="/admin/notifications" element={<AdminRoute element={<AdminNotifications />} />} />
+      </Routes>
+    </Suspense>
   );
 }
 

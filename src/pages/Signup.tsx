@@ -19,7 +19,7 @@ export default function Signup() {
 
     try {
       await signUp(email, password, fullName);
-      onNavigate('home');
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
     } finally {

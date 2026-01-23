@@ -273,17 +273,11 @@ export default function AdminUsers() {
     setFormData({
       email: user.email,
       password: '',
+      confirmPassword: '',
       full_name: user.full_name || '',
       is_admin: user.is_admin,
     });
     setShowEditModal(true);
-  };
-
-  const resetForm = () => {
-    setFormData({ email: '', password: '', confirmPassword: '', full_name: '', is_admin: false });
-    setEditingUser(null);
-    setShowCreateModal(false);
-    setShowEditModal(false);
   };
 
   const filteredUsers = users.filter((user) => {

@@ -84,20 +84,7 @@ export default function AdminNotifications() {
     }
   };
 
-  const getTypeTextColor = (type: string) => {
-    switch (type) {
-      case 'success':
-        return 'text-emerald-700 dark:text-emerald-400';
-      case 'warning':
-        return 'text-amber-700 dark:text-amber-400';
-      case 'error':
-        return 'text-red-700 dark:text-red-400';
-      default:
-        return 'text-blue-700 dark:text-blue-400';
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = () => {
     return <Bell className="w-5 h-5" />;
   };
 
@@ -165,7 +152,7 @@ export default function AdminNotifications() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4 flex-1">
                     <div className={`p-3 rounded-lg ${getTypeColor(notification.type)}`}>
-                      {getTypeIcon(notification.type)}
+                      {getTypeIcon()}
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900 dark:text-white">
