@@ -1,5 +1,5 @@
-import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, Tag, Users, Bell } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 
 interface AdminNavProps {
   currentPage: string;
@@ -7,34 +7,37 @@ interface AdminNavProps {
 
 export default function AdminNav({ currentPage }: AdminNavProps) {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const navItems = [
-    { page: 'admin-dashboard', path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-    { page: 'admin-products', path: '/admin/products', label: 'Products', icon: Package },
-    { page: 'admin-categories', path: '/admin/categories', label: 'Categories', icon: Tag },
-    { page: 'admin-orders', path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
-    { page: 'admin-users', path: '/admin/users', label: 'Users', icon: Users },
-    { page: 'admin-notifications', path: '/admin/notifications', label: 'Notifications', icon: Bell },
-  ];
+  const breadcrumbMap: { [key: string]: { label: string; path: string }[] } = {
+    'admin-dashboard': [{ label: 'Home', path: '/admin' }, { label: 'Dashboard', path: '/admin' }],
+    'admin-products': [{ label: 'Home', path: '/admin' }, { label: 'Products', path: '/admin/products' }],
+    'admin-categories': [{ label: 'Home', path: '/admin' }, { label: 'Categories', path: '/admin/categories' }],
+    'admin-orders': [{ label: 'Home', path: '/admin' }, { label: 'Orders', path: '/admin/orders' }],
+    'admin-users': [{ label: 'Home', path: '/admin' }, { label: 'Users', path: '/admin/users' }],
+    'admin-notifications': [{ label: 'Home', path: '/admin' }, { label: 'Notifications', path: '/admin/notifications' }],
+    'admin-profile': [{ label: 'Home', path: '/admin' }, { label: 'Profile', path: '/admin/profile' }],
+  };
+
+  const breadcrumbs = breadcrumbMap[currentPage] || [{ label: 'Home', path: '/admin' }];
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md mb-6 p-2 transition-colors border border-gray-100 dark:border-slate-700">
-      <div className="flex flex-wrap gap-2">
-        {navItems.map((item) => (
+    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
+      {breadcrumbs.map((item, index) => (
+        <div key={item.path} className="flex items-center space-x-2">
           <button
-            key={item.page}
             onClick={() => navigate(item.path)}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
-              currentPage === item.page
-                ? 'bg-black text-white dark:bg-[hsl(217.2,91.2%,59.8%)] dark:text-[hsl(222.2,47.4%,11.2%)]'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+            className={`transition ${
+              index === breadcrumbs.length - 1
+                ? 'text-gray-900 dark:text-white font-semibold'
+                : 'hover:text-blue-600 dark:hover:text-blue-400'
             }`}
           >
-            <item.icon className="w-5 h-5" />
-            <span>{item.label}</span>
+            {item.label}
           </button>
-        ))}
-      </div>
+          {index < breadcrumbs.length - 1 && <ChevronRight className="w-4 h-4" />}
+        </div>
+      ))}
     </div>
   );
 }

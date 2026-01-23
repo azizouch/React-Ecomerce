@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Moon, Sun, ChevronDown, Bell, Search } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ShoppingCart, User, LogOut, Moon, Sun, ChevronDown, Bell, Search, LayoutDashboard, Package, Tag, ShoppingBag, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../hooks/useCart';
 import { useTheme } from '../contexts/ThemeContext';
@@ -8,6 +8,7 @@ import { supabase, Category } from '../lib/supabase';
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, signOut } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { cartCount } = useCart();
@@ -90,6 +91,32 @@ export default function Navbar() {
             >
               ShopHub
             </button>
+
+            {/* Admin Navigation Links - Visible for admin only */}
+            {isAdmin && (
+              <div className="hidden md:flex items-center space-x-1">
+                {[
+                  { page: 'admin-dashboard', path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+                  { page: 'admin-products', path: '/admin/products', label: 'Products', icon: Package },
+                  { page: 'admin-categories', path: '/admin/categories', label: 'Categories', icon: Tag },
+                  { page: 'admin-orders', path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
+                  { page: 'admin-users', path: '/admin/users', label: 'Users', icon: Users },
+                ].map((item) => (
+                  <button
+                    key={item.page}
+                    onClick={() => navigate(item.path)}
+                    className={`flex items-center space-x-1 px-3 py-1.5 rounded-b-lg text-sm font-medium transition border-b-2 ${
+                      location.pathname === item.path
+                        ? 'border-b-black dark:border-b-[hsl(217.2,91.2%,59.8%)] text-gray-900 dark:text-white'
+                        : 'border-b-transparent text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Client Navigation Links - Visible for all clients */}
             {!isAdmin && (

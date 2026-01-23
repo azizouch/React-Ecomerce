@@ -89,7 +89,7 @@ export default function Pagination({
               disabled={page === '...'}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
                 page === currentPage
-                  ? 'bg-black dark:bg-slate-600 text-white'
+                  ? 'bg-black dark:bg-[hsl(217.2,91.2%,59.8%)] text-white'
                   : page === '...'
                   ? 'text-gray-400 cursor-default'
                   : 'border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'

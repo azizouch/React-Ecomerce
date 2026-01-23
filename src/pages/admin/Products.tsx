@@ -242,10 +242,10 @@ export default function Products() {
             </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Tous les livreurs" />
+                <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les livreurs</SelectItem>
+                <SelectItem value="all">All categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
@@ -256,8 +256,8 @@ export default function Products() {
           </div>
 
           {/* Right: Items Per Page and Total */}
-          <div className="flex gap-2 items-center text-sm whitespace-nowrap">
-            <span className="text-gray-600 dark:text-gray-400">Show</span>
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
             <Select
               value={itemsPerPage.toString()}
               onValueChange={(value) => {
@@ -265,7 +265,7 @@ export default function Products() {
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="w-[60px]">
+              <SelectTrigger className="w-16 h-8 text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -275,32 +275,32 @@ export default function Products() {
                 <SelectItem value="50">50</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-gray-600 dark:text-gray-400">items</span>
-            <span className="text-gray-600 dark:text-gray-400 font-medium">Total: {totalProducts}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">items</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalProducts}</span>
           </div>
         </div>
 
         {loading ? (
           <SkeletonLoader count={6} height="h-16" className="space-y-3" />
         ) : (
-          <SoftCard className="p-0">
+          <SoftCard className="p-0 bg-transparent dark:bg-transparent border-0">
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-100 dark:bg-slate-100">
-                  <tr className="border-b border-gray-200 dark:border-slate-600">
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+              <table className="w-full bg-transparent min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
                       Product
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
                       Category
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
                       Price
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
                       Stock
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right font-semibold text-gray-900 text-sm">
                       Actions
                     </th>
                   </tr>
@@ -309,9 +309,7 @@ export default function Products() {
                   {products.map((product, index) => (
                     <tr
                       key={product.id}
-                      className={`hover:bg-blue-50 dark:hover:bg-slate-700 transition ${
-                        index !== products.length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''
-                      }`}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 border-l-0 border-r-0 border-t-0 bg-transparent dark:bg-transparent transition"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
