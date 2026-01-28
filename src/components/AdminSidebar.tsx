@@ -90,7 +90,9 @@ export default function AdminSidebar() {
 
         {/* Navigation Items */}
         <nav className="flex-1 overflow-y-auto py-6">
-          <div className="space-y-1 px-4">
+          <div className={`space-y-1 ${
+                          isCollapsed ? 'flex flex-col items-center px-0' : 'px-4'
+                        }`}>
             {menuItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -102,11 +104,7 @@ export default function AdminSidebar() {
                     setIsOpen(false);
                   }}
                   title={isCollapsed ? item.label : ''}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                    active
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white'
-                  } ${isCollapsed ? 'justify-center' : ''}`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${isCollapsed ? 'w-10 h-10 p-0 justify-center' : 'w-full'} ${active ? 'bg-neutral-900 text-white dark:bg-blue-500 dark:text-white shadow-lg' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white'}`}
                 >
                   <Icon className="w-4 h-4" />
                   {!isCollapsed && (
@@ -130,7 +128,7 @@ export default function AdminSidebar() {
             title={isDark ? 'Light mode' : 'Dark mode'}
           >
             {isDark ? (
-              <Sun className="w-4 h-4 text-yellow-500" />
+              <Sun className="w-4 h-4 text-white" />
             ) : (
               <Moon className="w-4 h-4" />
             )}

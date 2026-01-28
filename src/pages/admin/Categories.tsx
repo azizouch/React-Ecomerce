@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, Category } from '../../lib/supabase';
-import { calculateTotalPages } from '../../lib/pagination';
+import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
@@ -8,8 +8,15 @@ import { useSidebar } from '../../contexts/SidebarContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
 import Pagination from '../../components/ui/Pagination';
-import { Plus, Edit, Trash2, Tag, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Tag, X, Search } from 'lucide-react';
 import Swal from 'sweetalert2';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 
 const DEFAULT_ITEMS_PER_PAGE = 12;
 
@@ -19,8 +26,10 @@ export default function AdminCategories() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
+  const [totalCategories, setTotalCategories] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -28,19 +37,32 @@ export default function AdminCategories() {
 
   useEffect(() => {
     loadCategories();
-  }, []);
+  }, [currentPage, itemsPerPage, searchQuery]);
 
   const loadCategories = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      const { offset, limit } = getPaginationParams(currentPage, itemsPerPage);
+
+      let query = supabase
         .from('categories')
-        .select('*')
-        .order('name');
+        .select('*', { count: 'exact' });
+
+      if (searchQuery.trim()) {
+        query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+      }
+
+      const { data, error, count } = await query
+        .order('name')
+        .range(offset, offset + limit - 1);
 
       if (error) throw error;
       setCategories(data || []);
+      setTotalCategories(count || 0);
     } catch (error) {
       console.error('Error loading categories:', error);
+      setCategories([]);
+      setTotalCategories(0);
     } finally {
       setLoading(false);
     }
@@ -133,16 +155,6 @@ export default function AdminCategories() {
     setShowModal(true);
   };
 
-  // Paginate categories
-  const totalPages = calculateTotalPages(categories.length, itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCategories = categories.slice(startIndex, startIndex + itemsPerPage);
-
-  // Reset to page 1 when items per page changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [itemsPerPage]);
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <AdminSidebar />
@@ -165,6 +177,45 @@ export default function AdminCategories() {
           </button>
         </div>
 
+        {/* Filters Bar */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          {/* Left: Search */}
+          <div className="relative w-full sm:w-56">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search categories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm"
+            />
+          </div>
+
+          {/* Right: Items Per Page and Total */}
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => {
+                setItemsPerPage(Number(value));
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-20 h-8 text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="12">12</SelectItem>
+                <SelectItem value="24">24</SelectItem>
+                <SelectItem value="36">36</SelectItem>
+                <SelectItem value="48">48</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-500 dark:text-gray-400">items</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalCategories}</span>
+          </div>
+        </div>
+
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <SkeletonLoader count={6} height="h-32" />
@@ -180,7 +231,7 @@ export default function AdminCategories() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {paginatedCategories.map((category) => (
+              {categories.map((category) => (
                 <SoftCard key={category.id} hoverable className="p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3 flex-1">
@@ -209,22 +260,21 @@ export default function AdminCategories() {
                     </div>
                   </div>
                   {category.description && (
-                    <p className="text-gray-600 text-sm line-clamp-2">{category.description}</p>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">{category.description}</p>
                   )}
                 </SoftCard>
               ))}
             </div>
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {calculateTotalPages(totalCategories, itemsPerPage) > 1 && (
               <div className="mt-8">
                 <Pagination
                   currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalItems={categories.length}
+                  totalPages={calculateTotalPages(totalCategories, itemsPerPage)}
+                  totalItems={totalCategories}
                   itemsPerPage={itemsPerPage}
                   onPageChange={setCurrentPage}
-                  onItemsPerPageChange={setItemsPerPage}
                 />
               </div>
             )}

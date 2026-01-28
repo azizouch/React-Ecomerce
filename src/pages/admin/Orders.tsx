@@ -40,68 +40,81 @@ export default function Orders() {
   const [totalOrders, setTotalOrders] = useState(0);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    setCurrentPage(1);
+  }, [searchQuery, selectedStatus]);
 
-  const loadData = async () => {
+  useEffect(() => {
+    loadOrders();
+  }, [currentPage, itemsPerPage, searchQuery, selectedStatus]);
+
+  const loadOrders = async () => {
     try {
-      // Fetch orders with order items and products
-      const { data: ordersData, error: ordersError } = await supabase
+      setLoading(true);
+      const { offset, limit } = getPaginationParams(currentPage, itemsPerPage);
+
+      // Build the orders query with filters and pagination
+      let query = supabase
         .from('orders')
-        .select(`
+        .select(
+          `
           *,
           order_items(*, products(*))
-        `)
-        .order('created_at', { ascending: false });
+        `,
+          { count: 'exact' }
+        );
 
-      if (ordersError) throw ordersError;
+      if (selectedStatus !== 'all') {
+        query = query.eq('status', selectedStatus);
+      }
 
-      // Fetch all profiles for mapping
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name');
+      if (searchQuery.trim()) {
+        query = query.ilike('id', `%${searchQuery}%`);
+      }
 
-      if (profilesError) throw profilesError;
+      const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
-      // Create a map of user_id to profile
-      const profilesMap: {[key: string]: {email: string, full_name: string | null}} = {};
-      profilesData?.forEach(profile => {
-        profilesMap[profile.id] = {
-          email: profile.email,
-          full_name: profile.full_name
-        };
-      });
+      if (error) throw error;
 
-      // Combine orders with profile information
-      const ordersWithProfiles = ordersData?.map(order => ({
-        ...order,
-        profiles: profilesMap[order.user_id] || { email: 'Unknown', full_name: null }
-      })) || [];
+      // Fetch all unique user IDs to get their profiles
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(order => order.user_id))];
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', userIds);
 
-      setOrders(ordersWithProfiles);
+        if (profilesError) throw profilesError;
+
+        // Create a map of user_id to profile
+        const profilesMap: {[key: string]: {email: string, full_name: string | null}} = {};
+        profilesData?.forEach(profile => {
+          profilesMap[profile.id] = {
+            email: profile.email,
+            full_name: profile.full_name
+          };
+        });
+
+        // Combine orders with profile information
+        const ordersWithProfiles = data.map(order => ({
+          ...order,
+          profiles: profilesMap[order.user_id] || { email: 'Unknown', full_name: null }
+        }));
+
+        setOrders(ordersWithProfiles);
+      } else {
+        setOrders([]);
+      }
+
+      setTotalOrders(count || 0);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading orders:', error);
+      setOrders([]);
+      setTotalOrders(0);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadFilteredOrders();
-  }, [currentPage, itemsPerPage, searchQuery, selectedStatus]);
-
-  const loadFilteredOrders = () => {
-    // Filter orders based on search query and status
-    const filteredOrders = orders.filter((order) => {
-      const matchesSearch = 
-        order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.profiles?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
-      return matchesSearch && matchesStatus;
-    });
-
-    setTotalOrders(filteredOrders.length);
   };
 
   const handleStatusChange = async (orderId: string, status: string) => {
@@ -112,7 +125,7 @@ export default function Orders() {
         .eq('id', orderId);
 
       if (error) throw error;
-      loadData();
+      loadOrders();
     } catch (error) {
       console.error('Error updating order status:', error);
       alert('Failed to update order status');
@@ -129,20 +142,8 @@ export default function Orders() {
     });
   };
 
-  // Filter orders based on search query and status
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch = 
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.profiles?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  // Paginate filtered orders
-  const totalPages = calculateTotalPages(filteredOrders.length, itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
+  // Calculate total pages based on server response
+  const totalPages = calculateTotalPages(totalOrders, itemsPerPage);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
@@ -207,13 +208,13 @@ export default function Orders() {
               </SelectContent>
             </Select>
             <span className="text-gray-600 dark:text-gray-400">entrées</span>
-            <span className="text-gray-600 dark:text-gray-400 font-medium">Total: {filteredOrders.length}</span>
+            <span className="text-gray-600 dark:text-gray-400 font-medium">Total: {totalOrders}</span>
           </div>
         </div>
 
         {loading ? (
           <SkeletonLoader count={5} height="h-20" className="space-y-3" />
-        ) : filteredOrders.length === 0 ? (
+        ) : orders.length === 0 ? (
           <SoftCard className="p-6">
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 text-lg">
@@ -223,7 +224,7 @@ export default function Orders() {
           </SoftCard>
         ) : (
           <div className="space-y-3">
-            {paginatedOrders.map((order) => (
+            {orders.map((order) => (
               <SoftCard key={order.id} hoverable className="p-6">
                 <div
                   className="cursor-pointer py-1"
@@ -368,7 +369,7 @@ export default function Orders() {
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                totalItems={filteredOrders.length}
+                totalItems={totalOrders}
                 itemsPerPage={itemsPerPage}
                 onPageChange={setCurrentPage}
                 onItemsPerPageChange={setItemsPerPage}

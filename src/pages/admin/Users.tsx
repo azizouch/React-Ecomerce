@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
-import { calculateTotalPages } from '../../lib/pagination';
+import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
@@ -11,6 +11,13 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
 import { Users, Crown, Mail, Calendar, Plus, Edit, Trash2, X, Search } from 'lucide-react';
 import Swal from 'sweetalert2';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
 
@@ -45,19 +52,38 @@ export default function AdminUsers() {
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [currentPage, itemsPerPage, searchQuery, selectedRole]);
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      const { offset, limit } = getPaginationParams(currentPage, itemsPerPage);
+
+      let query = supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' });
+
+      if (selectedRole === 'admin') {
+        query = query.eq('is_admin', true);
+      } else if (selectedRole === 'customer') {
+        query = query.eq('is_admin', false);
+      }
+
+      if (searchQuery.trim()) {
+        query = query.or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`);
+      }
+
+      const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
       if (error) throw error;
       setUsers(data || []);
+      setTotalUsers(count || 0);
     } catch (error) {
       console.error('Error loading users:', error);
+      setUsers([]);
+      setTotalUsers(0);
     } finally {
       setLoading(false);
     }
@@ -284,26 +310,8 @@ export default function AdminUsers() {
     setShowEditModal(true);
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = selectedRole === 'all' || 
-      (selectedRole === 'admin' && user.is_admin) || 
-      (selectedRole === 'customer' && !user.is_admin);
-    return matchesSearch && matchesRole;
-  });
-
-  // Paginate filtered users
-  const totalPages = calculateTotalPages(filteredUsers.length, itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
-
-  // Reset to page 1 when filtering changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedRole]);
-
   const adminCount = users.filter(user => user.is_admin).length;
+  const customerCount = users.filter(user => !user.is_admin).length;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
@@ -328,23 +336,32 @@ export default function AdminUsers() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <SoftCard className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <SoftCard className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Users</p>
-                <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{totalUsers}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Total Users</p>
+                <p className="text-xl font-semibold text-gray-900 dark:text-white mt-1">{totalUsers}</p>
               </div>
-              <Users className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+              <Users className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
           </SoftCard>
-          <SoftCard className="p-6">
+          <SoftCard className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Admin Users</p>
-                <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400 mt-1">{adminCount}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Admin Users</p>
+                <p className="text-xl font-semibold text-blue-600 dark:text-blue-400 mt-1">{adminCount}</p>
               </div>
-              <Crown className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+              <Crown className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+            </div>
+          </SoftCard>
+          <SoftCard className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Customer Users</p>
+                <p className="text-xl font-semibold text-green-600 dark:text-green-400 mt-1">{customerCount}</p>
+              </div>
+              <Users className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
           </SoftCard>
         </div>
@@ -365,54 +382,53 @@ export default function AdminUsers() {
                 />
               </div>
               {/* Role Filter */}
-              <select
-                value={selectedRole}
-                onChange={(e) => {
-                  setSelectedRole(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm appearance-none cursor-pointer pr-8 bg-no-repeat bg-right bg-contain min-w-[180px]"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/csvg%3e")`
-                }}
-              >
-                <option value="all">Tous les rôles</option>
-                <option value="admin">Admin</option>
-                <option value="customer">Client</option>
-              </select>
+              <Select value={selectedRole} onValueChange={(value) => {
+                setSelectedRole(value);
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="All roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All roles</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="customer">Customer</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Right: Items Per Page and Total */}
-            <div className="flex gap-2 items-center text-sm whitespace-nowrap">
-              <span className="text-gray-600 dark:text-gray-400">Afficher</span>
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
+            <div className="flex gap-2 items-center">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(value) => {
+                  setItemsPerPage(Number(value));
                   setCurrentPage(1);
                 }}
-                className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition appearance-none cursor-pointer pr-6 bg-no-repeat bg-right bg-contain"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/csvg%3e")`
-                }}
               >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-              <span className="text-gray-600 dark:text-gray-400">entrées</span>
-              <span className="text-gray-600 dark:text-gray-400 font-medium">Total: {filteredUsers.length}</span>
+                <SelectTrigger className="w-16 h-8 text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-500 dark:text-gray-400">items</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalUsers}</span>
             </div>
           </div>
 
           {loading ? (
             <SkeletonLoader count={5} height="h-16" />
-          ) : filteredUsers.length === 0 ? (
+          ) : users.length === 0 ? (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-              <h3 className="text-sm font-medium text-gray-900">No users found</h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">No users found</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 {searchQuery ? 'Try adjusting your search terms.' : 'No users have registered yet.'}
               </p>
             </div>
@@ -439,11 +455,11 @@ export default function AdminUsers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedUsers.map((user, index) => (
+                  {users.map((user, index) => (
                     <tr
                       key={user.id}
                       className={`hover:bg-blue-50 dark:hover:bg-slate-700 transition ${
-                        index !== filteredUsers.length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''
+                        index !== users.length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''
                       }`}
                     >
                       <td className="px-6 py-4">
@@ -509,14 +525,13 @@ export default function AdminUsers() {
           )}
 
           {/* Pagination Controls */}
-          {totalPages > 1 && (
+          {calculateTotalPages(totalUsers, itemsPerPage) > 1 && (
             <Pagination
               currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filteredUsers.length}
+              totalPages={calculateTotalPages(totalUsers, itemsPerPage)}
+              totalItems={totalUsers}
               itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
-              onItemsPerPageChange={setItemsPerPage}
             />
           )}
         </SoftCard>
