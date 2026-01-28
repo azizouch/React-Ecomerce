@@ -31,7 +31,7 @@ export default function StatCard({
   const colors = colorConfig[iconColor];
 
   return (
-    <div className={`bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-100 dark:border-slate-700 border-l-4 ${colors.border} hover:border-gray-200 dark:hover:border-slate-600 transition-all shadow-sm hover:shadow-md`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-100 dark:border-slate-700 border-l-4 ${colors.border} hover:border-gray-300 dark:hover:border-slate-600 transition-all shadow-md hover:shadow-lg`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{title}</p>
