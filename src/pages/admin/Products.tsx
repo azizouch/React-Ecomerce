@@ -1,9 +1,9 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { supabase, Product, Category } from '../../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
-import Navbar from '../../components/Navbar';
-import AdminNav from '../../components/AdminNav';
-import AdminFooter from '../../components/AdminFooter';
+import AdminSidebar from '../../components/AdminSidebar';
+import AdminTopbar from '../../components/AdminTopbar';
+import { useSidebar } from '../../contexts/SidebarContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import StatusBadge from '../../components/ui/StatusBadge';
 import SoftCard from '../../components/ui/SoftCard';
@@ -21,6 +21,7 @@ import {
 const DEFAULT_ITEMS_PER_PAGE = 10;
 
 export default function Products() {
+  const { isCollapsed } = useSidebar();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,11 +201,12 @@ export default function Products() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AdminNav currentPage="admin-products" />
-
-        <div className="flex justify-between items-center mb-8">
+      <AdminSidebar />
+      <AdminTopbar />
+      <div className="pt-16 lg:ml-64">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">List Products</h1>
           <button
             onClick={() => {
@@ -515,8 +517,8 @@ export default function Products() {
             </div>
           </div>
         )}
+        </div>
       </div>
-      <AdminFooter />
     </div>
   );
 }

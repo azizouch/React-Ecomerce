@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase, Order, OrderItem } from '../../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
-import Navbar from '../../components/Navbar';
-import AdminNav from '../../components/AdminNav';
-import AdminFooter from '../../components/AdminFooter';
+import AdminSidebar from '../../components/AdminSidebar';
+import AdminTopbar from '../../components/AdminTopbar';
+import { useSidebar } from '../../contexts/SidebarContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -28,6 +28,7 @@ interface OrderWithItems extends Order {
 }
 
 export default function Orders() {
+  const { isCollapsed } = useSidebar();
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -144,14 +145,15 @@ export default function Orders() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AdminNav currentPage="admin-orders" />
-
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Orders</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage customer orders and shipments</p>
-        </div>
+      <AdminSidebar />
+      <AdminTopbar />
+      <div className="pt-16 lg:ml-64">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Orders</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage customer orders and shipments</p>
+          </div>
 
         {/* Search and Filter Bar */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -370,8 +372,7 @@ export default function Orders() {
             )}
           </div>
         )}
-      </div>
-      <AdminFooter />
+        </div>        </div>      </div>
     </div>
   );
 }

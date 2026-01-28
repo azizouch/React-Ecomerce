@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import Navbar from '../../components/Navbar';
-import AdminNav from '../../components/AdminNav';
-import AdminFooter from '../../components/AdminFooter';
+import AdminSidebar from '../../components/AdminSidebar';
+import AdminTopbar from '../../components/AdminTopbar';
+import { useSidebar } from '../../contexts/SidebarContext';
 import SoftCard from '../../components/ui/SoftCard';
 import { Bell, Trash2, Check } from 'lucide-react';
 
@@ -15,6 +15,7 @@ interface Notification {
 }
 
 export default function AdminNotifications() {
+  const { isCollapsed } = useSidebar();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
@@ -90,14 +91,15 @@ export default function AdminNotifications() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AdminNav currentPage="admin-notifications" />
-
-        <div className="mb-10">
-          <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
-            Notifications
-          </h1>
+      <AdminSidebar />
+      <AdminTopbar />
+      <div className="pt-16 lg:ml-64">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+          <div className="mb-10">
+            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
+              Notifications
+            </h1>
           <p className="text-gray-600 dark:text-gray-400">
             Stay updated with all your system notifications
           </p>
@@ -199,8 +201,8 @@ export default function AdminNotifications() {
             </SoftCard>
           )}
         </div>
+        </div>
       </div>
-      <AdminFooter />
     </div>
   );
 }

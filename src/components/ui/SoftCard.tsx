@@ -13,7 +13,7 @@ export default function SoftCard({
 }: SoftCardProps) {
   return (
     <div
-      className={`bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm ${
+      className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm ${
         hoverable ? 'hover:shadow-md hover:border-gray-200 dark:hover:border-slate-600 transition-all' : ''
       } ${className}`}
     >

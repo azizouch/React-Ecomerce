@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase, Category } from '../../lib/supabase';
 import { calculateTotalPages } from '../../lib/pagination';
-import Navbar from '../../components/Navbar';
-import AdminNav from '../../components/AdminNav';
-import AdminFooter from '../../components/AdminFooter';
+import AdminSidebar from '../../components/AdminSidebar';
+import AdminTopbar from '../../components/AdminTopbar';
+import { useSidebar } from '../../contexts/SidebarContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
 import Pagination from '../../components/ui/Pagination';
@@ -13,6 +13,7 @@ import Swal from 'sweetalert2';
 const DEFAULT_ITEMS_PER_PAGE = 12;
 
 export default function AdminCategories() {
+  const { isCollapsed } = useSidebar();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -143,11 +144,12 @@ export default function AdminCategories() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AdminNav currentPage="admin-categories" />
-
-        <div className="flex justify-between items-center mb-8">
+      <AdminSidebar />
+      <AdminTopbar />
+      <div className="pt-16 lg:ml-64">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Categories</h1>
             <p className="text-gray-600 dark:text-gray-400">Manage product categories</p>
@@ -287,8 +289,8 @@ export default function AdminCategories() {
             </div>
           </div>
         )}
+        </div>
       </div>
-      <AdminFooter />
     </div>
   );
 }
