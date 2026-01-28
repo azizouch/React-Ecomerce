@@ -38,7 +38,7 @@ export default function AdminSidebar() {
   return (
     <>
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className="lg:hidden fixed top-4 left-4 z-[60]">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 rounded-lg bg-white dark:bg-slate-800 shadow-md hover:bg-gray-100 dark:hover:bg-slate-700 transition text-gray-800 dark:text-white"
@@ -68,7 +68,7 @@ export default function AdminSidebar() {
         }`}
       >
         {/* Logo/Header with Collapse Button */}
-        <div className="h-16 px-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+        <div className={`h-16 px-4 border-b border-gray-200 dark:border-slate-700 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}` }>
           {!isCollapsed && (
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 dark:from-blue-400 to-blue-600 dark:to-blue-600 bg-clip-text text-transparent">
               Admin Hub
@@ -102,13 +102,13 @@ export default function AdminSidebar() {
                     setIsOpen(false);
                   }}
                   title={isCollapsed ? item.label : ''}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 group ${
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${
                     active
                       ? 'bg-blue-600 text-white shadow-lg'
                       : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white'
                   } ${isCollapsed ? 'justify-center' : ''}`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-4 h-4" />
                   {!isCollapsed && (
                     <>
                       <span className="flex-1 text-left">{item.label}</span>
@@ -126,13 +126,13 @@ export default function AdminSidebar() {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200"
             title={isDark ? 'Light mode' : 'Dark mode'}
           >
             {isDark ? (
-              <Sun className="w-5 h-5 text-yellow-500" />
+              <Sun className="w-4 h-4 text-yellow-500" />
             ) : (
-              <Moon className="w-5 h-5" />
+              <Moon className="w-4 h-4" />
             )}
             {!isCollapsed && <span>{isDark ? 'Light' : 'Dark'}</span>}
           </button>

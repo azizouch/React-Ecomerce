@@ -3,6 +3,7 @@ import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { calculateTotalPages } from '../../lib/pagination';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
+import AdminFooter from '../../components/AdminFooter';
 import { useSidebar } from '../../contexts/SidebarContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
@@ -308,9 +309,11 @@ export default function AdminUsers() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <AdminSidebar />
       <AdminTopbar />
-      <div className="pt-16 lg:ml-64">
+      <div className={`pt-16 transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        }`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-7xl mx-auto">
+
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Users</h1>
@@ -326,7 +329,7 @@ export default function AdminUsers() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <SoftCard>
+          <SoftCard className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Users</p>
@@ -335,7 +338,7 @@ export default function AdminUsers() {
               <Users className="w-10 h-10 text-gray-300 dark:text-gray-600" />
             </div>
           </SoftCard>
-          <SoftCard>
+          <SoftCard className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Admin Users</p>
@@ -346,7 +349,7 @@ export default function AdminUsers() {
           </SoftCard>
         </div>
 
-        <SoftCard>
+        <SoftCard className="p-6">
           {/* Filters Bar - Like the image layout */}
           <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             {/* Left: Search and Filters */}
@@ -694,7 +697,11 @@ export default function AdminUsers() {
           </div>
         )}
         </div>
-        </div>
+      </div>
+      <div className={`transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      }`}>
+        <AdminFooter />
       </div>
     </div>
   );

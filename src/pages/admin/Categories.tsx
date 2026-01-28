@@ -3,6 +3,7 @@ import { supabase, Category } from '../../lib/supabase';
 import { calculateTotalPages } from '../../lib/pagination';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
+import AdminFooter from '../../components/AdminFooter';
 import { useSidebar } from '../../contexts/SidebarContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
@@ -146,9 +147,10 @@ export default function AdminCategories() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <AdminSidebar />
       <AdminTopbar />
-      <div className="pt-16 lg:ml-64">
+      <div className={`pt-16 transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        }`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Categories</h1>
@@ -168,7 +170,7 @@ export default function AdminCategories() {
             <SkeletonLoader count={6} height="h-32" />
           </div>
         ) : categories.length === 0 ? (
-          <SoftCard>
+          <SoftCard className="p-6">
             <div className="text-center py-12">
               <Tag className="mx-auto h-12 w-12 text-gray-300 mb-3" />
               <h3 className="text-sm font-medium text-gray-900">No categories found</h3>
@@ -179,7 +181,7 @@ export default function AdminCategories() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {paginatedCategories.map((category) => (
-                <SoftCard key={category.id} hoverable>
+                <SoftCard key={category.id} hoverable className="p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3 flex-1">
                       <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -290,6 +292,11 @@ export default function AdminCategories() {
           </div>
         )}
         </div>
+      </div>
+      <div className={`transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      }`}>
+        <AdminFooter />
       </div>
     </div>
   );

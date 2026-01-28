@@ -3,6 +3,7 @@ import { supabase, Order, OrderItem } from '../../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
+import AdminFooter from '../../components/AdminFooter';
 import { useSidebar } from '../../contexts/SidebarContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
@@ -147,9 +148,10 @@ export default function Orders() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <AdminSidebar />
       <AdminTopbar />
-      <div className="pt-16 lg:ml-64">
+      <div className={`pt-16 transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        }`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Orders</h1>
             <p className="text-gray-600 dark:text-gray-400">Manage customer orders and shipments</p>
@@ -170,16 +172,16 @@ export default function Orders() {
               />
             </div>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Tous les statuts" />
+              <SelectTrigger className="w-[180px] bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="pending">En attente</SelectItem>
-                <SelectItem value="processing">Traitement</SelectItem>
-                <SelectItem value="shipped">Expédié</SelectItem>
-                <SelectItem value="delivered">Livré</SelectItem>
-                <SelectItem value="cancelled">Annulé</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="pending">pending</SelectItem>
+                <SelectItem value="processing">processing</SelectItem>
+                <SelectItem value="shipped">shipped</SelectItem>
+                <SelectItem value="delivered">delivered</SelectItem>
+                <SelectItem value="cancelled">cancelled</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -194,7 +196,7 @@ export default function Orders() {
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="w-[60px]">
+              <SelectTrigger className="w-[60px] bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -212,7 +214,7 @@ export default function Orders() {
         {loading ? (
           <SkeletonLoader count={5} height="h-20" className="space-y-3" />
         ) : filteredOrders.length === 0 ? (
-          <SoftCard>
+          <SoftCard className="p-6">
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 text-lg">
                 {searchQuery || selectedStatus !== 'all' ? 'No orders match your filters' : 'No orders found'}
@@ -222,7 +224,7 @@ export default function Orders() {
         ) : (
           <div className="space-y-3">
             {paginatedOrders.map((order) => (
-              <SoftCard key={order.id} hoverable>
+              <SoftCard key={order.id} hoverable className="p-6">
                 <div
                   className="cursor-pointer py-1"
                   onClick={() =>
@@ -262,7 +264,7 @@ export default function Orders() {
                         </div>
                       </div>
                     </div>
-                    <button className="ml-4 text-gray-400 hover:text-gray-600 transition">
+                    <button className="ml-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition">
                       {expandedOrder === order.id ? (
                         <ChevronUp className="w-5 h-5" />
                       ) : (
@@ -272,21 +274,22 @@ export default function Orders() {
                   </div>
 
                   {expandedOrder !== order.id && (
-                    <div className="mt-4 flex items-center space-x-4 pt-4 border-t border-gray-100">
-                      <span className="text-xs text-gray-600 uppercase tracking-wider font-semibold">Update Status:</span>
+                    <div className="mt-4 flex items-center space-x-4 pt-4 border-t border-gray-100 dark:border-slate-600">
+                      <span className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Update Status:</span>
                       <Select
                         value={order.status}
                         onValueChange={(value) => {
                           handleStatusChange(order.id, value);
                         }}
                       >
-                        <SelectTrigger className="w-[120px] h-8 text-xs">
+                        <SelectTrigger className="w-[120px] h-8 text-xs bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pending">Pending</SelectItem>
                           <SelectItem value="processing">Processing</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="shipped">Shipped</SelectItem>
+                          <SelectItem value="delivered">Delivered</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                         </SelectContent>
                       </Select>
@@ -295,11 +298,11 @@ export default function Orders() {
                 </div>
 
                 {expandedOrder === order.id && order.order_items && (
-                  <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-slate-600">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-gray-900">Order Items</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">Order Items</h3>
                       <div className="flex items-center space-x-4">
-                        <span className="text-xs text-gray-600 uppercase tracking-wider font-semibold">Update Status:</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Update Status:</span>
                         <select
                           value={order.status}
                           onChange={(e) => {
@@ -307,11 +310,12 @@ export default function Orders() {
                             handleStatusChange(order.id, e.target.value);
                           }}
                           onClick={(e) => e.stopPropagation()}
-                          className="px-3 py-1 rounded-lg text-xs font-medium border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+                          className="px-3 py-1 rounded-lg text-xs font-medium border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                         >
                           <option value="pending">Pending</option>
                           <option value="processing">Processing</option>
-                          <option value="completed">Completed</option>
+                          <option value="shipped">Shipped</option>
+                          <option value="delivered">Delivered</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
                       </div>
@@ -320,12 +324,12 @@ export default function Orders() {
                       {order.order_items.map((item, index) => (
                         <div
                           key={item.id}
-                          className={`flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100 ${
+                          className={`flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600 ${
                             index !== order.order_items!.length - 1 ? '' : ''
                           }`}
                         >
                           <div className="flex items-center space-x-3 flex-1">
-                            <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                            <div className="w-12 h-12 bg-gray-200 dark:bg-slate-600 rounded-lg overflow-hidden flex-shrink-0">
                               {item.products?.image_url && (
                                 <img
                                   src={item.products.image_url}
@@ -335,19 +339,19 @@ export default function Orders() {
                               )}
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">
+                              <p className="font-medium text-gray-900 dark:text-white">
                                 {item.products?.name}
                               </p>
-                              <p className="text-xs text-gray-600">
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
                                 Qty: {item.quantity}
                               </p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-gray-900">
+                            <p className="font-semibold text-gray-900 dark:text-white">
                               ${(item.price * item.quantity).toFixed(2)}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               ${item.price.toFixed(2)} each
                             </p>
                           </div>
@@ -372,7 +376,13 @@ export default function Orders() {
             )}
           </div>
         )}
-        </div>        </div>      </div>
+        </div>
+      </div>
+      <div className={`transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        }`}>
+        <AdminFooter />
+      </div>
     </div>
   );
 }

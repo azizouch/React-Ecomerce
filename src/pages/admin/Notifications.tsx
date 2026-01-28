@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
+import AdminFooter from '../../components/AdminFooter';
 import { useSidebar } from '../../contexts/SidebarContext';
 import SoftCard from '../../components/ui/SoftCard';
 import { Bell, Trash2, Check } from 'lucide-react';
@@ -93,9 +94,10 @@ export default function AdminNotifications() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <AdminSidebar />
       <AdminTopbar />
-      <div className="pt-16 lg:ml-64">
+      <div className={`pt-16 transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        }`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-7xl mx-auto">
           <div className="mb-10">
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
               Notifications
@@ -147,7 +149,7 @@ export default function AdminNotifications() {
             filteredNotifications.map((notification) => (
               <SoftCard
                 key={notification.id}
-                className={`dark:bg-slate-800 border ${getTypeColor(notification.type)} ${
+                className={`p-6 dark:bg-slate-800 border ${getTypeColor(notification.type)} ${
                   !notification.read ? 'border-l-4' : ''
                 }`}
               >
@@ -191,7 +193,7 @@ export default function AdminNotifications() {
               </SoftCard>
             ))
           ) : (
-            <SoftCard className="dark:bg-slate-800 text-center py-12">
+            <SoftCard className="p-6 dark:bg-slate-800 text-center py-12">
               <Bell className="w-12 h-12 text-gray-300 dark:text-slate-600 mx-auto mb-3" />
               <p className="text-gray-500 dark:text-gray-400">
                 {filter === 'unread'
@@ -202,6 +204,11 @@ export default function AdminNotifications() {
           )}
         </div>
         </div>
+      </div>
+      <div className={`transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      }`}>
+        <AdminFooter />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
+import AdminFooter from '../../components/AdminFooter';
 import { useSidebar } from '../../contexts/SidebarContext';
 import SoftCard from '../../components/ui/SoftCard';
 import { User, Mail, Calendar, Shield, Edit2, Check, X } from 'lucide-react';
@@ -84,9 +85,10 @@ export default function AdminProfile() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <AdminSidebar />
       <AdminTopbar />
-      <div className="pt-16 lg:ml-64">
+      <div className={`pt-16 transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        }`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-7xl mx-auto">
           <div className="mb-10">
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">Admin Profile</h1>
           <p className="text-gray-600 dark:text-gray-400">Manage your profile information and account settings.</p>
@@ -94,7 +96,7 @@ export default function AdminProfile() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
-          <SoftCard className="lg:col-span-2 dark:bg-slate-800">
+          <SoftCard className="lg:col-span-2 p-6 dark:bg-slate-800">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Profile Information</h2>
             </div>
@@ -225,7 +227,7 @@ export default function AdminProfile() {
           </SoftCard>
 
           {/* Quick Info Card */}
-          <SoftCard className="dark:bg-slate-800">
+          <SoftCard className="p-6 dark:bg-slate-800">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Info</h3>
             
             <div className="space-y-4">
@@ -246,8 +248,11 @@ export default function AdminProfile() {
             </div>
           </SoftCard>
         </div>
-        </div>
-        </div>
+      </div>
+      <div className={`transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      }`}>
+        <AdminFooter />
       </div>
     </div>
   );
