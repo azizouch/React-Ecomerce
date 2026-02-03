@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, Product, Category } from '../lib/supabase';
 import { useCart } from '../hooks/useCart';
+import AddToCartModal from '../components/ui/AddToCartModal';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
 import Carousel from '../components/Carousel';
@@ -23,6 +24,8 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -54,13 +57,9 @@ export default function Home() {
     }
   };
 
-  const handleAddToCart = async (productId: string) => {
-    try {
-      await addToCart(productId);
-      alert('Product added to cart!');
-    } catch (error) {
-      alert('Failed to add product to cart');
-    }
+  const handleAddToCart = (productId: string) => {
+    setSelectedProductId(productId);
+    setModalOpen(true);
   };
 
 
@@ -190,6 +189,7 @@ export default function Home() {
       </div>
 
       <Footer />
+      <AddToCartModal productId={selectedProductId || ''} open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }

@@ -11,22 +11,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Admin client with service role key for admin operations
-export const supabaseAdmin = supabaseServiceRoleKey
-  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        storageKey: 'supabase-admin-auth'
-      }
-    })
-  : null;
+// export const supabaseAdmin = supabaseServiceRoleKey
+//   ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+//       auth: {
+//         autoRefreshToken: false,
+//         persistSession: false,
+//         storageKey: 'supabase-admin-auth'
+//       }
+//     })
+//   : null;
 
 // Debug logging
-console.log('🔧 Supabase Configuration:');
-console.log('- URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
-console.log('- Anon Key:', supabaseAnonKey ? '✅ Set' : '❌ Missing');
-console.log('- Service Role Key:', supabaseServiceRoleKey ? '✅ Set' : '❌ Missing');
-console.log('- Admin Client:', supabaseAdmin ? '✅ Created' : '❌ Failed to create');
+// console.log('🔧 Supabase Configuration:');
+// console.log('- URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
+// console.log('- Anon Key:', supabaseAnonKey ? '✅ Set' : '❌ Missing');
+// console.log('- Service Role Key:', supabaseServiceRoleKey ? '✅ Set' : '❌ Missing');
+// console.log('- Admin Client:', supabaseAdmin ? '✅ Created' : '❌ Failed to create');
 
 export type Profile = {
   id: string;
@@ -50,6 +50,45 @@ export type Product = {
   price: number;
   image_url: string | null;
   category_id: string | null;
+  stock: number;
+  size: string | null;
+  // Optional relations
+  images?: ProductImage[];
+  colors?: ProductColor[];
+  created_at: string;
+};
+
+export type ProductImage = {
+  id: string;
+  product_id: string;
+  image_url: string;
+  color: string;
+  sort_order: number;
+  created_at: string;
+};
+
+export type ProductColor = {
+  id: string;
+  product_id: string;
+  name: string;
+  hex_code: string | null;
+  created_at: string;
+  images?: ProductColorImage[];
+  sizes?: ProductColorSize[];
+};
+
+export type ProductColorImage = {
+  id: string;
+  color_id: string;
+  image_url: string;
+  sort_order: number;
+  created_at: string;
+};
+
+export type ProductColorSize = {
+  id: string;
+  color_id: string;
+  size: string;
   stock: number;
   created_at: string;
 };

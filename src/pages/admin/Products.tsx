@@ -1,10 +1,12 @@
 import { useState, useEffect, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase, Product, Category } from '../../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import StatusBadge from '../../components/ui/StatusBadge';
 import SoftCard from '../../components/ui/SoftCard';
@@ -22,25 +24,17 @@ import {
 const DEFAULT_ITEMS_PER_PAGE = 10;
 
 export default function Products() {
+  const navigate = useNavigate();
   const { isCollapsed } = useSidebar();
+  const { t, language } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
   const [totalProducts, setTotalProducts] = useState(0);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    image_url: '',
-    category_id: '',
-    stock: '',
-  });
 
   useEffect(() => {
     loadCategories();
@@ -98,60 +92,7 @@ export default function Products() {
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-
-    try {
-      const productData = {
-        name: formData.name,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        image_url: formData.image_url || null,
-        category_id: formData.category_id || null,
-        stock: parseInt(formData.stock),
-      };
-
-      if (editingProduct) {
-        const { error } = await supabase
-          .from('products')
-          .update(productData)
-          .eq('id', editingProduct.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('products').insert(productData);
-        if (error) throw error;
-      }
-
-      setShowModal(false);
-      setEditingProduct(null);
-      setFormData({
-        name: '',
-        description: '',
-        price: '',
-        image_url: '',
-        category_id: '',
-        stock: '',
-      });
-      loadProducts();
-    } catch (error) {
-      console.error('Error saving product:', error);
-      Swal.fire('Error', 'Failed to save product', 'error');
-    }
-  };
-
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      description: product.description || '',
-      price: product.price.toString(),
-      image_url: product.image_url || '',
-      category_id: product.category_id || '',
-      stock: product.stock.toString(),
-    });
-    setShowModal(true);
-  };
+  
 
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
@@ -205,28 +146,19 @@ export default function Products() {
       <AdminSidebar />
       <AdminTopbar />
       <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+          language === 'ar'
+            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
+            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         }`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">List Products</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">{t('listProducts')}</h1>
           <button
-            onClick={() => {
-              setEditingProduct(null);
-              setFormData({
-                name: '',
-                description: '',
-                price: '',
-                image_url: '',
-                category_id: '',
-                stock: '',
-              });
-              setShowModal(true);
-            }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2 font-medium shadow-sm"
+            onClick={() => navigate('/admin/products/new')}
+            className="bg-neutral-900 text-white dark:bg-blue-600 dark:text-slate-950  px-4 py-2 rounded-lg dark:hover:bg-blue-500 hover:bg-neutral-700 transition flex items-center space-x-2 font-medium shadow-sm"
           >
             <Plus className="w-5 h-5" />
-            <span>Add Product</span>
+            <span>{t('addProduct')}</span>
           </button>
         </div>
 
@@ -238,7 +170,7 @@ export default function Products() {
               <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-                placeholder="Rechercher..."
+                placeholder={t('rechercher')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
@@ -246,10 +178,10 @@ export default function Products() {
             </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All categories" />
+                <SelectValue placeholder={t('allCategories')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
+                <SelectItem value="all">{t('allCategories')}</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
@@ -261,7 +193,7 @@ export default function Products() {
 
           {/* Right: Items Per Page and Total */}
           <div className="flex gap-2 items-center">
-            <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('show')}</span>
             <Select
               value={itemsPerPage.toString()}
               onValueChange={(value) => {
@@ -279,8 +211,8 @@ export default function Products() {
                 <SelectItem value="50">50</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-sm text-gray-500 dark:text-gray-400">items</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalProducts}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('items')}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('totalProducts')}: {totalProducts}</span>
           </div>
         </div>
 
@@ -293,27 +225,28 @@ export default function Products() {
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                     <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
-                      Product
+                      {t('product')}
                     </th>
                     <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
-                      Category
+                      {t('categories')}
                     </th>
                     <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
-                      Price
+                      {t('price')}
                     </th>
                     <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
-                      Stock
+                      {t('stockField')}
                     </th>
                     <th className="px-6 py-4 text-right font-semibold text-gray-900 text-sm">
-                      Actions
+                      {t('actions')}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((product, index) => (
+                  {products.map((product) => (
                     <tr
                       key={product.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 border-l-0 border-r-0 border-t-0 bg-transparent dark:bg-transparent transition"
+                      onClick={() => navigate(`/admin/products/${product.id}`)}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 border-l-0 border-r-0 border-t-0 bg-transparent dark:bg-transparent transition cursor-pointer"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
@@ -350,17 +283,22 @@ export default function Products() {
                           label={getStockLabel(product.stock)}
                         />
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end space-x-3">
                           <button
-                            onClick={() => handleEdit(product)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/admin/products/${product.id}`);
+                            }}
                             className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition font-medium text-sm"
+                            title={t('edit')}
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(product.id)}
                             className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition font-medium text-sm"
+                            title={t('delete')}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -374,7 +312,7 @@ export default function Products() {
               {filteredProducts.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-gray-500 dark:text-gray-400">
-                    {searchQuery || selectedCategory !== 'all' ? 'No products match your filters' : 'No products found'}
+                    {searchQuery || selectedCategory !== 'all' ? t('noProductsMatch') : t('noProductsFound')}
                   </p>
                 </div>
               )}
@@ -387,142 +325,23 @@ export default function Products() {
                   totalItems={totalProducts}
                   itemsPerPage={itemsPerPage}
                   onPageChange={setCurrentPage}
+                  onItemsPerPageChange={(items) => {
+                    setItemsPerPage(items);
+                    setCurrentPage(1);
+                  }}
                 />
               )}
             </div>
           </SoftCard>
         )}
 
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-lg border dark:border-slate-700">
-              <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    {editingProduct ? 'Edit Product' : 'Add New Product'}
-                  </h2>
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Product Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Price *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Stock *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.stock}
-                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Category
-                  </label>
-                  <Select
-                    value={formData.category_id}
-                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="No Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">No Category</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Image URL
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
-                </div>
-
-                <div className="flex space-x-3 pt-4 border-t border-gray-200 dark:border-slate-700">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition"
-                  >
-                    {editingProduct ? 'Update Product' : 'Add Product'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-200 py-2 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-slate-600 transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        
         </div>
       </div>
       <div className={`transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        language === 'ar'
+          ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
+          : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       }`}>
         <AdminFooter />
       </div>

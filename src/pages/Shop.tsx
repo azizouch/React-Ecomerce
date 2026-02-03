@@ -4,6 +4,7 @@ import { supabase, Product, Category } from '../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../lib/pagination';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import AddToCartModal from '../components/ui/AddToCartModal';
 import { ShoppingCart, Search, Filter, ChevronDown } from 'lucide-react';
 import {
   Select,
@@ -28,7 +29,8 @@ export default function Shop() {
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
-  const { addToCart } = useCart();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const categoriesDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -129,13 +131,9 @@ export default function Shop() {
     }
   };
 
-  const handleAddToCart = async (productId: string) => {
-    try {
-      await addToCart(productId);
-      alert('Product added to cart!');
-    } catch (error) {
-      alert('Failed to add product to cart');
-    }
+  const handleAddToCart = (productId: string) => {
+    setSelectedProductId(productId);
+    setModalOpen(true);
   };
 
   const totalPages = calculateTotalPages(totalProducts, ITEMS_PER_PAGE);
@@ -440,6 +438,8 @@ export default function Shop() {
       </div>
 
       <Footer />
+
+      <AddToCartModal productId={selectedProductId || ''} open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }

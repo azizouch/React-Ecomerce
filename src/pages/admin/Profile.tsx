@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
@@ -10,6 +11,7 @@ import { supabase } from '../../lib/supabase';
 
 export default function AdminProfile() {
   const { isCollapsed } = useSidebar();
+  const { language } = useLanguage();
   const { user, profile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -86,17 +88,19 @@ export default function AdminProfile() {
       <AdminSidebar />
       <AdminTopbar />
       <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+          language === 'ar'
+            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
+            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         }`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-10">
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">Admin Profile</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage your profile information and account settings.</p>
-        </div>
+            <p className="text-gray-600 dark:text-gray-400">Manage your profile information and account settings.</p>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Card */}
-          <SoftCard className="lg:col-span-2 p-6 dark:bg-slate-800">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Profile Card */}
+            <SoftCard className="lg:col-span-2 p-6 dark:bg-slate-800">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Profile Information</h2>
             </div>
@@ -227,7 +231,7 @@ export default function AdminProfile() {
           </SoftCard>
 
           {/* Quick Info Card */}
-          <SoftCard className="p-6 dark:bg-slate-800">
+            <SoftCard className="p-6 dark:bg-slate-800">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Info</h3>
             
             <div className="space-y-4">
@@ -248,12 +252,10 @@ export default function AdminProfile() {
             </div>
           </SoftCard>
         </div>
-      </div>
-      <div className={`transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      }`}>
+
         <AdminFooter />
       </div>
     </div>
+  </div>
   );
 }

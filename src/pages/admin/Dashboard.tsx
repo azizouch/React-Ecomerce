@@ -4,6 +4,7 @@ import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import StatCard from '../../components/ui/StatCard';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
@@ -35,15 +36,16 @@ interface ProductSale {
 
 export default function AdminDashboard() {
   const { isCollapsed } = useSidebar();
+  const { t, language } = useLanguage();
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [sortBy, setSortBy] = useState('latest');
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   
   const sortOptions = [
-    { label: 'Latest', value: 'latest' },
-    { label: 'Oldest', value: 'oldest' },
-    { label: 'Highest Amount', value: 'highest' },
-    { label: 'Lowest Amount', value: 'lowest' },
+    { label: t('latest'), value: 'latest' },
+    { label: t('oldest'), value: 'oldest' },
+    { label: t('highestAmount'), value: 'highest' },
+    { label: t('lowestAmount'), value: 'lowest' },
   ];
   const [stats, setStats] = useState<Stats>({
     totalProducts: 2400,
@@ -140,13 +142,15 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
       <AdminTopbar />
       <div
         className={`pt-16 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+          language === 'ar'
+            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
+            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         }`}
       >
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-10">
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">Dashboard</h1>
-            <p className="text-gray-600 dark:text-gray-400">Welcome back! Here's your store overview.</p>
+            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">{t('dashboard')}</h1>
+            <p className="text-gray-600 dark:text-gray-400">{t('welcomeBack')}</p>
           </div>
           {loading ? (
             <>
@@ -162,28 +166,28 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
               {/* Top 4 Stat Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <StatCard
-                  title="Total Sales"
+                  title={t('totalSales')}
                   value={`$${(stats.totalRevenue / 1000).toFixed(1)}K`}
                   icon={<TrendingUp className="w-5 h-5" />}
                   iconColor="purple"
                   subtext=""
                 />
                 <StatCard
-                  title="Total Customers"
+                  title={t('totalCustomers')}
                   value={(stats.totalCustomers / 1000).toFixed(1) + 'K'}
                   icon={<Users className="w-5 h-5" />}
                   iconColor="blue"
                   subtext=""
                 />
                 <StatCard
-                  title="Total Products"
+                  title={t('totalProducts')}
                   value={(stats.totalProducts / 1000).toFixed(1) + 'K'}
                   icon={<Package className="w-5 h-5" />}
                   iconColor="orange"
                   subtext=""
                 />
                 <StatCard
-                  title="Total Orders"
+                  title={t('totalOrders')}
                   value={(stats.totalOrders / 1000).toFixed(1) + 'K'}
                   icon={<ShoppingCart className="w-5 h-5" />}
                   iconColor="green"
@@ -197,11 +201,11 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                 <SoftCard className="lg:col-span-2 p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sales Statistic</h2>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('salesStatistic')}</h2>
                     </div>
                     <button className="flex items-center gap-2 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
                       <Filter className="w-4 h-4" />
-                      Monthly
+                      {t('monthly')}
                     </button>
                   </div>
 
@@ -317,9 +321,9 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                 {/* Shipment Status Pie Chart */}
                 <SoftCard className="p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Shipment Status</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('shipmentStatus')}</h2>
                     <button className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium">
-                      Today
+                      {t('today')}
                     </button>
                   </div>
                   
@@ -342,19 +346,19 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                     <div className="grid grid-cols-2 gap-4 text-sm w-full">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
-                        <span className="text-gray-700 dark:text-gray-300">Delivered</span>
+                        <span className="text-gray-700 dark:text-gray-300">{t('delivered')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
-                        <span className="text-gray-700 dark:text-gray-300">On Delivery</span>
+                        <span className="text-gray-700 dark:text-gray-300">{t('onDelivery')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ef4444' }}></div>
-                        <span className="text-gray-700 dark:text-gray-300">Returned</span>
+                        <span className="text-gray-700 dark:text-gray-300">{t('returned')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f59e0b' }}></div>
-                        <span className="text-gray-700 dark:text-gray-300">Cancelled</span>
+                        <span className="text-gray-700 dark:text-gray-300">{t('cancelled')}</span>
                       </div>
                     </div>
                   </div>
@@ -366,14 +370,14 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                 {/* Recent Orders Table */}
                 <SoftCard className="lg:col-span-2 p-6">
                   <div className="mb-6 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Orders</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('recentOrders')}</h2>
                     <div className="relative" ref={sortDropdownRef}>
                       <button 
                         onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
                         className="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                       >
                         <ArrowRight className="w-4 h-4" />
-                        Sort by
+                        {t('sortBy')}
                         <ChevronDown className={`w-4 h-4 transition-transform ${sortDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
                       
@@ -406,14 +410,14 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-200 dark:border-slate-700">
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">Product</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">Order ID</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">Customer Name</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">Date</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">Item</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">Price</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">Total</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">Status</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('product')}</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('orderId')}</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('customerName')}</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('date')}</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('item')}</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('price')}</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('total')}</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('status')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -458,7 +462,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                   ) : (
                     <div className="text-center py-12">
                       <ShoppingCart className="mx-auto h-12 w-12 text-gray-300 dark:text-slate-600 mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No orders yet</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('noOrdersYet')}</p>
                     </div>
                   )}
                 </SoftCard>
@@ -466,14 +470,14 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                 {/* Sales Overview */}
                 <SoftCard className="p-6">
                   <div className="mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sales Overview</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('salesOverview')}</h2>
                   </div>
 
                   <div className="space-y-6">
                     {/* Growth indicator */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Sales</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('totalSalesCount')}</span>
                         <span className="text-xs text-green-600 dark:text-green-400 font-medium">4.9% ↑</span>
                       </div>
                       <p className="text-2xl font-bold text-gray-900 dark:text-white">9824</p>
@@ -503,7 +507,9 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
       </div>
       <div
         className={`transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+          language === 'ar'
+            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
+            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         }`}
       >
         <AdminFooter />

@@ -3,6 +3,7 @@ import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import SoftCard from '../../components/ui/SoftCard';
 import { Bell, Trash2, Check } from 'lucide-react';
 
@@ -17,6 +18,7 @@ interface Notification {
 
 export default function AdminNotifications() {
   const { isCollapsed } = useSidebar();
+  const { t, language } = useLanguage();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
@@ -95,7 +97,9 @@ export default function AdminNotifications() {
       <AdminSidebar />
       <AdminTopbar />
       <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+          language === 'ar'
+            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
+            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         }`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-10">
@@ -206,7 +210,9 @@ export default function AdminNotifications() {
         </div>
       </div>
       <div className={`transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        language === 'ar'
+          ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
+          : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       }`}>
         <AdminFooter />
       </div>

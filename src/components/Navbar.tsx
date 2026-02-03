@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Moon, Sun, ChevronDown, Bell, Search, LayoutDashboard, Package, Tag, ShoppingBag, Users } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Moon, Sun, ChevronDown, Bell, Search, LayoutDashboard, Package, Tag, ShoppingBag, Users, Globe } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../hooks/useCart';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, Category } from '../lib/supabase';
 
 export default function Navbar() {
@@ -11,18 +12,21 @@ export default function Navbar() {
   const location = useLocation();
   const { user, profile, signOut } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
   const { cartCount } = useCart();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const notificationsDropdownRef = useRef<HTMLDivElement>(null);
   const accountDropdownRef = useRef<HTMLDivElement>(null);
   const categoriesDropdownRef = useRef<HTMLDivElement>(null);
+  const languageDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!profile?.is_admin) {
@@ -44,6 +48,9 @@ export default function Navbar() {
       }
       if (categoriesDropdownRef.current && !categoriesDropdownRef.current.contains(event.target as Node)) {
         setShowCategoriesDropdown(false);
+      }
+      if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target as Node)) {
+        setShowLanguageDropdown(false);
       }
     }
 
@@ -126,7 +133,7 @@ export default function Navbar() {
                   onClick={() => navigate('/shop')}
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
                 >
-                  Shop
+                  {t('shop')}
                 </button>
 
                 {/* Categories Dropdown */}
@@ -135,7 +142,7 @@ export default function Navbar() {
                     onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
                     className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium flex items-center space-x-1"
                   >
-                    <span>Categories</span>
+                    <span>{t('categories')}</span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
 
@@ -165,7 +172,7 @@ export default function Navbar() {
                   onClick={() => navigate('/shop')}
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
                 >
-                  Deals
+                  {t('deals')}
                 </button>
 
                 {/* What's New Link */}
@@ -173,7 +180,7 @@ export default function Navbar() {
                   onClick={() => navigate('/shop')}
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
                 >
-                  What's New
+                  {t('whatsNew')}
                 </button>
 
                 {/* Delivery Link */}
@@ -181,7 +188,7 @@ export default function Navbar() {
                   onClick={() => navigate('/shop')}
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
                 >
-                  Delivery
+                  {t('delivery')}
                 </button>
               </div>
             )}
@@ -195,7 +202,7 @@ export default function Navbar() {
                 <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder={t('search')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-transparent ml-2 text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none w-40"
@@ -211,6 +218,66 @@ export default function Navbar() {
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
+
+            {/* Language Selector */}
+            <div className="relative" ref={languageDropdownRef}>
+              <button
+                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-300 flex items-center space-x-1"
+                title={t('language')}
+              >
+                <Globe className="w-5 h-5" />
+                <span className="text-xs font-semibold uppercase">{language}</span>
+              </button>
+
+              {/* Language Dropdown */}
+              {showLanguageDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
+                  <button
+                    onClick={() => {
+                      setLanguage('en');
+                      setShowLanguageDropdown(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm transition flex items-center space-x-2 ${
+                      language === 'en'
+                        ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <span>🇬🇧</span>
+                    <span>English</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLanguage('fr');
+                      setShowLanguageDropdown(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700 ${
+                      language === 'fr'
+                        ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <span>🇫🇷</span>
+                    <span>Français</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLanguage('ar');
+                      setShowLanguageDropdown(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700 ${
+                      language === 'ar'
+                        ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <span>🇸🇦</span>
+                    <span>العربية</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Notifications (Admin Only) */}
             {isAdmin && (
@@ -228,11 +295,11 @@ export default function Navbar() {
                 {showNotificationsDropdown && (
                   <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
                     <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Notifications</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('notifications')}</p>
                     </div>
                     <div className="max-h-96 overflow-y-auto">
                       <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                        <p className="text-sm">No new notifications</p>
+                        <p className="text-sm">{t('noNotifications')}</p>
                       </div>
                     </div>
                     <button
@@ -242,7 +309,7 @@ export default function Navbar() {
                       }}
                       className="w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition border-t border-gray-200 dark:border-slate-700 font-medium"
                     >
-                      View All Notifications
+                      {t('viewAllNotifications')}
                     </button>
                   </div>
                 )}
@@ -292,7 +359,7 @@ export default function Navbar() {
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2"
                         >
                           <User className="w-4 h-4" />
-                          <span>View Profile</span>
+                          <span>{t('viewProfile')}</span>
                         </button>
                         <button
                           onClick={() => {
@@ -302,7 +369,7 @@ export default function Navbar() {
                           className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700"
                         >
                           <LogOut className="w-4 h-4" />
-                          <span>Logout</span>
+                          <span>{t('logout')}</span>
                         </button>
                       </div>
                     )}
@@ -332,7 +399,7 @@ export default function Navbar() {
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2"
                         >
                           <ShoppingCart className="w-4 h-4" />
-                          <span>My Orders</span>
+                          <span>{t('myOrders')}</span>
                         </button>
                         <button
                           onClick={() => {
@@ -342,7 +409,7 @@ export default function Navbar() {
                           className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700"
                         >
                           <LogOut className="w-4 h-4" />
-                          <span>Logout</span>
+                          <span>{t('logout')}</span>
                         </button>
                       </div>
                     )}
@@ -371,7 +438,7 @@ export default function Navbar() {
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2"
                     >
                       <User className="w-4 h-4" />
-                      <span>Sign In</span>
+                      <span>{t('login')}</span>
                     </button>
                     <button
                       onClick={() => {
@@ -381,7 +448,7 @@ export default function Navbar() {
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700"
                     >
                       <User className="w-4 h-4" />
-                      <span>Sign Up</span>
+                      <span>{t('signup')}</span>
                     </button>
                   </div>
                 )}
@@ -395,20 +462,20 @@ export default function Navbar() {
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-slate-900 rounded-lg p-6 max-w-md w-full mx-4 border dark:border-slate-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Logout</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">Are you sure you want to log out?</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('confirmLogout')}</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">{t('areYouSure')}</p>
             <div className="flex space-x-4">
               <button
                 onClick={() => setShowLogoutModal(false)}
                 className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 onClick={handleSignOut}
                 className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition"
               >
-                Logout
+                {t('logout')}
               </button>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SidebarProvider } from './contexts/SidebarContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 // Lazy load components for better performance
@@ -18,6 +19,8 @@ const AdminOrders = lazy(() => import('./pages/admin/Orders'));
 const AdminUsers = lazy(() => import('./pages/admin/Users'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile'));
 const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
+const AdminProductDetail = lazy(() => import('./pages/admin/ProductDetail'));
+const AdminProductNew = lazy(() => import('./pages/admin/ProductNew'));
 
 // Protected route for admin pages
 function AdminRoute({ element }: { element: React.ReactElement }) {
@@ -55,6 +58,8 @@ function AppContent() {
         {/* Admin Routes - Protected */}
         <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
         <Route path="/admin/products" element={<AdminRoute element={<AdminProducts />} />} />
+        <Route path="/admin/products/new" element={<AdminRoute element={<AdminProductNew />} />} />
+        <Route path="/admin/products/:id" element={<AdminRoute element={<AdminProductDetail />} />} />
         <Route path="/admin/categories" element={<AdminRoute element={<AdminCategories />} />} />
         <Route path="/admin/orders" element={<AdminRoute element={<AdminOrders />} />} />
         <Route path="/admin/users" element={<AdminRoute element={<AdminUsers />} />} />
@@ -68,11 +73,13 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <SidebarProvider>
-          <AppContent />
-        </SidebarProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <SidebarProvider>
+            <AppContent />
+          </SidebarProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </BrowserRouter>
   );
 }

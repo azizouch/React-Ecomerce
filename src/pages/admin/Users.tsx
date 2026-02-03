@@ -5,6 +5,7 @@ import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -32,6 +33,7 @@ interface UserProfile {
 
 export default function AdminUsers() {
   const { isCollapsed } = useSidebar();
+  const { t, language } = useLanguage();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -318,7 +320,9 @@ export default function AdminUsers() {
       <AdminSidebar />
       <AdminTopbar />
       <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+          language === 'ar'
+            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
+            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         }`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
 
@@ -714,7 +718,9 @@ export default function AdminUsers() {
         </div>
       </div>
       <div className={`transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        language === 'ar'
+          ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
+          : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       }`}>
         <AdminFooter />
       </div>
