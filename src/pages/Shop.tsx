@@ -25,6 +25,10 @@ export default function Shop() {
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [sortBy, setSortBy] = useState<string>('name');
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [availableSizes, setAvailableSizes] = useState<string[]>([]);
+  const [availableColors, setAvailableColors] = useState<Array<{ id: string; name: string; hex: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,11 +39,12 @@ export default function Shop() {
 
   useEffect(() => {
     loadCategories();
+    loadAvailableSizesAndColors();
   }, []);
 
   useEffect(() => {
     loadProducts();
-  }, [currentPage, selectedCategory, searchQuery, priceRange, sortBy]);
+  }, [currentPage, selectedCategory, searchQuery, priceRange, sortBy, selectedSizes, selectedColors]);
 
   useEffect(() => {
     const categoryParam = searchParams.get('category');
@@ -75,12 +80,38 @@ export default function Shop() {
     }
   };
 
+  const loadAvailableSizesAndColors = async () => {
+    try {
+      // Load available sizes
+      const { data: sizesData, error: sizesError } = await supabase
+        .from('product_color_sizes')
+        .select('size')
+        .neq('size', null);
+
+      if (sizesError) throw sizesError;
+      const uniqueSizes = [...new Set((sizesData || []).map(s => s.size))].sort();
+      setAvailableSizes(uniqueSizes);
+
+      // Load available colors
+      const { data: colorsData, error: colorsError } = await supabase
+        .from('product_colors')
+        .select('id, name, hex_code')
+        .neq('hex_code', null);
+
+      if (colorsError) throw colorsError;
+      const uniqueColors = [...new Set((colorsData || []).map(c => JSON.stringify({ id: c.id, name: c.name, hex: c.hex_code })))].map(c => JSON.parse(c));
+      setAvailableColors(uniqueColors);
+    } catch (error) {
+      console.error('Error loading sizes and colors:', error);
+    }
+  };
+
   const loadProducts = async () => {
     setLoading(true);
     try {
       const { offset, limit } = getPaginationParams(currentPage, ITEMS_PER_PAGE);
 
-      // Build the query with filters
+      // Build the base query with filters
       let query = supabase
         .from('products')
         .select('*', { count: 'exact' });
@@ -102,32 +133,104 @@ export default function Shop() {
         );
       }
 
-      // Apply sorting
-      switch (sortBy) {
-        case 'price-low':
-          query = query.order('price', { ascending: true });
-          break;
-        case 'price-high':
-          query = query.order('price', { ascending: false });
-          break;
-        case 'name':
-        default:
-          query = query.order('name', { ascending: true });
+      // If colors or sizes are selected, we need to filter differently
+      if (selectedColors.length > 0 || selectedSizes.length > 0) {
+        // First, get all products that match basic criteria
+        const { data: allProducts, error: productsError } = await query.order('name');
+        if (productsError) throw productsError;
+
+        // Filter products based on colors and sizes
+        let filteredProducts = allProducts || [];
+        if (selectedColors.length > 0 || selectedSizes.length > 0) {
+          const productIds = await getProductIdsBySizesAndColors();
+          filteredProducts = filteredProducts.filter(p => productIds.has(p.id));
+        }
+
+        // Apply sorting
+        const sortedProducts = applySorting(filteredProducts);
+        
+        // Apply pagination
+        const paginatedProducts = sortedProducts.slice(offset, offset + limit);
+
+        setProducts(paginatedProducts);
+        setTotalProducts(sortedProducts.length);
+      } else {
+        // Apply sorting
+        switch (sortBy) {
+          case 'price-low':
+            query = query.order('price', { ascending: true });
+            break;
+          case 'price-high':
+            query = query.order('price', { ascending: false });
+            break;
+          case 'name':
+          default:
+            query = query.order('name', { ascending: true });
+        }
+
+        // Apply pagination
+        query = query.range(offset, offset + limit - 1);
+
+        const { data, error, count } = await query;
+
+        if (error) throw error;
+
+        setProducts(data || []);
+        setTotalProducts(count || 0);
       }
-
-      // Apply pagination
-      query = query.range(offset, offset + limit - 1);
-
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      setProducts(data || []);
-      setTotalProducts(count || 0);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getProductIdsBySizesAndColors = async (): Promise<Set<string>> => {
+    const productIds = new Set<string>();
+
+    try {
+      // Get product IDs that have the selected sizes
+      if (selectedSizes.length > 0) {
+        const { data: sizeResults } = await supabase
+          .from('product_color_sizes')
+          .select('product_colors!inner(product_id)')
+          .in('size', selectedSizes);
+
+        sizeResults?.forEach(result => {
+          if (result.product_colors && typeof result.product_colors === 'object') {
+            const pc = result.product_colors as any;
+            if (pc.product_id) productIds.add(pc.product_id);
+          }
+        });
+      }
+
+      // Get product IDs that have the selected colors
+      if (selectedColors.length > 0) {
+        const { data: colorResults } = await supabase
+          .from('product_colors')
+          .select('product_id')
+          .in('id', selectedColors);
+
+        colorResults?.forEach(result => {
+          if (result.product_id) productIds.add(result.product_id);
+        });
+      }
+    } catch (error) {
+      console.error('Error filtering by sizes and colors:', error);
+    }
+
+    return productIds;
+  };
+
+  const applySorting = (products: Product[]) => {
+    switch (sortBy) {
+      case 'price-low':
+        return [...products].sort((a, b) => a.price - b.price);
+      case 'price-high':
+        return [...products].sort((a, b) => b.price - a.price);
+      case 'name':
+      default:
+        return [...products].sort((a, b) => a.name.localeCompare(b.name));
     }
   };
 
@@ -297,6 +400,64 @@ export default function Shop() {
                       onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
                       className="w-full accent-blue-600"
                     />
+                  </div>
+                </div>
+
+                {/* Sizes */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Sizes
+                  </label>
+                  <div className="space-y-2">
+                    {availableSizes.map((size) => (
+                      <label key={size} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedSizes.includes(size)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedSizes([...selectedSizes, size]);
+                            } else {
+                              setSelectedSizes(selectedSizes.filter(s => s !== size));
+                            }
+                            setCurrentPage(1);
+                          }}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{size}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Colors */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Colors
+                  </label>
+                  <div className="space-y-2">
+                    {availableColors.map((color) => (
+                      <label key={color.id} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedColors.includes(color.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedColors([...selectedColors, color.id]);
+                            } else {
+                              setSelectedColors(selectedColors.filter(c => c !== color.id));
+                            }
+                            setCurrentPage(1);
+                          }}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span
+                          className="ml-2 w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{color.name}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
               </div>

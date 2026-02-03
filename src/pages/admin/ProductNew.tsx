@@ -199,7 +199,6 @@ export default function ProductNew() {
           : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
       }`}>
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-5xl">
           {/* Header */}
           <div className="flex items-center gap-3 mb-8">
             <button
@@ -215,11 +214,11 @@ export default function ProductNew() {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Product Info */}
             <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-200 dark:border-slate-700">
-              <h2 className="text-lg font-semibold mb-4">{t('productInfo') || 'Product Information'}</h2>
+              <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{t('productInfo') || 'Product Information'}</h2>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('productName')} *</label>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('productName')} *</label>
                   <input
                     type="text"
                     value={name}
@@ -229,19 +228,9 @@ export default function ProductNew() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">{t('description')}</label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('price')} (DH)</label>
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('price')} (DH)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -252,9 +241,9 @@ export default function ProductNew() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('category')}</label>
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('category')}</label>
                     <Select value={categoryId} onValueChange={setCategoryId}>
-                      <SelectTrigger className="bg-white dark:bg-slate-700">
+                      <SelectTrigger className="w-full bg-white dark:bg-slate-700">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -268,13 +257,23 @@ export default function ProductNew() {
                     </Select>
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('description')}</label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Colors & Variants */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Colors & Variants</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Colors & Variants</h2>
                 <button
                   type="button"
                   onClick={addColor}
@@ -325,7 +324,7 @@ export default function ProductNew() {
 
                     {/* Images Section */}
                     <div className="mb-6">
-                      <h3 className="text-sm font-semibold mb-3">Images for {color.name || 'this color'}</h3>
+                      <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-white">Images for {color.name || 'this color'}</h3>
                       <div className="flex gap-2 mb-3">
                         <input
                           type="url"
@@ -370,7 +369,7 @@ export default function ProductNew() {
 
                     {/* Sizes Section */}
                     <div>
-                      <h3 className="text-sm font-semibold mb-3">Sizes & Stock</h3>
+                      <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-white">Sizes & Stock</h3>
                       <div className="flex gap-2 mb-3">
                         <input
                           type="text"
@@ -448,7 +447,6 @@ export default function ProductNew() {
               </button>
             </div>
           </form>
-        </div>
         </div>
       </div>
 

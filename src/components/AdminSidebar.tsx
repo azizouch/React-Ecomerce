@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -17,7 +17,7 @@ import {
   Sun,
 } from 'lucide-react';
 
-export default function AdminSidebar() {
+const AdminSidebar = memo(function AdminSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const location = useLocation();
@@ -34,7 +34,12 @@ export default function AdminSidebar() {
     { label: t('notifications'), icon: Bell, path: '/admin/notifications' },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === '/admin') {
+      return location.pathname === path;
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
 
   return (
     <>
@@ -184,4 +189,8 @@ export default function AdminSidebar() {
       </aside>
     </>
   );
-}
+});
+
+AdminSidebar.displayName = 'AdminSidebar';
+
+export default AdminSidebar;

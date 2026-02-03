@@ -11,15 +11,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Admin client with service role key for admin operations
-// export const supabaseAdmin = supabaseServiceRoleKey
-//   ? createClient(supabaseUrl, supabaseServiceRoleKey, {
-//       auth: {
-//         autoRefreshToken: false,
-//         persistSession: false,
-//         storageKey: 'supabase-admin-auth'
-//       }
-//     })
-//   : null;
+export const supabaseAdmin = supabaseServiceRoleKey
+  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        storageKey: 'supabase-admin-auth'
+      }
+    })
+  : null;
 
 // Debug logging
 // console.log('🔧 Supabase Configuration:');

@@ -1,11 +1,13 @@
-# Fix Admin Navigation Error
+# E-Commerce UI/UX Improvements
 
 ## Tasks
-- [x] Update AdminNav.tsx to use useNavigate instead of onNavigate prop
-- [x] Update Dashboard.tsx to remove onNavigate prop and use useNavigate
-- [x] Update Products.tsx to remove onNavigate prop and use useNavigate
-- [x] Update Orders.tsx to remove onNavigate prop and use useNavigate
-- [x] Update Categories.tsx to remove onNavigate prop and use useNavigate
-- [x] Update Router.tsx to not pass onNavigate to admin components
-- [x] Test navigation in admin dashboard after changes
-- [ ] Consider removing unused Router.tsx if not needed elsewhere
+- [x] Align users page design with products page (filters and table styling)
+- [x] Fix sidebar reload on product row clicks during navigation
+- [x] Ensure parent links active on detail pages (verify sidebar active state)
+- [x] Fix light mode colors for notifications page
+- [x] Fix light mode colors for add product page
+- [x] Fix light mode colors for edit product page
+- [x] Fix light mode colors for customer product details page
+- [x] Fix light mode colors for add to cart modal
+- [x] Add size and color filters to shop page
+- [x] Add footer to customer product detail page

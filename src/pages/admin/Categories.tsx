@@ -230,13 +230,13 @@ export default function AdminCategories() {
               {categories.map((category) => (
                 <div
                   key={category.id}
-                  className="cursor-pointer transition"
+                  className="cursor-pointer transition "
                   onClick={() => {
                     setSelectedCategory(category);
                     setShowDetailModal(true);
                   }}
                 >
-                  <SoftCard hoverable className="p-6 h-full"
+                  <SoftCard hoverable className="p-6 h-full shadow-md"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3 flex-1">

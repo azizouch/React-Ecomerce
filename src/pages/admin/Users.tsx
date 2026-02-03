@@ -312,9 +312,6 @@ export default function AdminUsers() {
     setShowEditModal(true);
   };
 
-  const adminCount = users.filter(user => user.is_admin).length;
-  const customerCount = users.filter(user => !user.is_admin).length;
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <AdminSidebar />
@@ -333,138 +330,129 @@ export default function AdminUsers() {
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2 font-medium shadow-sm"
+            className="bg-neutral-900 text-white dark:bg-blue-600 dark:text-slate-950 px-4 py-2 rounded-lg dark:hover:bg-blue-500 hover:bg-neutral-700 transition flex items-center space-x-2 font-medium shadow-sm"
           >
             <Plus className="w-5 h-5" />
             <span>Add User</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-          <SoftCard className="p-4">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <SoftCard className="p-4 bg-white dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Total Users</p>
-                <p className="text-xl font-semibold text-gray-900 dark:text-white mt-1">{totalUsers}</p>
+                <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{totalUsers}</p>
               </div>
               <Users className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
           </SoftCard>
-          <SoftCard className="p-4">
+          <SoftCard className="p-4 bg-white dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Admin Users</p>
-                <p className="text-xl font-semibold text-blue-600 dark:text-blue-400 mt-1">{adminCount}</p>
+                <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400 mt-1">{users.filter(u => u.is_admin).length}</p>
               </div>
               <Crown className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
           </SoftCard>
-          <SoftCard className="p-4">
+          <SoftCard className="p-4 bg-white dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Customer Users</p>
-                <p className="text-xl font-semibold text-green-600 dark:text-green-400 mt-1">{customerCount}</p>
+                <p className="text-2xl font-semibold text-green-600 dark:text-green-400 mt-1">{users.filter(u => !u.is_admin).length}</p>
               </div>
               <Users className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
           </SoftCard>
         </div>
 
-        <SoftCard className="p-6">
-          {/* Filters Bar - Like the image layout */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            {/* Left: Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
-              <div className="relative w-full sm:w-56">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400 dark:text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Rechercher..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm"
-                />
-              </div>
-              {/* Role Filter */}
-              <Select value={selectedRole} onValueChange={(value) => {
-                setSelectedRole(value);
-                setCurrentPage(1);
-              }}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All roles" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All roles</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="customer">Customer</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Search and Filter Bar */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          {/* Left: Search and Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
+            <div className="relative w-full sm:w-56">
+              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400 dark:text-gray-500" />
+              <input
+                type="text"
+                placeholder={t('rechercher')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
+              />
             </div>
-
-            {/* Right: Items Per Page and Total */}
-            <div className="flex gap-2 items-center">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
-              <Select
-                value={itemsPerPage.toString()}
-                onValueChange={(value) => {
-                  setItemsPerPage(Number(value));
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="w-16 h-8 text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                </SelectContent>
-              </Select>
-              <span className="text-sm text-gray-500 dark:text-gray-400">items</span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalUsers}</span>
-            </div>
+            <Select value={selectedRole} onValueChange={(value) => {
+              setSelectedRole(value);
+              setCurrentPage(1);
+            }}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All roles</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="customer">Customer</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {loading ? (
-            <SkeletonLoader count={5} height="h-16" />
-          ) : users.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">No users found</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {searchQuery ? 'Try adjusting your search terms.' : 'No users have registered yet.'}
-              </p>
-            </div>
-          ) : (
+          {/* Right: Items Per Page and Total */}
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => {
+                setItemsPerPage(Number(value));
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-16 h-8 text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-500 dark:text-gray-400">items</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalUsers}</span>
+          </div>
+        </div>
+
+        {/* Users Table */}
+        {loading ? (
+          <SkeletonLoader count={6} height="h-16" className="space-y-3" />
+        ) : (
+          <SoftCard className="p-0 bg-transparent dark:bg-transparent border-0">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full bg-transparent min-w-full">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-slate-600">
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                  <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm dark:text-gray-200">
                       User
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm dark:text-gray-200">
                       Role
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm dark:text-gray-200">
                       Joined
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm dark:text-gray-200">
                       Last Active
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right font-semibold text-gray-900 text-sm dark:text-gray-200">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user, index) => (
+                  {users.map((user) => (
                     <tr
                       key={user.id}
-                      className={`hover:bg-blue-50 dark:hover:bg-slate-700 transition ${
-                        index !== users.length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''
-                      }`}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 border-l-0 border-r-0 border-t-0 bg-transparent dark:bg-transparent transition"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
@@ -505,17 +493,19 @@ export default function AdminUsers() {
                           }
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end space-x-2">
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-end space-x-3">
                           <button
                             onClick={() => openEditModal(user)}
-                            className="text-blue-600 hover:text-blue-700 transition font-medium text-sm"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition font-medium text-sm"
+                            title="Edit user"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="text-red-600 hover:text-red-700 transition font-medium text-sm"
+                            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition font-medium text-sm"
+                            title="Delete user"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -525,37 +515,47 @@ export default function AdminUsers() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
 
-          {/* Pagination Controls */}
-          {calculateTotalPages(totalUsers, itemsPerPage) > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={calculateTotalPages(totalUsers, itemsPerPage)}
-              totalItems={totalUsers}
-              itemsPerPage={itemsPerPage}
-              onPageChange={setCurrentPage}
-            />
-          )}
-        </SoftCard>
+              {users.length === 0 && (
+                <div className="text-center py-12">
+                  <Users className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">No users found</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    {searchQuery ? 'Try adjusting your search terms.' : 'No users have registered yet.'}
+                  </p>
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {calculateTotalPages(totalUsers, itemsPerPage) > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={calculateTotalPages(totalUsers, itemsPerPage)}
+                  totalItems={totalUsers}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
+              )}
+            </div>
+          </SoftCard>
+        )}
 
         {/* Create User Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-lg dark:shadow-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Create New User</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create New User</h3>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition"
+                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
               <form onSubmit={handleCreateUser} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Email *
                   </label>
                   <input
@@ -563,11 +563,11 @@ export default function AdminUsers() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Password *
                   </label>
                   <input
@@ -576,18 +576,18 @@ export default function AdminUsers() {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
                     minLength={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Full Name
                   </label>
                   <input
                     type="text"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
                 <div className="flex items-center pt-2">
@@ -596,23 +596,23 @@ export default function AdminUsers() {
                     id="is_admin"
                     checked={formData.is_admin}
                     onChange={(e) => setFormData({ ...formData, is_admin: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded"
                   />
-                  <label htmlFor="is_admin" className="ml-2 block text-sm text-gray-900">
+                  <label htmlFor="is_admin" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
                     Admin User
                   </label>
                 </div>
-                <div className="flex space-x-3 pt-6 border-t border-gray-200">
+                <div className="flex space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700">
                   <button
                     type="submit"
-                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition font-medium"
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition font-medium"
                   >
                     Create User
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition font-medium"
+                    className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium"
                   >
                     Cancel
                   </button>
@@ -625,30 +625,30 @@ export default function AdminUsers() {
         {/* Edit User Modal */}
         {showEditModal && editingUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-lg dark:shadow-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Edit User</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit User</h3>
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition"
+                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
               <form onSubmit={handleEditUser} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Email
                   </label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     New Password (leave empty to keep current)
                   </label>
                   <input
@@ -656,12 +656,12 @@ export default function AdminUsers() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     minLength={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
                 {formData.password && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Confirm New Password
                     </label>
                     <input
@@ -669,19 +669,19 @@ export default function AdminUsers() {
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                       minLength={6}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     />
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Full Name
                   </label>
                   <input
                     type="text"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
                 <div className="flex items-center pt-2">
@@ -690,23 +690,23 @@ export default function AdminUsers() {
                     id="edit_is_admin"
                     checked={formData.is_admin}
                     onChange={(e) => setFormData({ ...formData, is_admin: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded"
                   />
-                  <label htmlFor="edit_is_admin" className="ml-2 block text-sm text-gray-900">
+                  <label htmlFor="edit_is_admin" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
                     Admin User
                   </label>
                 </div>
-                <div className="flex space-x-3 pt-6 border-t border-gray-200">
+                <div className="flex space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700">
                   <button
                     type="submit"
-                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition font-medium"
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition font-medium"
                   >
                     Update User
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
-                    className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition font-medium"
+                    className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium"
                   >
                     Cancel
                   </button>
