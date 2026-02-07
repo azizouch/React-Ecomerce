@@ -1,27 +1,28 @@
 import { useState, FormEvent, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ShoppingBag } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [justLoggedIn, setJustLoggedIn] = useState(false);
-  const { signIn, profile, user } = useAuth();
+  const { signIn, profile, user, loading: authLoading } = useAuth();
 
+  // Redirect if already authenticated
   useEffect(() => {
-    if (justLoggedIn && user && profile) {
+    // Only redirect if we're still on the login page
+    if (!authLoading && user && profile && location.pathname === '/login') {
       if (profile.is_admin) {
-        navigate('/admin');
+        navigate('/admin', { replace: true });
       } else {
-        navigate('/');
+        navigate('/', { replace: true });
       }
-      setJustLoggedIn(false);
     }
-  }, [justLoggedIn, user, profile, navigate]);
+  }, [user, profile, authLoading, location.pathname]); // Don't include navigate in deps
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -30,9 +31,10 @@ export default function Login() {
 
     try {
       await signIn(email, password);
-      setJustLoggedIn(true);
-    } catch (err) {
-      setError('Invalid email or password');
+      // After signIn, the AuthContext will trigger auth state change
+      // and the above useEffect will redirect when user/profile update
+    } catch (err: any) {
+      setError(err.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }

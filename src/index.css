@@ -2,28 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Font Family */
-/* * {
-  font-family: Inter, "Inter Fallback", system-ui, sans-serif;
-} */
+/* Fix horizontal scrolling issue */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
 
-@layer base {
+#root {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
 
-  html {
-    overflow-x: hidden;
-  }
+/* Ensure all elements respect viewport width - exclude dialog/modal/dropdown components */
+*:not([data-radix-dialog-content]):not([role="dialog"]):not(.max-w-sm):not(.max-w-md):not(.max-w-lg):not(.max-w-xl):not(.max-w-2xl):not(.max-w-3xl):not(.max-w-4xl):not(.max-w-5xl):not(.max-w-6xl):not(.max-w-7xl) {
+  max-width: 100% !important;
+}
 
-  body {
-    font-family: 'Inter', 'Inter Fallback', system-ui, sans-serif;
-    font-style: normal;
-    overflow-x: hidden;
-    max-width: 100vw;
-  }
+* {
+  box-sizing: border-box !important;
+}
 
-  #root {
-    overflow-x: hidden;
-    max-width: 100vw;
-  }
+
+
+/* Prevent any body modifications that cause layout shifts */
+body {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
 }
 
 /* Fix for Radix components (dropdowns, selects) adding body padding */
@@ -40,80 +44,28 @@ body[style*="margin-right"] {
   padding-right: 0 !important;
   margin-right: 0 !important;
 }
-/* Root Color Variables */
-:root {
-  /* Neutral Colors */
-  --color-background: #f8fafc;
-  --color-surface: #ffffff;
-  --color-border: #e2e8f0;
-  --color-border-subtle: #f1f5f9;
-  
-  /* Text Colors */
-  --color-text-primary: #1e293b;
-  --color-text-secondary: #64748b;
-  --color-text-tertiary: #94a3b8;
-  
-  /* Accent Colors */
-  --color-accent: #2563eb;
-  --color-accent-hover: #1d4ed8;
-  --color-accent-light: #dbeafe;
-  
-  /* Status Colors */
-  --color-success: #059669;
-  --color-success-light: #d1fae5;
-  --color-warning: #d97706;
-  --color-warning-light: #fef3c7;
-  --color-error: #dc2626;
-  --color-error-light: #fee2e2;
-}
 
-/* Dark Mode - Support both class-based and prefers-color-scheme */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --color-background: #0f172a;
-    --color-surface: #1e293b;
-    --color-border: #334155;
-    --color-border-subtle: #1e293b;
-    
-    --color-text-primary: #f1f5f9;
-    --color-text-secondary: #cbd5e1;
-    --color-text-tertiary: #94a3b8;
-    
-    --color-accent: #3b82f6;
-    --color-accent-hover: #2563eb;
-    --color-accent-light: #1e3a8a;
+/* Center notification dropdown for all small screens */
+@media (max-width: 639px) {
+  [data-radix-popper-content-wrapper] {
+    left: 50% !important;
+    transform: translate(-50%, 49.5px) !important;
   }
 }
 
-/* Dark Mode - Class-based override */
-.dark {
-  --color-background: #0f172a;
-  --color-surface: #1e293b;
-  --color-border: #334155;
-  --color-border-subtle: #1e293b;
-  
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #94a3b8;
-  
-  --color-accent: #3b82f6;
-  --color-accent-hover: #2563eb;
-  --color-accent-light: #1e3a8a;
+/* Header responsive positioning - pure CSS without JavaScript */
+.header-responsive {
+  left: 0 !important; /* Mobile: always start from left edge */
 }
 
-/* Global Base Styles */
-/* body {
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
-  transition: background-color 0.2s ease, color 0.2s ease;
-} */
-
-/* Smooth Transitions */
-* {
-  @apply transition-colors duration-200;
+/* Desktop: adjust based on sidebar state */
+@media (min-width: 1024px) {
+  .header-responsive {
+    left: var(--sidebar-width) !important;
+    transition: left 200ms ease-linear;
+  }
 }
 
-/* Custom Scrollbar */
 /* Hide scrollbar in sidebar while keeping scroll functionality */
 [data-sidebar="sidebar"] {
   scrollbar-width: none; /* Firefox */
@@ -132,112 +84,189 @@ body[style*="margin-right"] {
 [data-sidebar="content"]::-webkit-scrollbar {
   display: none; /* WebKit browsers (Chrome, Safari, Edge) */
 }
-/* ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
 
-::-webkit-scrollbar-track {
-  background: var(--color-background);
-}
 
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 4px;
-}
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-secondary);
-} */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
-/* Input Focus Styles */
-@layer components {
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  input[type="url"],
-  input[type="date"],
-  textarea,
-  select {
-    @apply border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 100%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  /* Skeleton Loading Animation */
-  @keyframes skeleton-loading {
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 84% 4.9%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', 'Inter Fallback', system-ui, sans-serif;
+    font-style: normal;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+}
+
+
+
+/* Custom animations for LogiTrack loader */
+
+
+@layer utilities {
+  @keyframes logitrack-spin {
     0% {
-      background-color: var(--color-border-subtle);
-    }
-    50% {
-      background-color: var(--color-border);
+      transform: rotate(0deg);
     }
     100% {
-      background-color: var(--color-border-subtle);
+      transform: rotate(360deg);
     }
   }
 
-  .animate-pulse {
-    animation: skeleton-loading 1.5s ease-in-out infinite;
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.3;
+    }
   }
 
-  /* Soft Card */
-  .soft-card {
-    @apply bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-gray-200 dark:hover:border-slate-600 transition-all;
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
-  /* Stat Card */
-  .stat-card {
-    @apply bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-gray-200 dark:hover:border-slate-600 transition-all;
+  .logitrack-spin {
+    animation: logitrack-spin 1s linear infinite;
   }
 
-  /* Status Badge */
-  .status-badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+  .logitrack-pulse {
+    animation: logitrack-pulse 1.5s ease-in-out infinite;
   }
 
-  /* Table Styles */
-  table {
-    @apply w-full;
+  .logitrack-fade-in {
+    animation: logitrack-fade-in 0.5s ease-out;
   }
 
-  thead {
-    @apply bg-slate-50 dark:bg-slate-900;
+  .logitrack-pulse-delay-150 {
+    animation: logitrack-pulse 1.5s ease-in-out infinite;
+    animation-delay: 0.15s;
   }
 
-  tbody tr {
-    @apply border-b border-gray-100 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700/50 transition-colors;
+  .logitrack-pulse-delay-300 {
+    animation: logitrack-pulse 1.5s ease-in-out infinite;
+    animation-delay: 0.3s;
   }
 
-  /* Modal Backdrop */
-  .modal-backdrop {
-    @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
+  @keyframes fade-in-down {
+    0% {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
-  /* Modal Content */
-  .modal-content {
-    @apply bg-white dark:bg-slate-800 rounded-xl shadow-lg;
-  }
-}
-
-/* Dark Mode Toggle Support */
-html.dark {
-  color-scheme: dark;
-}
-
-/* Smooth Animation for Page Transitions */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@layer components {
-  .fade-in {
-    animation: fadeIn 0.2s ease-in-out;
+  .animate-fade-in-down {
+    animation: fade-in-down 0.6s ease-out;
   }
 }
-
-

@@ -1,10 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, Category } from '../../lib/supabase';
-import AdminSidebar from '../../components/AdminSidebar';
-import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
-import { useSidebar } from '../../contexts/SidebarContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { X, Save, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -26,7 +23,6 @@ interface ColorForm {
 
 export default function ProductNew() {
   const navigate = useNavigate();
-  const { isCollapsed } = useSidebar();
   const { t, language } = useLanguage();
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -189,16 +185,8 @@ export default function ProductNew() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <AdminSidebar />
-      <AdminTopbar />
-
-      <div className={`pt-16 transition-all duration-300 ease-in-out ${
-        language === 'ar'
-          ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-          : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      }`}>
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="flex items-center gap-3 mb-8">
             <button
@@ -448,9 +436,7 @@ export default function ProductNew() {
             </div>
           </form>
         </div>
-      </div>
-
       <AdminFooter />
-    </div>
+    </>
   );
 }

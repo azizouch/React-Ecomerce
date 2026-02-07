@@ -1,18 +1,15 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, Product, Category } from '../../lib/supabase';
+import { Product, Category, catalog } from '../../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
-import AdminSidebar from '../../components/AdminSidebar';
-import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
-import { useSidebar } from '../../contexts/SidebarContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import StatusBadge from '../../components/ui/StatusBadge';
 import SoftCard from '../../components/ui/SoftCard';
 import Pagination from '../../components/ui/Pagination';
 import { Plus, Edit, Trash2, X, Search } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
 import {
   Select,
   SelectContent,
@@ -25,7 +22,6 @@ const DEFAULT_ITEMS_PER_PAGE = 10;
 
 export default function Products() {
   const navigate = useNavigate();
-  const { isCollapsed } = useSidebar();
   const { t, language } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -35,6 +31,8 @@ export default function Products() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
   const [totalProducts, setTotalProducts] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     loadCategories();
@@ -46,11 +44,7 @@ export default function Products() {
 
   const loadCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-
+      const { data, error } = await catalog.getCategories();
       if (error) throw error;
       setCategories(data || []);
     } catch (error) {
@@ -61,25 +55,12 @@ export default function Products() {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const { offset, limit } = getPaginationParams(currentPage, itemsPerPage);
-
-      let query = supabase
-        .from('products')
-        .select('*', { count: 'exact' });
-
-      if (selectedCategory !== 'all') {
-        query = query.eq('category_id', selectedCategory);
-      }
-
-      if (searchQuery.trim()) {
-        query = query.or(
-          `name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`
-        );
-      }
-
-      const { data, error, count } = await query
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+      const { data, error, count } = await catalog.getProducts({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchQuery,
+        categoryId: selectedCategory === 'all' ? null : selectedCategory,
+      });
 
       if (error) throw error;
 
@@ -94,27 +75,24 @@ export default function Products() {
 
   
 
-  const handleDelete = async (id: string) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'You won\'t be able to revert this!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!'
-    });
+  const handleDelete = (id: string) => {
+    setProductToDelete(id);
+    setDeleteDialogOpen(true);
+  };
 
-    if (!result.isConfirmed) return;
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
 
     try {
-      const { error } = await supabase.from('products').delete().eq('id', id);
+      const { error } = await catalog.deleteProduct(productToDelete);
       if (error) throw error;
       loadProducts();
-      Swal.fire('Deleted!', 'Product has been deleted.', 'success');
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
     } catch (error) {
       console.error('Error deleting product:', error);
-      Swal.fire('Error', 'Failed to delete product', 'error');
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
     }
   };
 
@@ -142,15 +120,8 @@ export default function Products() {
   }, [searchQuery, selectedCategory, itemsPerPage]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <AdminSidebar />
-      <AdminTopbar />
-      <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          language === 'ar'
-            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}>
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">{t('listProducts')}</h1>
           <button
@@ -337,14 +308,7 @@ export default function Products() {
 
         
         </div>
-      </div>
-      <div className={`transition-all duration-300 ease-in-out ${
-        language === 'ar'
-          ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-          : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      }`}>
-        <AdminFooter />
-      </div>
-    </div>
+      <AdminFooter />
+    </>
   );
 }

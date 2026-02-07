@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, Product, Category } from '../lib/supabase';
+import { Product, Category, catalog } from '../lib/supabase';
 import { useCart } from '../hooks/useCart';
 import AddToCartModal from '../components/ui/AddToCartModal';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import Navbar from '../components/Navbar';
 import Carousel from '../components/Carousel';
 import Footer from '../components/Footer';
 import { ShoppingCart } from 'lucide-react';
+import { t } from '../lib/translations';
 
 export default function Home() {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
+  const { language } = useLanguage();
 
   // Redirect admin users to dashboard immediately
   useEffect(() => {
@@ -40,16 +43,16 @@ export default function Home() {
 
   const loadData = async () => {
     try {
-      const [productsRes, categoriesRes] = await Promise.all([
-        supabase.from('products').select('*').order('created_at', { ascending: false }),
-        supabase.from('categories').select('*').order('name'),
+      const [{ data: productsData, error: productsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
+        catalog.getProducts({ page: 1, limit: 1000 }),
+        catalog.getCategories(),
       ]);
 
-      if (productsRes.error) throw productsRes.error;
-      if (categoriesRes.error) throw categoriesRes.error;
+      if (productsError) throw productsError;
+      if (categoriesError) throw categoriesError;
 
-      setProducts(productsRes.data || []);
-      setCategories(categoriesRes.data || []);
+      setProducts(productsData || []);
+      setCategories(categoriesData || []);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -88,7 +91,7 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">Discover Products</h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">{t(language, 'discoverProducts')}</h1>
 
           <div className="flex flex-wrap gap-2">
             <button
@@ -99,7 +102,7 @@ export default function Home() {
                   : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
               }`}
             >
-              All Products
+              {t(language, 'allProducts')}
             </button>
             {categories.map((category) => (
               <button
@@ -120,11 +123,11 @@ export default function Home() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading products...</p>
+            <p className="mt-4 text-gray-600">{t(language, 'loadingProduct')}</p>
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No products found</p>
+            <p className="text-gray-600 text-lg">{t(language, 'noProductsFound')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -150,7 +153,7 @@ export default function Home() {
                   )}
                   {product.stock === 0 && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">Out of Stock</span>
+                      <span className="text-white font-bold text-lg">{t(language, 'outOfStock')}</span>
                     </div>
                   )}
                 </div>
@@ -175,11 +178,11 @@ export default function Home() {
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                     >
                       <ShoppingCart className="w-4 h-4" />
-                      <span>Add</span>
+                      <span>{t(language, 'addToCart')}</span>
                     </button>
                   </div>
                   <p className="text-sm text-gray-500 mt-2">
-                    {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                    {product.stock > 0 ? `${product.stock} ${t(language, 'inStock')}` : t(language, 'outOfStock')}
                   </p>
                 </div>
               </div>

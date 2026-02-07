@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, Category } from '../../lib/supabase';
 import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
-import AdminSidebar from '../../components/AdminSidebar';
-import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
-import { useSidebar } from '../../contexts/SidebarContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
@@ -23,7 +20,6 @@ import {
 const DEFAULT_ITEMS_PER_PAGE = 12;
 
 export default function AdminCategories() {
-  const { isCollapsed } = useSidebar();
   const { t, language } = useLanguage();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,15 +148,8 @@ export default function AdminCategories() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <AdminSidebar />
-      <AdminTopbar />
-      <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          language === 'ar'
-            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}>
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">{t('categoriesManage')}</h1>
@@ -366,14 +355,7 @@ export default function AdminCategories() {
           onRefresh={loadCategories}
         />
         </div>
-      </div>
-      <div className={`transition-all duration-300 ease-in-out ${
-        language === 'ar'
-          ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-          : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      }`}>
-        <AdminFooter />
-      </div>
-    </div>
+      <AdminFooter />
+    </>
   );
 }

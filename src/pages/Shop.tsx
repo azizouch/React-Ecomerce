@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, Product, Category } from '../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../lib/pagination';
+import { useLanguage } from '../contexts/LanguageContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AddToCartModal from '../components/ui/AddToCartModal';
 import { ShoppingCart, Search, Filter, ChevronDown } from 'lucide-react';
+import { t } from '../lib/translations';
 import {
   Select,
   SelectContent,
@@ -18,6 +20,7 @@ const ITEMS_PER_PAGE = 12;
 
 export default function Shop() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -320,13 +323,13 @@ export default function Shop() {
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 dark:shadow-lg dark:border dark:border-slate-700">
                 <h3 className="text-lg font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
                   <Filter className="w-5 h-5 mr-2" />
-                  Filters
+                  {t(language, 'filter')}
                 </h3>
 
                 {/* Search */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Search Products
+                    {t(language, 'searchProducts')}
                   </label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
@@ -343,7 +346,7 @@ export default function Shop() {
                 {/* Categories */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Categories
+                    {t(language, 'categories')}
                   </label>
                   <div className="space-y-2">
                     <button
@@ -468,19 +471,19 @@ export default function Shop() {
               {/* Sort */}
               <div className="flex justify-between items-center mb-6">
                 <p className="text-gray-600 dark:text-gray-400">
-                  Showing {products.length} of {totalProducts} products
+                  {t(language, 'show')} {products.length} {t(language, 'of')} {totalProducts} {t(language, 'items')}
                 </p>
                 <Select value={sortBy} onValueChange={(value) => {
                   setSortBy(value);
                   setCurrentPage(1);
                 }}>
                   <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Sort by..." />
+                    <SelectValue placeholder={t(language, 'sortBy')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="name">Sort by Name</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    <SelectItem value="name">{t(language, 'sortName')}</SelectItem>
+                    <SelectItem value="price-low">{t(language, 'sortPriceLow')}</SelectItem>
+                    <SelectItem value="price-high">{t(language, 'sortPriceHigh')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -488,11 +491,11 @@ export default function Shop() {
               {loading ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600 dark:text-gray-400">Loading products...</p>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">{t(language, 'loadingProduct')}</p>
                 </div>
               ) : products.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-600 dark:text-gray-400 text-lg">No products found</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-lg">{t(language, 'noProductsFound')}</p>
                 </div>
               ) : (
                 <>
@@ -519,7 +522,7 @@ export default function Shop() {
                           )}
                           {product.stock === 0 && (
                             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                              <span className="text-white font-bold text-lg">Out of Stock</span>
+                              <span className="text-white font-bold text-lg">{t(language, 'outOfStock')}</span>
                             </div>
                           )}
                         </div>
@@ -544,7 +547,7 @@ export default function Shop() {
                               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                             >
                               <ShoppingCart className="w-4 h-4" />
-                              <span>Add</span>
+                              <span>{t(language, 'addToCart')}</span>
                             </button>
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">

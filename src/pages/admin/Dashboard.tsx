@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, Order } from '../../lib/supabase';
-import AdminSidebar from '../../components/AdminSidebar';
-import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
-import { useSidebar } from '../../contexts/SidebarContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import StatCard from '../../components/ui/StatCard';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
@@ -35,7 +32,6 @@ interface ProductSale {
 }
 
 export default function AdminDashboard() {
-  const { isCollapsed } = useSidebar();
   const { t, language } = useLanguage();
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [sortBy, setSortBy] = useState('latest');
@@ -137,17 +133,8 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
   }, [sortDropdownOpen]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <AdminSidebar />
-      <AdminTopbar />
-      <div
-        className={`pt-16 transition-all duration-300 ease-in-out ${
-          language === 'ar'
-            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}
-      >
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-10">
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">{t('dashboard')}</h1>
             <p className="text-gray-600 dark:text-gray-400">{t('welcomeBack')}</p>
@@ -504,16 +491,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
             </>
           )}
         </div>
-      </div>
-      <div
-        className={`transition-all duration-300 ease-in-out ${
-          language === 'ar'
-            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}
-      >
-        <AdminFooter />
-      </div>
-    </div>
+      <AdminFooter />
+    </>
   );
 }

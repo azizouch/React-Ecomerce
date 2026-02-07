@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase, Order, OrderItem } from '../../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
-import AdminSidebar from '../../components/AdminSidebar';
 import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
-import { useSidebar } from '../../contexts/SidebarContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
@@ -30,7 +28,6 @@ interface OrderWithItems extends Order {
 }
 
 export default function Orders() {
-  const { isCollapsed } = useSidebar();
   const { t, language } = useLanguage();
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,18 +145,11 @@ export default function Orders() {
   const totalPages = calculateTotalPages(totalOrders, itemsPerPage);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <AdminSidebar />
-      <AdminTopbar />
-      <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          language === 'ar'
-            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}>
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">Orders</h1>
-            <p className="text-gray-600 dark:text-gray-400">Manage customer orders and shipments</p>
+            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">{t('ordersList')}</h1>
+            <p className="text-gray-600 dark:text-gray-400">{t('manageOrdersShip')}</p>
           </div>
 
         {/* Search and Filter Bar */}
@@ -382,14 +372,7 @@ export default function Orders() {
           </div>
         )}
         </div>
-      </div>
-      <div className={`transition-all duration-300 ease-in-out ${
-          language === 'ar'
-            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}>
-        <AdminFooter />
-      </div>
-    </div>
+      <AdminFooter />
+    </>
   );
 }

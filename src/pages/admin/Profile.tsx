@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import AdminSidebar from '../../components/AdminSidebar';
-import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
-import { useSidebar } from '../../contexts/SidebarContext';
 import SoftCard from '../../components/ui/SoftCard';
 import { User, Mail, Calendar, Shield, Edit2, Check, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 export default function AdminProfile() {
-  const { isCollapsed } = useSidebar();
   const { language } = useLanguage();
   const { user, profile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -84,15 +80,8 @@ export default function AdminProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <AdminSidebar />
-      <AdminTopbar />
-      <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          language === 'ar'
-            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}>
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-10">
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">Admin Profile</h1>
             <p className="text-gray-600 dark:text-gray-400">Manage your profile information and account settings.</p>
@@ -231,7 +220,7 @@ export default function AdminProfile() {
           </SoftCard>
 
           {/* Quick Info Card */}
-            <SoftCard className="p-6 dark:bg-slate-800">
+          <SoftCard className="p-6 dark:bg-slate-800">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Info</h3>
             
             <div className="space-y-4">
@@ -251,11 +240,9 @@ export default function AdminProfile() {
               </div>
             </div>
           </SoftCard>
-        </div>
-
-        <AdminFooter />
+          </div>
       </div>
-    </div>
-  </div>
+      <AdminFooter />
+    </>
   );
 }

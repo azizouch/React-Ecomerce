@@ -1,10 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, Product, Category } from '../../lib/supabase';
-import AdminSidebar from '../../components/AdminSidebar';
-import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
-import { useSidebar } from '../../contexts/SidebarContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { ArrowLeft, Edit, Trash2, Save, X, Plus } from 'lucide-react';
@@ -28,7 +25,6 @@ interface ColorForm {
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isCollapsed } = useSidebar();
   const { t, language } = useLanguage();
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -60,27 +56,30 @@ export default function ProductDetail() {
     try {
       setLoading(true);
 
-      // Load product
-      const { data: productData, error: productError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', id)
-        .single();
+      // Load product and categories in parallel
+      const [productResult, categoriesResult] = await Promise.all([
+        supabase
+          .from('products')
+          .select('*')
+          .eq('id', id)
+          .single(),
+        supabase
+          .from('categories')
+          .select('*')
+          .order('name')
+      ]);
 
-      if (productError) {
-        console.error('Product fetch error:', productError);
-        throw productError;
+      if (productResult.error) {
+        console.error('Product fetch error:', productResult.error);
+        throw productResult.error;
       }
 
-      // Load categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
+      if (categoriesResult.error) console.error('Categories fetch error:', categoriesResult.error);
 
-      if (categoriesError) console.error('Categories fetch error:', categoriesError);
+      const productData = productResult.data;
+      const categoriesData = categoriesResult.data || [];
 
-      // Load colors with images and sizes
+      // Load colors
       const { data: colorsData, error: colorsError } = await supabase
         .from('product_colors')
         .select('*')
@@ -88,33 +87,45 @@ export default function ProductDetail() {
 
       if (colorsError) console.error('Colors fetch error:', colorsError);
 
-      // Load images and sizes for each color
+      // Load images and sizes for all colors in parallel
       const colorForms: ColorForm[] = [];
-      if (colorsData) {
-        for (const color of colorsData) {
-          const { data: imagesData } = await supabase
+      if (colorsData && colorsData.length > 0) {
+        const imagePromises = colorsData.map(color =>
+          supabase
             .from('product_color_images')
             .select('*')
             .eq('color_id', color.id)
-            .order('sort_order');
+            .order('sort_order')
+        );
 
-          const { data: sizesData } = await supabase
+        const sizePromises = colorsData.map(color =>
+          supabase
             .from('product_color_sizes')
             .select('*')
-            .eq('color_id', color.id);
+            .eq('color_id', color.id)
+        );
+
+        const [imagesResults, sizesResults] = await Promise.all([
+          Promise.all(imagePromises),
+          Promise.all(sizePromises)
+        ]);
+
+        colorsData.forEach((color, index) => {
+          const imagesData = imagesResults[index]?.data || [];
+          const sizesData = sizesResults[index]?.data || [];
 
           colorForms.push({
             id: color.id,
             name: color.name,
             hex_code: color.hex_code || '#000000',
-            images: imagesData || [],
-            sizes: sizesData || [],
+            images: imagesData,
+            sizes: sizesData,
           });
-        }
+        });
       }
 
       setProduct(productData);
-      setCategories(categoriesData || []);
+      setCategories(categoriesData);
       setColors(colorForms);
 
       // Set form data
@@ -391,51 +402,29 @@ export default function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-        <AdminTopbar />
-        <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          language === 'ar'
-            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}>
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-            <SkeletonLoader count={5} />
-          </div>
+      <>
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+          <SkeletonLoader count={5} />
         </div>
         <AdminFooter />
-      </div>
+      </>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-        <AdminTopbar />
-        <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          language === 'ar'
-            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}>
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center">
-            <p className="text-gray-500">{t('noOrdersYet')}</p>
-          </div>
+      <>
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center">
+          <p className="text-gray-500">{t('noOrdersYet')}</p>
         </div>
         <AdminFooter />
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <AdminSidebar />
-      <AdminTopbar />
-
-      <div className={`pt-16 transition-all duration-300 ease-in-out ${
-        language === 'ar'
-          ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-          : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      }`}>
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8 flex items-start justify-between">
             <div>
@@ -815,9 +804,7 @@ export default function ProductDetail() {
             )}
           </form>
         </div>
-      </div>
-
       <AdminFooter />
-    </div>
+    </>
   );
 }

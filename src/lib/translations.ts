@@ -129,6 +129,20 @@ export const translations = {
     noNotificationsThere: 'No notifications',
     administrator: 'Administrator',
     userRole: 'User',
+    stayUpdated: 'Stay updated with all your system notifications',
+    allNotifications: 'All Notifications',
+    unread: 'Unread',
+    markAsRead: 'Mark as read',
+    deleteNotif: 'Delete',
+    
+    // Users Page Stats
+    totalUsers: 'Total Users',
+    adminUsers: 'Admin Users',
+    addUser: 'Add User',
+    manageUserAccounts: 'Manage user accounts and permissions',
+    
+    // Orders Page
+    manageOrdersShip: 'Manage customer orders and shipments',
     
     // Admin
     adminDashboard: 'Admin Hub',
@@ -163,6 +177,51 @@ export const translations = {
     dark: 'Dark',
     expandSidebar: 'Expand sidebar',
     collapseSidebar: 'Collapse sidebar',
+    loading: 'Loading...',
+    loadingProduct: 'Loading product...',
+    backToHome: 'Back to Home',
+    backToProducts: 'Back to Products',
+    productNotFound: 'Product not found',
+    
+    // Home Page
+    discoverProducts: 'Discover Products',
+    allProducts: 'All Products',
+    
+    // Cart Page
+    shoppingCart: 'Shopping Cart',
+    yourCartEmpty: 'Your cart is empty',
+    addProductsStart: 'Add some products to get started',
+    continueShopping: 'Continue Shopping',
+    checkout: 'Checkout',
+    orderPlaced: 'Order placed successfully!',
+    failedOrder: 'Failed to place order',
+    emptyCart: 'Empty Cart',
+    quantityLabel: 'Qty:',
+    subtotal: 'Subtotal',
+    remove: 'Remove',
+    
+    // Product Card/Detail
+    addToCart: 'Add to Cart',
+    selectSize: 'Select Size',
+    selectColor: 'Select Color',
+    size: 'Size',
+    color: 'Color',
+    quantity: 'Quantity',
+    inStock: 'In Stock',
+    outOfStock: 'Out of Stock',
+    decreaseQuantity: 'Decrease quantity',
+    increaseQuantity: 'Increase quantity',
+    productAddedCart: 'Product added to cart!',
+    failedAddCart: 'Failed to add product to cart',
+    
+    // Shop Page
+    of: 'of',
+    searchProducts: 'Search Products',
+    sortBy: 'Sort by...',
+    sortName: 'Sort by Name',
+    sortPriceLow: 'Price: Low to High',
+    sortPriceHigh: 'Price: High to Low',
+    filter: 'Filters',
     
     // Modals & Alerts
     deleteConfirm: 'Are you sure?',
@@ -324,6 +383,20 @@ export const translations = {
     noNotificationsThere: 'Pas de notifications',
     administrator: 'Administrateur',
     userRole: 'Utilisateur',
+    stayUpdated: 'Restez informé de toutes vos notifications système',
+    allNotifications: 'Toutes les notifications',
+    unread: 'Non lus',
+    markAsRead: 'Marquer comme lu',
+    deleteNotif: 'Supprimer',
+    
+    // Users Page Stats
+    totalUsers: 'Utilisateurs totaux',
+    adminUsers: 'Utilisateurs administrateurs',
+    addUser: 'Ajouter un utilisateur',
+    manageUserAccounts: 'Gérer les comptes utilisateurs et les autorisations',
+    
+    // Orders Page
+    manageOrdersShip: 'Gérer les commandes des clients et les expéditions',
     
     // Admin
     adminDashboard: 'Tableau de bord administrateur',
@@ -357,6 +430,51 @@ export const translations = {
     dark: 'Sombre',
     expandSidebar: 'Développer la barre latérale',
     collapseSidebar: 'Réduire la barre latérale',
+    loading: 'Chargement...',
+    loadingProduct: 'Chargement du produit...',
+    backToHome: 'Retour à l\'accueil',
+    backToProducts: 'Retour aux produits',
+    productNotFound: 'Produit non trouvé',
+    
+    // Home Page
+    discoverProducts: 'Découvrez les produits',
+    allProducts: 'Tous les produits',
+    
+    // Cart Page
+    shoppingCart: 'Panier',
+    yourCartEmpty: 'Votre panier est vide',
+    addProductsStart: 'Ajoutez des produits pour commencer',
+    continueShopping: 'Continuer vos achats',
+    checkout: 'Passer la commande',
+    orderPlaced: 'Commande passée avec succès!',
+    failedOrder: 'Échec de la commande',
+    emptyCart: 'Vider le panier',
+    quantityLabel: 'Qté:',
+    subtotal: 'Sous-total',
+    remove: 'Supprimer',
+    
+    // Product Card/Detail
+    addToCart: 'Ajouter au panier',
+    selectSize: 'Sélectionner la taille',
+    selectColor: 'Sélectionner la couleur',
+    size: 'Taille',
+    color: 'Couleur',
+    quantity: 'Quantité',
+    inStock: 'En stock',
+    outOfStock: 'Rupture de stock',
+    decreaseQuantity: 'Diminuer la quantité',
+    increaseQuantity: 'Augmenter la quantité',
+    productAddedCart: 'Produit ajouté au panier!',
+    failedAddCart: 'Échec de l\'ajout du produit au panier',
+    
+    // Shop Page
+    of: 'sur',
+    searchProducts: 'Rechercher des produits',
+    sortBy: 'Trier par...',
+    sortName: 'Trier par nom',
+    sortPriceLow: 'Prix: bas à élevé',
+    sortPriceHigh: 'Prix: élevé à bas',
+    filter: 'Filtres',
     
     // Modals & Alerts
     deleteConfirm: 'Êtes-vous sûr?',
@@ -518,6 +636,20 @@ export const translations = {
     noNotificationsThere: 'لا توجد إخطارات',
     administrator: 'مسؤول',
     userRole: 'مستخدم',
+    stayUpdated: 'ابقَ محدثًا مع جميع إخطارات نظامك',
+    allNotifications: 'جميع الإخطارات',
+    unread: 'غير مقروءة',
+    markAsRead: 'وضع علامة بأنها مقروءة',
+    deleteNotif: 'حذف',
+    
+    // Users Page Stats
+    totalUsers: 'إجمالي المستخدمين',
+    adminUsers: 'مستخدمو إدارة',
+    addUser: 'إضافة مستخدم',
+    manageUserAccounts: 'إدارة حسابات المستخدمين والأذونات',
+    
+    // Orders Page
+    manageOrdersShip: 'إدارة طلبات العملاء والشحنات',
     
     // Admin
     adminDashboard: 'لوحة تحكم المسؤول',
@@ -551,6 +683,51 @@ export const translations = {
     dark: 'غامق',
     expandSidebar: 'توسيع الشريط الجانبي',
     collapseSidebar: 'إغلاق الشريط الجانبي',
+    loading: 'جاري التحميل...',
+    loadingProduct: 'جاري تحميل المنتج...',
+    backToHome: 'رجوع إلى الصفحة الرئيسية',
+    backToProducts: 'رجوع إلى المنتجات',
+    productNotFound: 'المنتج غير موجود',
+    
+    // Home Page
+    discoverProducts: 'اكتشف المنتجات',
+    allProducts: 'جميع المنتجات',
+    
+    // Cart Page
+    shoppingCart: 'سلة التسوق',
+    yourCartEmpty: 'سلتك فارغة',
+    addProductsStart: 'أضف بعض المنتجات للبدء',
+    continueShopping: 'متابعة التسوق',
+    checkout: 'الدفع',
+    orderPlaced: 'تم تقديم الطلب بنجاح!',
+    failedOrder: 'فشل تقديم الطلب',
+    emptyCart: 'إفراغ السلة',
+    quantityLabel: 'الكمية:',
+    subtotal: 'المجموع الجزئي',
+    remove: 'إزالة',
+    
+    // Product Card/Detail
+    addToCart: 'أضف إلى السلة',
+    selectSize: 'اختر الحجم',
+    selectColor: 'اختر اللون',
+    size: 'الحجم',
+    color: 'اللون',
+    quantity: 'الكمية',
+    inStock: 'متوفر',
+    outOfStock: 'غير متوفر',
+    decreaseQuantity: 'تقليل الكمية',
+    increaseQuantity: 'زيادة الكمية',
+    productAddedCart: 'تمت إضافة المنتج إلى السلة!',
+    failedAddCart: 'فشل إضافة المنتج إلى السلة',
+    
+    // Shop Page
+    of: 'من',
+    searchProducts: 'البحث عن المنتجات',
+    sortBy: 'ترتيب حسب...',
+    sortName: 'ترتيب حسب الاسم',
+    sortPriceLow: 'السعر: من الأقل إلى الأعلى',
+    sortPriceHigh: 'السعر: من الأعلى إلى الأقل',
+    filter: 'المرشحات',
     
     // Modals & Alerts
     deleteConfirm: 'هل أنت متأكد؟',

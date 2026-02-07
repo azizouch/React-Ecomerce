@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import AdminSidebar from '../../components/AdminSidebar';
-import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
-import { useSidebar } from '../../contexts/SidebarContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SoftCard from '../../components/ui/SoftCard';
 import { Bell, Trash2, Check } from 'lucide-react';
@@ -17,7 +14,6 @@ interface Notification {
 }
 
 export default function AdminNotifications() {
-  const { isCollapsed } = useSidebar();
   const { t, language } = useLanguage();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
@@ -93,21 +89,14 @@ export default function AdminNotifications() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      <AdminSidebar />
-      <AdminTopbar />
-      <div className={`pt-16 transition-all duration-300 ease-in-out ${
-          language === 'ar'
-            ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-            : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}>
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-10">
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
-              Notifications
+              {t('notificationsPage')}
             </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Stay updated with all your system notifications
+            {t('stayUpdated')}
           </p>
         </div>
 
@@ -122,7 +111,7 @@ export default function AdminNotifications() {
                   : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
               }`}
             >
-              All Notifications
+              {t('allNotifications')}
             </button>
             <button
               onClick={() => setFilter('unread')}
@@ -132,7 +121,7 @@ export default function AdminNotifications() {
                   : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
               }`}
             >
-              Unread ({notifications.filter((n) => !n.read).length})
+              {t('unread')} ({notifications.filter((n) => !n.read).length})
             </button>
           </div>
 
@@ -142,7 +131,7 @@ export default function AdminNotifications() {
               className="flex items-center space-x-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition"
             >
               <Check className="w-4 h-4" />
-              <span>Mark All as Read</span>
+              <span>{t('markAsRead')}</span>
             </button>
           )}
         </div>
@@ -207,15 +196,8 @@ export default function AdminNotifications() {
             </SoftCard>
           )}
         </div>
-        </div>
       </div>
-      <div className={`transition-all duration-300 ease-in-out ${
-        language === 'ar'
-          ? isCollapsed ? 'lg:mr-20' : 'lg:mr-64'
-          : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      }`}>
-        <AdminFooter />
-      </div>
-    </div>
+      <AdminFooter />
+    </>
   );
 }

@@ -1,9 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SidebarProvider } from './contexts/SidebarContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import LoadingSpinner from './components/ui/LoadingSpinner';
+import { Toaster } from './components/ui/toaster';
+import { Toaster as Sonner } from './components/ui/sonner';
+import { TooltipProvider } from './components/ui/tooltip';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminLayout } from './components/layout/AdminLayout';
 
 // Lazy load components for better performance
 const Login = lazy(() => import('./pages/Login'));
@@ -56,31 +62,120 @@ function AppContent() {
         <Route path="/cart" element={<Cart />} />
 
         {/* Admin Routes - Protected */}
-        <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
-        <Route path="/admin/products" element={<AdminRoute element={<AdminProducts />} />} />
-        <Route path="/admin/products/new" element={<AdminRoute element={<AdminProductNew />} />} />
-        <Route path="/admin/products/:id" element={<AdminRoute element={<AdminProductDetail />} />} />
-        <Route path="/admin/categories" element={<AdminRoute element={<AdminCategories />} />} />
-        <Route path="/admin/orders" element={<AdminRoute element={<AdminOrders />} />} />
-        <Route path="/admin/users" element={<AdminRoute element={<AdminUsers />} />} />
-        <Route path="/admin/profile" element={<AdminRoute element={<AdminProfile />} />} />
-        <Route path="/admin/notifications" element={<AdminRoute element={<AdminNotifications />} />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminDashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/products"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminProducts />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/products/new"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminProductNew />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/products/:id"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminProductDetail />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/categories"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminCategories />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminOrders />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminUsers />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/profile"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminProfile />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/notifications"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminNotifications />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Suspense>
   );
 }
 
+const queryClient = new QueryClient();
+
 function App() {
   return (
-    <BrowserRouter>
-      <LanguageProvider>
-        <AuthProvider>
-          <SidebarProvider>
-            <AppContent />
-          </SidebarProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <LanguageProvider>
+              <SidebarProvider>
+                <AppContent />
+              </SidebarProvider>
+            </LanguageProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

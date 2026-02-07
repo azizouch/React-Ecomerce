@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import Navbar from '../components/Navbar';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { t } from '../lib/translations';
 
 export default function Cart() {
   const navigate = useNavigate();
   const { cartItems, updateQuantity, removeFromCart, clearCart, cartTotal } = useCart();
   const { user } = useAuth();
+  const { language } = useLanguage();
   const [loading, setLoading] = useState(false);
 
   const handleCheckout = async () => {
@@ -43,11 +46,11 @@ export default function Cart() {
       if (itemsError) throw itemsError;
 
       await clearCart();
-      alert('Order placed successfully!');
+      alert(t(language, 'orderPlaced'));
       navigate('/');
     } catch (error) {
       console.error('Error placing order:', error);
-      alert('Failed to place order');
+      alert(t(language, 'failedOrder'));
     } finally {
       setLoading(false);
     }
@@ -58,18 +61,18 @@ export default function Cart() {
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">{t(language, 'shoppingCart')}</h1>
 
         {cartItems.length === 0 ? (
           <div className="bg-white rounded-xl shadow-md p-12 text-center">
             <ShoppingBag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
-            <p className="text-gray-600 mb-6">Add some products to get started</p>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">{t(language, 'yourCartEmpty')}</h2>
+            <p className="text-gray-600 mb-6">{t(language, 'addProductsStart')}</p>
             <button
               onClick={() => navigate('/')}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
             >
-              Continue Shopping
+              {t(language, 'continueShopping')}
             </button>
           </div>
         ) : (
@@ -137,7 +140,7 @@ export default function Cart() {
 
             <div className="bg-white rounded-xl shadow-md p-6">
               <div className="flex items-center justify-between mb-6">
-                <span className="text-xl font-semibold text-gray-900">Total:</span>
+                <span className="text-xl font-semibold text-gray-900">{t(language, 'total')}:</span>
                 <span className="text-3xl font-bold text-blue-600">
                   ${cartTotal.toFixed(2)}
                 </span>
@@ -148,14 +151,14 @@ export default function Cart() {
                 disabled={loading}
                 className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Processing...' : 'Checkout'}
+                {loading ? t(language, 'loading') : t(language, 'checkout')}
               </button>
 
               <button
                 onClick={() => navigate('/')}
                 className="w-full mt-3 bg-gray-200 text-gray-700 py-4 rounded-lg font-semibold hover:bg-gray-300 transition"
               >
-                Continue Shopping
+                {t(language, 'continueShopping')}
               </button>
             </div>
           </div>
