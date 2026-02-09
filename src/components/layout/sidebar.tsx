@@ -7,9 +7,8 @@ import {
   Users,
   Bell,
   Settings,
-  Building2,
   FileText,
-  Home,
+  BarChart2,
   ShoppingCart,
   ChevronDown,
   ChevronUp,
@@ -17,16 +16,11 @@ import {
   Sun,
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
-  XCircle,
-  Ban,
   CreditCard,
-  RotateCcw,
-  UserCheck,
-  UserPlus,
-  UserX,
-  User,
   Tag,
+  Star,
+  Activity,
+  LayoutDashboard,
 } from 'lucide-react';
 
 import {
@@ -38,15 +32,12 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   useSidebar,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
 } from '../ui/sidebar';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useIsMobile } from '../../hooks/use-mobile';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { supabase } from '../../lib/supabase';
 
 export function AppSidebar() {
   const location = useLocation();
@@ -60,7 +51,6 @@ export function AppSidebar() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [dropdownPopup, setDropdownPopup] = useState<{ items: any[]; x: number; y: number } | null>(null);
-  const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const updateTheme = () => {
@@ -79,18 +69,27 @@ export function AppSidebar() {
 
   const isCollapsed = state === 'collapsed';
 
-  const navigationItems = [
-    // Admin section
-    { title: t('dashboard'), url: '/admin', icon: Package, isAdmin: true },
-    { title: t('products'), url: '/admin/products', icon: Package, isAdmin: true },
-    { title: t('orders'), url: '/admin/orders', icon: ShoppingCart, isAdmin: true },
-    { title: t('users'), url: '/admin/users', icon: Users, isAdmin: true },
-    { title: t('notifications'), url: '/admin/notifications', icon: Bell, isAdmin: true },
+  const navigationItems: any[] = [
+    // Admin sectionLayoutDashboard
+    { title: t('dashboard') || 'Dashboard', url: '/admin', icon: LayoutDashboard, isAdmin: true },
+    { title: t('products') || 'Products', url: '/admin/products', icon: Package, isAdmin: true },
+    { title: t('orders') || 'Orders', url: '/admin/orders', icon: ShoppingCart, isAdmin: true },
+    { title: t('users') || 'Users', url: '/admin/users', icon: Users, isAdmin: true },
+    { title: t('notifications') || 'Notifications', url: '/admin/notifications', icon: Bell, isAdmin: true },
+    { title: t('payments') || 'Payments', url: '/admin/payments', icon: CreditCard, isAdmin: true },
+    { title: t('shipping') || 'Shipping', url: '/admin/shipping', icon: Truck, isAdmin: true },
+    { title: t('discounts') || 'Discounts', url: '/admin/discounts', icon: Tag, isAdmin: true },
+    { title: t('inventory') || 'Inventory', url: '/admin/inventory', icon: Package, isAdmin: true },
+    { title: t('reviews') || 'Reviews', url: '/admin/reviews', icon: Star, isAdmin: true },
+    { title: t('pages') || 'Pages', url: '/admin/pages', icon: FileText, isAdmin: true },
+    { title: t('reports') || 'Reports & Analytics', url: '/admin/reports', icon: BarChart2, isAdmin: true },
+    { title: t('activityLogs') || 'Activity Logs', url: '/admin/activity-logs', icon: Activity, isAdmin: true },
+    { title: t('settings') || 'Settings', url: '/admin/settings', icon: Settings, isAdmin: true },
   ];
 
   useEffect(() => {
     if (!isCollapsed) {
-      const activeDropdown = navigationItems.find(item => item.items && item.items.some(subItem => location.pathname === subItem.url));
+      const activeDropdown = navigationItems.find(item => item.items && item.items.some((subItem: any) => location.pathname === subItem.url));
       if (activeDropdown) {
         setExpandedItems(prev => prev.includes(activeDropdown.title) ? prev : [activeDropdown.title]);
       } else {
@@ -106,6 +105,10 @@ export function AppSidebar() {
   const isActive = (url: string) => {
     if (url === '/') return location.pathname === '/';
     return location.pathname === url;
+  };
+
+  const isParentActive = (items: any[]) => {
+    return items.some((subItem: any) => subItem.url === location.pathname);
   };
 
   const toggleExpanded = (itemTitle: string) => {
@@ -148,8 +151,17 @@ export function AppSidebar() {
         <SidebarHeader className="h-16 px-4 border-b border-sidebar-border">
           <div className={`h-full flex items-center w-full ${!isCollapsed ? 'justify-between' : 'justify-center'}`}>
             {!isCollapsed && (
-              <button className="text-xl font-bold text-sidebar-foreground flex items-center cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none transition-colors" onClick={() => { navigate('/'); if (isMobile) toggleSidebar(); }}>
-                LogiTrack
+              <button
+                className="text-xl font-bold text-sidebar-foreground flex items-center cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none transition-colors"
+                onClick={() => {
+                  // Prevent navigation while auth/profile is loading
+                  if (authState.loading) return;
+                  const target = authState.profile?.is_admin ? '/admin' : '/';
+                  navigate(target);
+                  if (isMobile) toggleSidebar();
+                }}
+              >
+                E-commerce
               </button>
             )}
             <div className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" onClick={toggleCollapse}>
@@ -245,10 +257,22 @@ export function AppSidebar() {
       </Sidebar>
 
       {tooltip && createPortal(
-        <div className="fixed px-2 py-1 bg-black text-white text-xs rounded shadow-lg pointer-events-none whitespace-nowrap" style={{ left: tooltip.x, top: tooltip.y, transform: 'translateY(-50%)', zIndex: 2147483647 }}>
+        <div
+          className={`fixed px-2 py-2 text-xs rounded shadow-lg pointer-events-none whitespace-nowrap
+            ${isDarkMode ? 'bg-white text-black' : 'bg-black text-white'}
+          `}
+          style={{
+            left: tooltip.x + 12,
+            top: tooltip.y,
+            transform: 'translateY(-50%)',
+            zIndex: 2147483647,
+          }}
+        >
           {tooltip.text}
-        </div>, document.body
+        </div>,
+        document.body
       )}
+
 
       {dropdownPopup && createPortal(
         <>

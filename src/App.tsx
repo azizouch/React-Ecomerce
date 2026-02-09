@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -10,6 +10,7 @@ import { Toaster as Sonner } from './components/ui/sonner';
 import { TooltipProvider } from './components/ui/tooltip';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminLayout } from './components/layout/AdminLayout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load components for better performance
 const Login = lazy(() => import('./pages/Login'));
@@ -27,21 +28,15 @@ const AdminProfile = lazy(() => import('./pages/admin/Profile'));
 const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
 const AdminProductDetail = lazy(() => import('./pages/admin/ProductDetail'));
 const AdminProductNew = lazy(() => import('./pages/admin/ProductNew'));
-
-// Protected route for admin pages
-function AdminRoute({ element }: { element: React.ReactElement }) {
-  const { user, profile, loading } = useAuth();
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!user || !profile?.is_admin) {
-    return <Navigate to="/" replace />;
-  }
-
-  return element;
-}
+const AdminPayments = lazy(() => import('./pages/admin/Payments'));
+const AdminShipping = lazy(() => import('./pages/admin/Shipping'));
+const AdminDiscounts = lazy(() => import('./pages/admin/Discounts'));
+const AdminInventory = lazy(() => import('./pages/admin/Inventory'));
+const AdminReviews = lazy(() => import('./pages/admin/Reviews'));
+const AdminPages = lazy(() => import('./pages/admin/Pages'));
+const AdminSettings = lazy(() => import('./pages/admin/Settings'));
+const AdminReports = lazy(() => import('./pages/admin/Reports'));
+const AdminActivityLogs = lazy(() => import('./pages/admin/ActivityLogs'));
 
 function AppContent() {
   const { loading } = useAuth();
@@ -51,8 +46,9 @@ function AppContent() {
   }
 
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <Routes>
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
         {/* Client Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -152,8 +148,99 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-      </Routes>
-    </Suspense>
+        <Route
+          path="/admin/payments"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminPayments />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/shipping"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminShipping />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/discounts"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminDiscounts />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/inventory"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminInventory />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reviews"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminReviews />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/pages"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminPages />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminReports />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/activity-logs"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminActivityLogs />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminSettings />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

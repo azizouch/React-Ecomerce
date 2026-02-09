@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase, Order, OrderItem } from '../../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
-import AdminTopbar from '../../components/AdminTopbar';
 import AdminFooter from '../../components/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
-import { ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Truck, RefreshCw, Filter } from 'lucide-react';
+import { Input } from '../../components/ui/input';
 import {
   Select,
   SelectContent,
@@ -28,7 +28,7 @@ interface OrderWithItems extends Order {
 }
 
 export default function Orders() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -147,62 +147,60 @@ export default function Orders() {
   return (
     <>
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">{t('ordersList')}</h1>
-            <p className="text-gray-600 dark:text-gray-400">{t('manageOrdersShip')}</p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <Truck className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+              {t('ordersList')}
+            </h1>
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button onClick={() => loadOrders()} className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 w-full sm:w-auto">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Actualiser
+                </button>
+              </div>
+            </div>
           </div>
 
         {/* Search and Filter Bar */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          {/* Left: Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
-            <div className="relative w-full sm:w-56">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400 dark:text-gray-500" />
-              <input
-                type="text"
-                placeholder="Rechercher..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
-              />
+        <div className="mb-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+              </div>
             </div>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[180px] bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pending">pending</SelectItem>
-                <SelectItem value="processing">processing</SelectItem>
-                <SelectItem value="shipped">shipped</SelectItem>
-                <SelectItem value="delivered">delivered</SelectItem>
-                <SelectItem value="cancelled">cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
-          {/* Right: Items Per Page and Total */}
-          <div className="flex gap-2 items-center text-sm whitespace-nowrap">
-            <span className="text-gray-600 dark:text-gray-400">Afficher</span>
-            <Select
-              value={itemsPerPage.toString()}
-              onValueChange={(value) => {
-                setItemsPerPage(Number(value));
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="w-[60px] bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-gray-600 dark:text-gray-400">entrées</span>
-            <span className="text-gray-600 dark:text-gray-400 font-medium">Total: {totalOrders}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+                <Input
+                  placeholder="Rechercher..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les statuts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="pending">pending</SelectItem>
+                  <SelectItem value="processing">processing</SelectItem>
+                  <SelectItem value="shipped">shipped</SelectItem>
+                  <SelectItem value="delivered">delivered</SelectItem>
+                  <SelectItem value="cancelled">cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div />
+
+              <div />
+            </div>
           </div>
         </div>
 

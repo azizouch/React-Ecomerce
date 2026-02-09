@@ -7,7 +7,8 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
-import { Users, Crown, Mail, Calendar, Plus, Edit, Trash2, X, Search } from 'lucide-react';
+import { Users, Crown, Mail, Calendar, Plus, Edit, Trash2, X, Search, RefreshCw, Filter } from 'lucide-react';
+import { Input } from '../../components/ui/input';
 import Swal from 'sweetalert2';
 import {
   Select,
@@ -29,7 +30,7 @@ interface UserProfile {
 }
 
 export default function AdminUsers() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -313,18 +314,26 @@ export default function AdminUsers() {
     <>
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
 
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">{t('usersList')}</h1>
-            <p className="text-gray-600 dark:text-gray-400">{t('manageUserAccounts')}</p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <Users className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+            {t('usersList')}
+          </h1>
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button onClick={() => loadUsers()} className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 w-full sm:w-auto">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Actualiser
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 rounded-md px-3 bg-neutral-900 text-white dark:bg-blue-600 dark:text-slate-950 w-full sm:w-auto dark:hover:bg-blue-500 hover:bg-neutral-700"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t('addUser')}
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-neutral-900 text-white dark:bg-blue-600 dark:text-slate-950 px-4 py-2 rounded-lg dark:hover:bg-blue-500 hover:bg-neutral-700 transition flex items-center space-x-2 font-medium shadow-sm"
-          >
-            <Plus className="w-5 h-5" />
-            <span>{t('addUser')}</span>
-          </button>
         </div>
 
         {/* Stats Cards */}
@@ -359,56 +368,44 @@ export default function AdminUsers() {
         </div>
 
         {/* Search and Filter Bar */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          {/* Left: Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
-            <div className="relative w-full sm:w-56">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400 dark:text-gray-500" />
-              <input
-                type="text"
-                placeholder={t('rechercher')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
-              />
+        <div className="mb-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+              </div>
             </div>
-            <Select value={selectedRole} onValueChange={(value) => {
-              setSelectedRole(value);
-              setCurrentPage(1);
-            }}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All roles" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All roles</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="customer">Customer</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
-          {/* Right: Items Per Page and Total */}
-          <div className="flex gap-2 items-center">
-            <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
-            <Select
-              value={itemsPerPage.toString()}
-              onValueChange={(value) => {
-                setItemsPerPage(Number(value));
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+                <Input
+                  placeholder={t('rechercher')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <Select value={selectedRole} onValueChange={(value) => {
+                setSelectedRole(value);
                 setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="w-16 h-8 text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-gray-500 dark:text-gray-400">items</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalUsers}</span>
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All roles</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="customer">Customer</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div />
+
+              <div />
+            </div>
           </div>
         </div>
 
@@ -416,24 +413,55 @@ export default function AdminUsers() {
         {loading ? (
           <SkeletonLoader count={6} height="h-16" className="space-y-3" />
         ) : (
-          <SoftCard className="p-0 bg-transparent dark:bg-transparent border-0">
+          <div className="space-y-3">
+            <div className="space-y-3 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('usersList') || 'List Users'}</h2>
+                <div className="flex justify-between items-center sm:gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
+                    <Select
+                      value={itemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="dark:placeholder:text-gray-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 flex items-center justify-between rounded-md border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-16 h-8 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">entrées</span>
+                  </div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Total: {totalUsers}</span>
+                </div>
+              </div>
+            </div>
+
+            <SoftCard className="p-0 bg-transparent dark:bg-transparent border-0">
             <div className="overflow-x-auto">
               <table className="w-full bg-transparent min-w-full">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm dark:text-gray-200">
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
                       User
                     </th>
-                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm dark:text-gray-200">
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
                       Role
                     </th>
-                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm dark:text-gray-200">
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
                       Joined
                     </th>
-                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm dark:text-gray-200">
+                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
                       Last Active
                     </th>
-                    <th className="px-6 py-4 text-right font-semibold text-gray-900 text-sm dark:text-gray-200">
+                    <th className="px-6 py-4 text-right font-semibold text-gray-900 text-sm">
                       Actions
                     </th>
                   </tr>
@@ -524,10 +552,12 @@ export default function AdminUsers() {
                   totalItems={totalUsers}
                   itemsPerPage={itemsPerPage}
                   onPageChange={setCurrentPage}
+                  onItemsPerPageChange={(items) => { setItemsPerPage(items); setCurrentPage(1); }}
                 />
               )}
             </div>
           </SoftCard>
+          </div>
         )}
 
         {/* Create User Modal */}

@@ -23,7 +23,6 @@ html, body {
 }
 
 
-
 /* Prevent any body modifications that cause layout shifts */
 body {
   padding-right: 0 !important;
@@ -65,6 +64,12 @@ body[style*="margin-right"] {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
+
+  /* Ensure header spans full width on small screens only */
+  .header-responsive {
+    right: 0 !important;
+    width: 100% !important;
+  }
 }
 
 /* Desktop: adjust based on sidebar state */
@@ -100,8 +105,6 @@ body[style*="margin-right"] {
     padding-left: 0 !important;
   }
 }
-/* No global body padding — use padding on .main-responsive so inner centered containers
-   (e.g. .max-w-7xl.mx-auto) remain centered within the visible content area. */
 
 /* Hide scrollbar in sidebar while keeping scroll functionality */
 [data-sidebar="sidebar"] {
@@ -121,8 +124,6 @@ body[style*="margin-right"] {
 [data-sidebar="content"]::-webkit-scrollbar {
   display: none; /* WebKit browsers (Chrome, Safari, Edge) */
 }
-
-
 
 @layer base {
   :root {
@@ -235,13 +236,10 @@ body[style*="margin-right"] {
   }
 }
 
-
-
-/* Custom animations for LogiTrack loader */
-
+/* Custom animations for ecomerce loader */
 
 @layer utilities {
-  @keyframes logitrack-spin {
+  @keyframes ecomerce-spin {
     0% {
       transform: rotate(0deg);
     }
@@ -270,24 +268,24 @@ body[style*="margin-right"] {
     }
   }
 
-  .logitrack-spin {
+  .ecomerce-spin {
     animation: logitrack-spin 1s linear infinite;
   }
 
-  .logitrack-pulse {
+  .ecomerce-pulse {
     animation: logitrack-pulse 1.5s ease-in-out infinite;
   }
 
-  .logitrack-fade-in {
+  .ecomerce-fade-in {
     animation: logitrack-fade-in 0.5s ease-out;
   }
 
-  .logitrack-pulse-delay-150 {
+  .ecomerce-pulse-delay-150 {
     animation: logitrack-pulse 1.5s ease-in-out infinite;
     animation-delay: 0.15s;
   }
 
-  .logitrack-pulse-delay-300 {
+  .ecomerce-pulse-delay-300 {
     animation: logitrack-pulse 1.5s ease-in-out infinite;
     animation-delay: 0.3s;
   }

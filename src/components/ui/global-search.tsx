@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, Loader2 } from 'lucide-react';
+import { Search, X, Loader2, Building2, Truck, ShoppingBag } from 'lucide-react';
 import { Input } from './input';
 import { Button } from './button';
 import { supabase } from '../../lib/supabase';
@@ -11,6 +11,9 @@ interface SearchResult {
   name: string;
   price?: number;
   category?: string;
+  email?: string;
+  type: 'product' | 'user' | 'order';
+  displayText?: string;
 }
 
 interface GlobalSearchProps {
@@ -64,19 +67,67 @@ export function GlobalSearch({
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, price, category_id')
-        .ilike('name', `%${searchQuery}%`)
-        .limit(8);
+      const [productsRes, usersRes, ordersRes] = await Promise.all([
+        supabase
+          .from('products')
+          .select('id, name, price, category_id')
+          .ilike('name', `%${searchQuery}%`)
+          .limit(5),
+        supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
+          .limit(5),
+        supabase
+          .from('orders')
+          .select('id, total_amount, created_at')
+          .ilike('id', `%${searchQuery}%`)
+          .limit(5),
+      ]);
 
-      if (error) {
-        console.error('Search error:', error);
-        setResults([]);
-      } else {
-        setResults(data || []);
-        setIsOpen(true);
+      const allResults: SearchResult[] = [];
+
+      // Add products
+      if (productsRes.data) {
+        productsRes.data.forEach(product => {
+          allResults.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            type: 'product',
+            displayText: product.name,
+          });
+        });
       }
+
+      // Add users
+      if (usersRes.data) {
+        usersRes.data.forEach(user => {
+          allResults.push({
+            id: user.id,
+            name: user.full_name || user.email,
+            email: user.email,
+            type: 'user',
+            displayText: `${user.full_name || 'Unknown'} (${user.email})`,
+          });
+        });
+      }
+
+      // Add orders
+      if (ordersRes.data) {
+        ordersRes.data.forEach(order => {
+          allResults.push({
+            id: order.id,
+            name: `Order ${order.id.slice(0, 8).toUpperCase()}`,
+            price: order.total_amount,
+            type: 'order',
+            displayText: `Order #${order.id.slice(0, 8).toUpperCase()} - $${order.total_amount.toFixed(2)}`,
+          });
+        });
+      }
+
+      setResults(allResults);
+      if (allResults.length > 0) setIsOpen(true);
     } catch (error) {
       console.error('Search error:', error);
       setResults([]);
@@ -133,11 +184,18 @@ export function GlobalSearch({
     }
   };
 
-  // Navigate to result
-  const navigateToResult = (id: string) => {
+  // Navigate to result based on type
+  const navigateToResult = (result: SearchResult) => {
     closeDropdown();
     setQuery('');
-    navigate(`/product/${id}`);
+    
+    if (result.type === 'product') {
+      navigate(`/product/${result.id}`);
+    } else if (result.type === 'user') {
+      navigate(`/admin/users`);
+    } else if (result.type === 'order') {
+      navigate(`/admin/orders`);
+    }
   };
 
   // Handle keyboard navigation
@@ -158,7 +216,7 @@ export function GlobalSearch({
       case 'Enter':
         e.preventDefault();
         if (selectedIndex >= 0 && results[selectedIndex]) {
-          navigateToResult(results[selectedIndex].id);
+          navigateToResult(results[selectedIndex]);
         }
         break;
       case 'Escape':
@@ -213,7 +271,7 @@ export function GlobalSearch({
 
       {/* Search Results Dropdown */}
       {isOpen && query.trim().length >= 2 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-[9999] max-h-96 overflow-y-auto">
           {/* Loading State */}
           {isLoading && (
             <div className="p-4 text-center">
@@ -236,33 +294,98 @@ export function GlobalSearch({
           {!isLoading && hasResults && (
             <div className="py-2">
               <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
-                Products
+                Résultats de recherche
               </div>
-              {results.map((product, index) => (
-                <button
-                  key={product.id}
-                  onClick={() => navigateToResult(product.id)}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
-                    selectedIndex === index ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium text-gray-900 dark:text-white text-sm">
-                      {product.name}
-                    </div>
-                    {product.price && (
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        ${product.price}
-                      </span>
-                    )}
+
+              {/* Products Section */}
+              {results.filter(r => r.type === 'product').length > 0 && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-2">
+                    <ShoppingBag className="h-3 w-3" />
+                    Produits ({results.filter(r => r.type === 'product').length})
                   </div>
-                  {product.category && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {product.category}
-                    </div>
-                  )}
-                </button>
-              ))}
+                  {results
+                    .filter(r => r.type === 'product')
+                    .map((product) => (
+                      <button
+                        key={product.id}
+                        onClick={() => navigateToResult(product)}
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                          selectedIndex === results.indexOf(product) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        }`}
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">
+                          {product.name}
+                        </div>
+                        {product.price && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            ${product.price.toFixed(2)}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                </div>
+              )}
+
+              {/* Users Section */}
+              {results.filter(r => r.type === 'user').length > 0 && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-2">
+                    <Building2 className="h-3 w-3" />
+                    Utilisateurs ({results.filter(r => r.type === 'user').length})
+                  </div>
+                  {results
+                    .filter(r => r.type === 'user')
+                    .map((user) => (
+                      <button
+                        key={user.id}
+                        onClick={() => navigateToResult(user)}
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                          selectedIndex === results.indexOf(user) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        }`}
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">
+                          {user.name}
+                        </div>
+                        {user.email && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {user.email}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                </div>
+              )}
+
+              {/* Orders Section */}
+              {results.filter(r => r.type === 'order').length > 0 && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-2">
+                    <Truck className="h-3 w-3" />
+                    Commandes ({results.filter(r => r.type === 'order').length})
+                  </div>
+                  {results
+                    .filter(r => r.type === 'order')
+                    .map((order) => (
+                      <button
+                        key={order.id}
+                        onClick={() => navigateToResult(order)}
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                          selectedIndex === results.indexOf(order) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        }`}
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">
+                          {order.name}
+                        </div>
+                        {order.price && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            ${order.price.toFixed(2)}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                </div>
+              )}
             </div>
           )}
         </div>

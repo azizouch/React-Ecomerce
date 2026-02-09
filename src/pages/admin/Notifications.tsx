@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import AdminFooter from '../../components/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SoftCard from '../../components/ui/SoftCard';
-import { Bell, Trash2, Check } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Bell, Trash2, Check, RefreshCw } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -71,6 +72,37 @@ export default function AdminNotifications() {
     );
   };
 
+  const handleRefresh = () => {
+    // Reload notifications data only
+    const mockNotifications: Notification[] = [
+      {
+        id: '1',
+        title: 'New Order',
+        message: 'You have received a new order #12345',
+        type: 'info',
+        read: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 5),
+      },
+      {
+        id: '2',
+        title: 'Low Stock Alert',
+        message: 'Product "Wireless Headphones" is running low on stock',
+        type: 'warning',
+        read: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 30),
+      },
+      {
+        id: '3',
+        title: 'Order Shipped',
+        message: 'Order #12340 has been shipped successfully',
+        type: 'success',
+        read: true,
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
+      },
+    ];
+    setNotifications(mockNotifications);
+  };
+
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'success':
@@ -91,38 +123,43 @@ export default function AdminNotifications() {
   return (
     <>
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-10">
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <Bell className="h-7 w-7 text-blue-600 dark:text-blue-400" />
               {t('notificationsPage')}
             </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {t('stayUpdated')}
-          </p>
-        </div>
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Button 
+                  onClick={handleRefresh} 
+                  variant="outline" 
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  {t('refresh') || 'Actualiser'}
+                </Button>
+              </div>
+            </div>
+          </div>
 
         {/* Filter and Actions */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex space-x-2">
-            <button
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-2">
+            <Button
               onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                filter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
-              }`}
+              variant={filter === 'all' ? 'default' : 'outline'}
+              size="sm"
             >
-              {t('allNotifications')}
-            </button>
-            <button
+              {t('allNotifications') || 'All Notifications'}
+            </Button>
+            <Button
               onClick={() => setFilter('unread')}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                filter === 'unread'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
-              }`}
+              variant={filter === 'unread' ? 'default' : 'outline'}
+              size="sm"
             >
-              {t('unread')} ({notifications.filter((n) => !n.read).length})
-            </button>
+              {t('unread') || 'Unread'} ({notifications.filter((n) => !n.read).length})
+            </Button>
           </div>
 
           {notifications.some((n) => !n.read) && (

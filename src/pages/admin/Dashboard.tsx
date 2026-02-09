@@ -7,6 +7,7 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
 import StatusBadge from '../../components/ui/StatusBadge';
 import CircularChart from '../../components/ui/CircularChart';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { Package, ShoppingCart, DollarSign, Users, TrendingUp, ArrowRight, Filter, ChevronDown } from 'lucide-react';
 
 interface Stats {
@@ -394,57 +395,57 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
 
                   {recentOrders.length > 0 ? (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-200 dark:border-slate-700">
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('product')}</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('orderId')}</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('customerName')}</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('date')}</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('item')}</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('price')}</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('total')}</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-400">{t('status')}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      <Table className="text-sm">
+                        <TableHeader>
+                          <TableRow className="border-b border-gray-200 dark:border-slate-700">
+                            <TableHead>{t('product')}</TableHead>
+                            <TableHead>{t('orderId')}</TableHead>
+                            <TableHead>{t('customerName')}</TableHead>
+                            <TableHead>{t('date')}</TableHead>
+                            <TableHead>{t('item')}</TableHead>
+                            <TableHead>{t('price')}</TableHead>
+                            <TableHead>{t('total')}</TableHead>
+                            <TableHead>{t('status')}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
                           {recentOrders.slice(0, 5).map((order, index) => (
-                            <tr
+                            <TableRow
                               key={order.id}
                               className={`border-b border-gray-100 dark:border-slate-700 ${
                                 index % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-gray-50 dark:bg-slate-700/50'
                               } hover:bg-gray-100 dark:hover:bg-slate-600 transition`}
                             >
-                              <td className="px-4 py-3">
+                              <TableCell>
                                 <Package className="w-4 h-4 text-gray-400" />
-                              </td>
-                              <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                              </TableCell>
+                              <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                                 #{order.id.slice(0, 6).toUpperCase()}
-                              </td>
-                              <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                              </TableCell>
+                              <TableCell className="text-gray-700 dark:text-gray-300">
                                 {order.profiles?.full_name || 'Guest'}
-                              </td>
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                              </TableCell>
+                              <TableCell className="text-gray-600 dark:text-gray-400">
                                 {new Date(order.created_at).toLocaleDateString('en-US', {
                                   month: 'short',
                                   day: 'numeric',
                                   year: '2-digit'
                                 })}
-                              </td>
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">2</td>
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                              </TableCell>
+                              <TableCell className="text-gray-600 dark:text-gray-400">2</TableCell>
+                              <TableCell className="text-gray-600 dark:text-gray-400">
                                 ${(order.total_amount / 2).toFixed(0)}
-                              </td>
-                              <td className="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">
+                              </TableCell>
+                              <TableCell className="font-semibold text-gray-900 dark:text-gray-100">
                                 ${order.total_amount.toFixed(0)}
-                              </td>
-                              <td className="px-4 py-3">
+                              </TableCell>
+                              <TableCell>
                                 <StatusBadge status={order.status} />
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
                   ) : (
                     <div className="text-center py-12">

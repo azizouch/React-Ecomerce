@@ -1,4 +1,4 @@
-import { Search, User, X, LogOut, Settings, Bell, Globe } from 'lucide-react';
+import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,7 +11,7 @@ import {
   AlertDialogTrigger,
 } from '../ui/alert-dialog';
 import { Button } from '../ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { Avatar, AvatarFallback } from '../ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +20,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
 import { useSidebar } from '../ui/sidebar';
 import { GlobalSearch } from '../ui/global-search';
 import { ConfirmationDialog } from '../ui/confirmation-dialog';
@@ -33,12 +36,13 @@ import { supabase } from '../../lib/supabase';
 
 export function Header() {
   const { toggleSidebar, state: sidebarState } = useSidebar();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, loading } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDesktopNotifications, setShowDesktopNotifications] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -82,6 +86,10 @@ export function Header() {
               description: `Order ID: ${order.id.slice(0, 8)}... • $${order.total_amount}`,
               time: 'Recently',
               type: 'order',
+              lu: false,
+              date_creation: order.created_at,
+              message: `Order ID: ${order.id.slice(0, 8)} • $${order.total_amount}`,
+              titre: 'Order Status',
             });
           });
         }
@@ -94,6 +102,30 @@ export function Header() {
 
     loadNotifications();
   }, []);
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, lu: true })));
+    setUnreadCount(0);
+  };
+
+  const deleteNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+  };
+
+  const formatRelativeTime = (date: any) => {
+    if (!date) return 'Recently';
+    try {
+      const d = new Date(date);
+      const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (diff < 60) return `${diff}s`;
+      if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+      return `${Math.floor(diff / 86400)}d`;
+    } catch (e) {
+      return String(date);
+    }
+  };
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -195,7 +227,15 @@ export function Header() {
         {/* Center - App Title */}
         <button
           className="text-lg font-bold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-gray-900 dark:focus:text-white transition-colors select-none bg-transparent border-none p-0 m-0"
-          onClick={() => navigate('/')}
+          onClick={() => {
+            // Prevent navigation while auth/profile is still loading to avoid flash
+            if (loading) return;
+            if (profile?.is_admin) {
+              navigate('/admin');
+            } else {
+              navigate('/');
+            }
+          }}
           onMouseLeave={(e) => e.currentTarget.blur()}
         >
           LogiTrack
@@ -296,37 +336,133 @@ export function Header() {
 
         <div className={`flex items-center gap-4 ${edgeMarginClass}`}>
           {/* Notifications */}
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
+          <Popover open={showDesktopNotifications} onOpenChange={setShowDesktopNotifications}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 relative">
+                <Bell className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                  <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-red-500 text-white rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Badge>
                 )}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">
-                {t('notifications')} ({unreadCount})
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
-              {notifications.length > 0 ? (
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.map((notif) => (
-                    <div key={notif.id} className="px-2 py-2 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                      <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{notif.title}</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">{notif.description}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">{notif.time}</div>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              <Card className="shadow-lg border-border animate-in fade-in zoom-in-95 duration-200">
+                <CardHeader className="pb-3 pt-4 px-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-medium">
+                      {t('notifications') || 'Notifications'}
+                    </CardTitle>
+                    {unreadCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-xs"
+                        onClick={markAllAsRead}
+                      >
+                        <CheckCheck className="mr-1 h-3.5 w-3.5" />
+                        Tout marquer comme lu
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="px-2 py-0 max-h-[60vh] overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="text-center py-8 text-sm text-muted-foreground">
+                      <p>Aucune notification</p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                  {t('noNotifications') || 'No notifications'}
-                </div>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`block px-4 py-3 hover:bg-muted/50 transition-colors relative ${!notification.lu ? 'bg-muted/30' : ''}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <p className={`text-sm ${!notification.lu ? 'font-medium' : ''}`}>
+                                  {notification.title || notification.titre}
+                                </p>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 text-muted-foreground hover:text-foreground ml-2"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                      }}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                      <span className="sr-only">Supprimer</span>
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Êtes-vous sûr de vouloir supprimer cette notification ?
+                                        Cette action est irréversible.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteNotification(notification.id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Supprimer
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {notification.description || notification.message}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatRelativeTime(notification.date_creation || notification.time)}
+                              </p>
+                            </div>
+                          </div>
+                          {!notification.lu && (
+                            <span className="absolute right-12 top-3 h-2 w-2 rounded-full bg-primary" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+
+                <CardFooter className="p-3 border-t">
+                  <div className="flex w-full gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="text-xs flex-1"
+                      onClick={() => {
+                        navigate('/admin/notifications');
+                        setShowDesktopNotifications(false);
+                      }}
+                    >
+                      Voir tout
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setShowDesktopNotifications(false)}
+                    >
+                      Fermer
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            </PopoverContent>
+          </Popover>
 
           {/* Language Selector */}
           <DropdownMenu modal={false}>
