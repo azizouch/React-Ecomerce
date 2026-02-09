@@ -38,9 +38,9 @@ export function Layout({ children }: LayoutProps) {
   return (
     <RadixSidebarProvider>
       <AppSidebar />
-      <div className="min-h-screen flex flex-col" style={{ direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+      <div className="min-h-screen flex flex-col w-full" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <Header />
-        <main className="flex-1 px-4 pb-4 sm:px-6 sm:pb-6 bg-background" style={{ paddingTop: '5.5rem' }}>
+        <main dir={language === 'ar' ? 'rtl' : 'ltr'} className="main-responsive flex-1 px-4 pb-4 sm:px-6 sm:pb-6 bg-background" style={{ paddingTop: '5.5rem' }}>
           {children}
         </main>
         <ScrollToTop />

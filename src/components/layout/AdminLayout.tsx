@@ -28,23 +28,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <RadixSidebarProvider>
-      <Header />
-      <div className="flex w-full">
-        {language === 'ar' ? (
-          <>
-            <main className="flex-1 min-h-screen bg-slate-50 dark:bg-slate-950 pt-16">
-              {children}
-            </main>
-            <AppSidebar />
-          </>
-        ) : (
-          <>
-            <AppSidebar />
-            <main className="flex-1 min-h-screen bg-slate-50 dark:bg-slate-950 pt-16">
-              {children}
-            </main>
-          </>
-        )}
+      <div style={{ display: 'flex', width: '100%', minHeight: '100vh', flexDirection: 'column', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+        <Header />
+        <div className="flex w-full flex-1" style={{ direction: language === 'ar' ? 'rtl' : 'ltr', flexDirection: language === 'ar' ? 'row-reverse' : 'row' }}>
+          <AppSidebar />
+          <main className="main-responsive flex-1 min-h-screen bg-slate-50 dark:bg-slate-950 pt-16 w-full">
+            {children}
+          </main>
+        </div>
       </div>
       <ScrollToTop />
     </RadixSidebarProvider>

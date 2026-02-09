@@ -114,6 +114,18 @@ const SidebarProvider = React.forwardRef<
     // This makes it easier to style the sidebar with Tailwind classes.
     const state = open ? "expanded" : "collapsed"
 
+    // Publish the effective sidebar width as an app-level CSS variable so
+    // other layout elements (header/main/body) can read it for offsets.
+    React.useEffect(() => {
+      try {
+        // On mobile the sidebar overlays content so width should be 0
+        const width = isMobile ? "0rem" : state === "collapsed" ? SIDEBAR_WIDTH_ICON : SIDEBAR_WIDTH
+        document.documentElement.style.setProperty('--app-sidebar-width', width)
+      } catch (e) {
+        // ignore in non-browser environments
+      }
+    }, [isMobile, state])
+
     const contextValue = React.useMemo<SidebarContext>(
       () => ({
         state,
@@ -222,9 +234,8 @@ const Sidebar = React.forwardRef<
         {/* This is what handles the sidebar gap on desktop */}
         <div
           className={cn(
-            "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
+            "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear hidden",
             "group-data-[collapsible=offcanvas]:w-0",
-            "group-data-[side=right]:rotate-180",
             variant === "floating" || variant === "inset"
               ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"

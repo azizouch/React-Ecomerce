@@ -760,3 +760,19 @@ export const translations = {
     cookiePolicy: 'سياسة ملفات تعريف الارتباط',
   },
 };
+
+// Helper translator function for files that import `t` directly.
+// Usage: t('en', 'home') or t('ar', 'discoverProducts')
+export function t(lang: string, key: string): string {
+  const langObj: any = (translations as any)[lang] || (translations as any)['en'];
+  const keys = key.split('.');
+  let value: any = langObj;
+  for (const k of keys) {
+    if (value?.[k] !== undefined) {
+      value = value[k];
+    } else {
+      return key; // fallback to key when missing
+    }
+  }
+  return typeof value === 'string' ? value : key;
+}

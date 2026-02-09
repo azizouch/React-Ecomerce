@@ -58,13 +58,50 @@ body[style*="margin-right"] {
   left: 0 !important; /* Mobile: always start from left edge */
 }
 
+/* Mobile and tablet: ensure top padding for header */
+@media (max-width: 1023px) {
+  .main-responsive {
+    padding-top: 5.5rem !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
 /* Desktop: adjust based on sidebar state */
 @media (min-width: 1024px) {
   .header-responsive {
-    left: var(--sidebar-width) !important;
+    left: var(--app-sidebar-width, var(--sidebar-width)) !important;
+    right: 0 !important;
     transition: left 200ms ease-linear;
   }
+
+  /* RTL: when page or header has dir=rtl, position header from the right */
+  .header-responsive[dir="rtl"] {
+    right: var(--app-sidebar-width, var(--sidebar-width)) !important;
+    left: 0 !important;
+    transition: right 200ms ease-linear;
+  }
+
+  /* Main responsive content adjusts padding based on sidebar width and direction */
+  .main-responsive {
+    transition: padding 200ms ease-linear;
+    box-sizing: border-box !important;
+  }
+
+  /* LTR: sidebar on left, so pad main from left */
+  html[dir="ltr"] .main-responsive {
+    padding-left: var(--app-sidebar-width, var(--sidebar-width)) !important;
+    padding-right: 0 !important;
+  }
+
+  /* RTL: sidebar on right, so pad main from right */
+  html[dir="rtl"] .main-responsive {
+    padding-right: var(--app-sidebar-width, var(--sidebar-width)) !important;
+    padding-left: 0 !important;
+  }
 }
+/* No global body padding — use padding on .main-responsive so inner centered containers
+   (e.g. .max-w-7xl.mx-auto) remain centered within the visible content area. */
 
 /* Hide scrollbar in sidebar while keeping scroll functionality */
 [data-sidebar="sidebar"] {

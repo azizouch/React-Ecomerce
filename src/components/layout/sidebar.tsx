@@ -16,6 +16,7 @@ import {
   Moon,
   Sun,
   ChevronLeft,
+  ChevronRight,
   CheckCircle,
   XCircle,
   Ban,
@@ -53,6 +54,7 @@ export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
   const authState = useAuth();
   const { t, language } = useLanguage();
+  const sidebarSide = language === 'ar' ? 'right' : 'left';
   const isMobile = useIsMobile();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -122,7 +124,8 @@ export function AppSidebar() {
   const handleMouseEnter = (event: React.MouseEvent, text: string) => {
     if (!isCollapsed) return;
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    setTooltip({ text, x: rect.right + 8, y: rect.top + rect.height / 2 });
+    const x = sidebarSide === 'right' ? rect.left - 8 : rect.right + 8;
+    setTooltip({ text, x, y: rect.top + rect.height / 2 });
   };
 
   const handleMouseLeave = () => setTooltip(null);
@@ -130,7 +133,8 @@ export function AppSidebar() {
   const handleDropdownClick = (event: React.MouseEvent, items: any[]) => {
     if (!isCollapsed) return;
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    setDropdownPopup({ items, x: rect.right + 8, y: rect.top });
+    const x = sidebarSide === 'right' ? rect.left - 8 : rect.right + 8;
+    setDropdownPopup({ items, x, y: rect.top });
     setTooltip(null);
   };
 
@@ -140,7 +144,7 @@ export function AppSidebar() {
 
   return (
     <>
-      <Sidebar collapsible="icon" className={`bg-sidebar border-r border-sidebar-border ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <Sidebar collapsible="icon" side={sidebarSide} className={`bg-sidebar ${sidebarSide === 'left' ? 'border-r' : 'border-l'} border-sidebar-border ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
         <SidebarHeader className="h-16 px-4 border-b border-sidebar-border">
           <div className={`h-full flex items-center w-full ${!isCollapsed ? 'justify-between' : 'justify-center'}`}>
             {!isCollapsed && (
@@ -149,7 +153,11 @@ export function AppSidebar() {
               </button>
             )}
             <div className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" onClick={toggleCollapse}>
-              <ChevronLeft className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
+              {sidebarSide === 'right' ? (
+                <ChevronRight className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
+              ) : (
+                <ChevronLeft className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
+              )}
             </div>
           </div>
         </SidebarHeader>

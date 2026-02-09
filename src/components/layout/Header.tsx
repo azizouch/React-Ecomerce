@@ -145,12 +145,25 @@ export function Header() {
 
   const sidebarWidth = getSidebarWidth();
 
+  // Sync an app-level CSS var used by global layout CSS so header/main offsets follow sidebar
+  useEffect(() => {
+    try {
+      document.documentElement.style.setProperty('--app-sidebar-width', sidebarWidth);
+    } catch (e) {
+      // ignore in non-browser env
+    }
+  }, [sidebarWidth]);
+
+  const edgeMarginClass = language === 'ar' ? 'mr-6' : 'ml-6';
+
   return (
     <header
-      className="header-responsive fixed top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6 right-0"
+      dir={language === 'ar' ? 'rtl' : 'ltr'}
+      className="header-responsive fixed top-0 z-50 h-16 border-b bg-background border-border flex items-center px-4 sm:px-6"
       style={{
         '--sidebar-width': sidebarWidth,
-        '--sidebar-width-desktop': sidebarWidth
+        '--sidebar-width-desktop': sidebarWidth,
+        '--app-sidebar-width': sidebarWidth,
       } as React.CSSProperties}
     >
       {/* Mobile/Tablet Layout */}
@@ -185,11 +198,36 @@ export function Header() {
           onClick={() => navigate('/')}
           onMouseLeave={(e) => e.currentTarget.blur()}
         >
-          E-Commerce
+          LogiTrack
         </button>
 
-        {/* Right side - User (Mobile Only) */}
+        {/* Right side - Notifications and User (Mobile Only) */}
         <div className="flex items-center space-x-3 lg:hidden">
+          {/* Notifications Bell */}
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative h-7 w-7">
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-gray-500">No notifications</div>
+              ) : (
+                notifications.map((notif) => (
+                  <DropdownMenuItem key={notif.id} className="flex flex-col items-start px-4 py-2 cursor-pointer">
+                    <div className="font-medium text-sm">{notif.title}</div>
+                    <div className="text-xs text-gray-500">{notif.description}</div>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* User Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full border border-gray-300 dark:border-gray-600 p-0 hover:bg-transparent">
@@ -256,7 +294,7 @@ export function Header() {
           <GlobalSearch className="w-80 sm:w-96" />
         </div>
 
-        <div className="flex items-center space-x-4 ml-6">
+        <div className={`flex items-center gap-4 ${edgeMarginClass}`}>
           {/* Notifications */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
@@ -324,7 +362,7 @@ export function Header() {
           {/* User Menu */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <div className="flex items-center space-x-2 cursor-pointer">
+              <div className="flex items-center gap-2 cursor-pointer">
                 {/* Desktop: Show user info */}
                 <div className="text-right">
                   <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
