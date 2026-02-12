@@ -7,7 +7,9 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
 import Pagination from '../../components/ui/Pagination';
 import CategoryDetailModal from '../../components/modals/CategoryDetailModal';
+import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
 import { Plus, Edit, Trash2, Tag, X, Search } from 'lucide-react';
+import { useToast } from '../../hooks/use-toast';
 import Swal from 'sweetalert2';
 import {
   Select,
@@ -21,6 +23,7 @@ const DEFAULT_ITEMS_PER_PAGE = 12;
 
 export default function AdminCategories() {
   const { t, language } = useLanguage();
+  const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -31,6 +34,9 @@ export default function AdminCategories() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
   const [totalCategories, setTotalCategories] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -106,38 +112,31 @@ export default function AdminCategories() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'You won\'t be able to revert this!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!'
-    });
+  const handleDelete = (id: string) => {
+    setCategoryToDelete(id);
+    setDeleteDialogOpen(true);
+  };
 
-    if (!result.isConfirmed) return;
+  const confirmDelete = async () => {
+    if (!categoryToDelete) return;
 
+    setIsDeleting(true);
     try {
       const { error } = await supabase
         .from('categories')
         .delete()
-        .eq('id', id);
+        .eq('id', categoryToDelete);
 
       if (error) throw error;
       loadCategories();
-      
-      await Swal.fire({
-        icon: 'success',
-        title: 'Deleted!',
-        text: 'Category has been deleted.',
-        timer: 2000,
-        showConfirmButton: false
-      });
+      toast({ title: 'Category deleted successfully' });
     } catch (error) {
       console.error('Error deleting category:', error);
-      Swal.fire('Error', 'Failed to delete category', 'error');
+      toast({ title: 'Failed to delete category', description: 'Please try again' });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setCategoryToDelete(null);
     }
   };
 
@@ -353,6 +352,18 @@ export default function AdminCategories() {
             setSelectedCategory(null);
           }}
           onRefresh={loadCategories}
+        />
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Delete Category"
+          description="Are you sure you want to delete this category? This action cannot be undone."
+          confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+          cancelText="Cancel"
+          onConfirm={confirmDelete}
+          variant="destructive"
         />
         </div>
       <AdminFooter />

@@ -5,10 +5,13 @@ import AdminFooter from '../../components/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
+import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
 import { Users, Crown, Mail, Calendar, Plus, Edit, Trash2, X, Search, RefreshCw, Filter } from 'lucide-react';
 import { Input } from '../../components/ui/input';
+import { useToast } from '../../hooks/use-toast';
 import Swal from 'sweetalert2';
 import {
   Select,
@@ -31,6 +34,7 @@ interface UserProfile {
 
 export default function AdminUsers() {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,6 +45,9 @@ export default function AdminUsers() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -236,65 +243,38 @@ export default function AdminUsers() {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'You are about to delete this user. This action cannot be undone!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete user',
-      cancelButtonText: 'Cancel'
-    });
+  const handleDeleteUser = (userId: string) => {
+    setUserToDelete(userId);
+    setDeleteDialogOpen(true);
+  };
 
-    if (!result.isConfirmed) return;
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setIsDeleting(true);
 
     const adminClient = getSupabaseAdmin();
     if (!adminClient) {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Configuration Error',
-        text: 'Admin functionality is not properly configured. Please contact a system administrator.',
-        confirmButtonText: 'OK'
-      });
+      toast({ title: 'Configuration Error', description: 'Admin functionality is not properly configured' });
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
       return;
     }
 
     try {
-      const { error } = await adminClient.auth.admin.deleteUser(userId);
+      const { error } = await adminClient.auth.admin.deleteUser(userToDelete);
       if (error) throw error;
 
       loadUsers();
-      await Swal.fire({
-        icon: 'success',
-        title: 'Deleted!',
-        text: 'User has been deleted successfully.',
-        timer: 2000,
-        showConfirmButton: false
-      });
+      toast({ title: 'User deleted successfully' });
     } catch (error: any) {
       console.error('Error deleting user:', error);
-
-      let errorMessage = 'Failed to delete user. Please try again.';
-      if (error.message) {
-        if (error.message.includes('User not allowed') || error.message.includes('not allowed')) {
-          errorMessage = 'You do not have permission to delete users. Please contact a system administrator.';
-        } else if (error.message.includes('not found')) {
-          errorMessage = 'User not found. They may have already been deleted.';
-        } else if (error.message.includes('cannot delete yourself')) {
-          errorMessage = 'You cannot delete your own account.';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-
-      await Swal.fire({
-        icon: 'error',
-        title: 'Deletion Failed',
-        text: errorMessage,
-        confirmButtonText: 'OK'
-      });
+      toast({ title: 'Failed to delete user', description: error.message || 'Please try again' });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
     }
   };
 
@@ -446,33 +426,23 @@ export default function AdminUsers() {
 
             <SoftCard className="p-0 bg-transparent dark:bg-transparent border-0">
             <div className="overflow-x-auto">
-              <table className="w-full bg-transparent min-w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
-                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
-                      User
-                    </th>
-                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
-                      Role
-                    </th>
-                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
-                      Joined
-                    </th>
-                    <th className="px-6 py-4 text-left font-semibold text-gray-900 text-sm">
-                      Last Active
-                    </th>
-                    <th className="px-6 py-4 text-right font-semibold text-gray-900 text-sm">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="bg-transparent min-w-full">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                    <TableHead className="text-sm">User</TableHead>
+                    <TableHead className="text-sm">Role</TableHead>
+                    <TableHead className="text-sm">Joined</TableHead>
+                    <TableHead className="text-sm">Last Active</TableHead>
+                    <TableHead className="text-sm text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {users.map((user) => (
-                    <tr
+                    <TableRow
                       key={user.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-600 border-l-0 border-r-0 border-t-0 bg-transparent dark:bg-transparent transition"
                     >
-                      <td className="px-6 py-4">
+                      <TableCell>
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
                             <span className="text-white font-semibold text-sm">
@@ -489,29 +459,29 @@ export default function AdminUsers() {
                             </div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell>
                         {user.is_admin ? (
                           <StatusBadge status="active" label="Admin" />
                         ) : (
                           <StatusBadge status="inactive" label="Customer" />
                         )}
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
                           <Calendar className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
                           {new Date(user.created_at).toLocaleDateString()}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell>
                         <div className="text-sm text-gray-700 dark:text-gray-300">
                           {user.last_sign_in_at
                             ? new Date(user.last_sign_in_at).toLocaleDateString()
                             : '—'
                           }
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end space-x-3">
                           <button
                             onClick={() => openEditModal(user)}
@@ -528,11 +498,11 @@ export default function AdminUsers() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
 
               {users.length === 0 && (
                 <div className="text-center py-12">
@@ -735,6 +705,18 @@ export default function AdminUsers() {
             </div>
           </div>
         )}
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Delete User"
+          description="Are you sure you want to delete this user? This action cannot be undone."
+          confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+          cancelText="Cancel"
+          onConfirm={confirmDeleteUser}
+          variant="destructive"
+        />
         </div>
       <AdminFooter />
     </>

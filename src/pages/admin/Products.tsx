@@ -263,7 +263,7 @@ export default function Products() {
 
               <Table className="bg-transparent min-w-full">
                 <TableHeader>
-                  <TableRow className="border-b border-gray-200 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
+                  <TableRow className="border-b border-gray-200 text-neutral-900 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                     <TableHead className="text-sm">{t('product')}</TableHead>
                     <TableHead className="text-sm">{t('categories')}</TableHead>
                     <TableHead className="text-sm">{t('price')}</TableHead>

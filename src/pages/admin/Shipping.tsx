@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import SoftCard from '../../components/ui/SoftCard';
+// SoftCard removed; not needed in this file
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -25,7 +26,6 @@ export default function AdminShipping() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [zones, setZones] = useState<any[]>(mockZones);
-  const [loading, setLoading] = useState(false);
 
   // Dialog / form state
   const [openDialog, setOpenDialog] = useState(false);
@@ -41,7 +41,6 @@ export default function AdminShipping() {
   const [targetDeleteId, setTargetDeleteId] = useState<string | null>(null);
 
   const loadZones = async () => {
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('shipping_zones')
@@ -52,7 +51,6 @@ export default function AdminShipping() {
     } catch (e) {
       console.error('Error loading shipping zones', e);
     } finally {
-      setLoading(false);
     }
   };
 
@@ -60,15 +58,7 @@ export default function AdminShipping() {
     loadZones();
   }, []);
 
-  const handleOpenNew = () => {
-    setEditingZone(null);
-    setName('');
-    setMethodsText('');
-    setPrice('');
-    setEta('');
-    setEnabled(true);
-    setOpenDialog(true);
-  };
+  // opening the dialog is handled by the DialogTrigger; no separate handler needed
 
   const handleEdit = (z: any) => {
     setEditingZone(z);
@@ -184,26 +174,25 @@ export default function AdminShipping() {
         </div>
       </div>
 
-      <SoftCard className="p-0">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-full">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-                <th className="px-6 py-3 text-left text-sm font-semibold dark:text-gray-200">Zone</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold dark:text-gray-200">Methods</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold dark:text-gray-200">Price Range</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold dark:text-gray-200">ETA</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold dark:text-gray-200">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full">
+            <TableHeader>
+              <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+                <TableHead className="text-sm">Zone</TableHead>
+                <TableHead className="text-sm">Methods</TableHead>
+                <TableHead className="text-sm">Price Range</TableHead>
+                <TableHead className="text-sm">ETA</TableHead>
+                <TableHead className="text-sm">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {zones.map((z) => (
-                <tr key={z.id} className="border-b border-gray-100 dark:border-gray-700">
-                  <td className="px-6 py-3 text-sm">{z.name}</td>
-                  <td className="px-6 py-3 text-sm">{(z.methods || []).join(', ')}</td>
-                  <td className="px-6 py-3 text-sm">{z.price}</td>
-                  <td className="px-6 py-3 text-sm">{z.eta || '—'}</td>
-                  <td className="px-6 py-3 text-sm">
+                <TableRow key={z.id} className="border-b border-gray-100 dark:border-gray-700">
+                  <TableCell className="text-sm">{z.name}</TableCell>
+                  <TableCell className="text-sm">{(z.methods || []).join(', ')}</TableCell>
+                  <TableCell className="text-sm">{z.price}</TableCell>
+                  <TableCell className="text-sm">{z.eta || '—'}</TableCell>
+                  <TableCell className="text-sm">
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant="ghost" onClick={() => handleEdit(z)}>
                         <Edit className="h-4 w-4" />
@@ -212,14 +201,12 @@ export default function AdminShipping() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </SoftCard>
-
       <ConfirmationDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

@@ -4,7 +4,10 @@ import { supabase, Product, Category } from '../../lib/supabase';
 import AdminFooter from '../../components/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { ArrowLeft, Edit, Trash2, Save, X, Plus } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
+import { ArrowLeft, Edit, Trash2, Save, X, Plus, Package } from 'lucide-react';
+import { useToast } from '../../hooks/use-toast';
 import Swal from 'sweetalert2';
 import {
   Select,
@@ -26,6 +29,7 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+  const { toast } = useToast();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [colors, setColors] = useState<ColorForm[]>([]);
@@ -33,6 +37,8 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -350,30 +356,26 @@ export default function ProductDetail() {
     }
   };
 
-  const handleDelete = async () => {
-    const result = await Swal.fire({
-      title: t('deleteConfirm'),
-      text: t('deleteWarning'),
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: t('yesDelete'),
-      cancelButtonText: t('cancel'),
-    });
+  const handleDelete = () => {
+    setShowDeleteModal(true);
+  };
 
-    if (result.isConfirmed) {
-      try {
-        const { error } = await supabase.from('products').delete().eq('id', id);
+  const confirmDelete = async () => {
+    if (!id) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', id);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        Swal.fire('Deleted!', 'Product deleted successfully', 'success');
-        navigate('/admin/products');
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        Swal.fire('Error', 'Failed to delete product', 'error');
-      }
+      toast({ title: 'Product deleted successfully' });
+      navigate('/admin/products');
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast({ title: 'Failed to delete product', description: 'Please try again' });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -425,40 +427,79 @@ export default function ProductDetail() {
   return (
     <>
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <div className="mb-8 flex items-start justify-between">
-            <div>
-              <button
-                onClick={() => navigate('/admin/products')}
-                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-4 hover:underline"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                {t('back') || 'Back'}
-              </button>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{product.name}</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {t('createdAt') || 'Created'} {formatDate(product.created_at)}
-              </p>
+        {/* Header */}
+          <div className="mb-2">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/admin/products')}
+              className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors ring-offset-background hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour à la liste
+            </Button>
+          </div>
+     
+          {/* Title Section */}
+          <div className="mb-8">
+            {/* Mobile Layout - Title and Buttons Separated */}
+            <div className="md:hidden">
+              {/* Title Row */}
+            
+              {/* Buttons Row - 2x2 Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center justify-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <Edit className="h-4 w-4" />
+                  {t('edit') || 'Edit'}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {t('delete') || 'Delete'}
+                </Button>
+              </div>
             </div>
 
-            {!isEditing && (
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  <Edit className="w-4 h-4" />
-                  {t('edit') || 'Edit'}
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {t('delete') || 'Delete'}
-                </button>
+            {/* Desktop Layout - Title and Buttons on Same Line */}
+            <div className="hidden md:flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                  <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{product.name}</h1>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    {t('createdAt') || 'Created'} {formatDate(product.created_at)}
+                  </p>
+                </div>
               </div>
-            )}
+              {!isEditing && (
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    <Edit className="h-4 w-4" />
+                    {t('edit') || 'Edit'}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDelete}
+                    className="flex items-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {t('delete') || 'Delete'}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Main Content */}
@@ -804,6 +845,18 @@ export default function ProductDetail() {
             )}
           </form>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationDialog
+          open={showDeleteModal}
+          onOpenChange={setShowDeleteModal}
+          title="Delete Product"
+          description="Are you sure you want to delete this product? This action cannot be undone."
+          confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+          cancelText="Cancel"
+          onConfirm={confirmDelete}
+          variant="destructive"
+        />
       <AdminFooter />
     </>
   );

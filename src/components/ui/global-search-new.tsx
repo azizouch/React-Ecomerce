@@ -204,10 +204,9 @@ export function GlobalSearch({
   const navigateToResult = (result: SearchResult) => {
     closeDropdown();
     setQuery('');
-    
     switch (result.type) {
       case 'product':
-        navigate(`/product/${result.id}`);
+        navigate(`/admin/products/${result.id}`);
         break;
       case 'category':
         navigate(`/shop?category=${result.id}`);

@@ -127,11 +127,10 @@ export default function AdminDiscounts() {
         </div>
       </div>
 
-      <SoftCard className="p-0">
         <div className="overflow-x-auto">
-          <Table className="min-w-full">
+          <Table className="bg-transparent min-w-full">
             <TableHeader>
-              <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+              <TableRow className="border-b border-gray-200 text-neutral-900 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                 <TableHead>Code</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Value</TableHead>
@@ -165,7 +164,6 @@ export default function AdminDiscounts() {
             </TableBody>
           </Table>
         </div>
-      </SoftCard>
 
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogTrigger asChild>

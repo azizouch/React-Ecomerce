@@ -46,11 +46,10 @@ export default function AdminReviews() {
         </div>
       </div>
 
-      <SoftCard className="p-0">
         <div className="overflow-x-auto">
-          <Table className="min-w-full">
+          <Table className="bg-transparent min-w-full">
             <TableHeader>
-              <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+              <TableRow className="border-b border-gray-200 text-neutral-900 dark:border-gray-600" style={{ backgroundColor: 'hsl(210, 40%, 96.1%)' }}>
                 <TableHead className="text-sm">Product</TableHead>
                 <TableHead className="text-sm">Rating</TableHead>
                 <TableHead className="text-sm">Review</TableHead>
@@ -75,7 +74,6 @@ export default function AdminReviews() {
             </TableBody>
           </Table>
         </div>
-      </SoftCard>
     </div>
   );
 }

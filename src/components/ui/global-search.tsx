@@ -5,6 +5,7 @@ import { Button } from './button';
 import { supabase } from '../../lib/supabase';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface SearchResult {
   id: string;
@@ -40,6 +41,7 @@ export function GlobalSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
 
   // Clear search when component mounts or when location changes
   useEffect(() => {
@@ -67,7 +69,7 @@ export function GlobalSearch({
 
     setIsLoading(true);
     try {
-      const [productsRes, usersRes, ordersRes] = await Promise.all([
+      const [productsRes, usersRes] = await Promise.all([
         supabase
           .from('products')
           .select('id, name, price, category_id')
@@ -77,11 +79,6 @@ export function GlobalSearch({
           .from('profiles')
           .select('id, email, full_name')
           .or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
-          .limit(5),
-        supabase
-          .from('orders')
-          .select('id, total_amount, created_at')
-          .ilike('id', `%${searchQuery}%`)
           .limit(5),
       ]);
 
@@ -109,19 +106,6 @@ export function GlobalSearch({
             email: user.email,
             type: 'user',
             displayText: `${user.full_name || 'Unknown'} (${user.email})`,
-          });
-        });
-      }
-
-      // Add orders
-      if (ordersRes.data) {
-        ordersRes.data.forEach(order => {
-          allResults.push({
-            id: order.id,
-            name: `Order ${order.id.slice(0, 8).toUpperCase()}`,
-            price: order.total_amount,
-            type: 'order',
-            displayText: `Order #${order.id.slice(0, 8).toUpperCase()} - $${order.total_amount.toFixed(2)}`,
           });
         });
       }
@@ -190,7 +174,7 @@ export function GlobalSearch({
     setQuery('');
     
     if (result.type === 'product') {
-      navigate(`/product/${result.id}`);
+      navigate(`/admin/products/${result.id}`);
     } else if (result.type === 'user') {
       navigate(`/admin/users`);
     } else if (result.type === 'order') {
@@ -293,16 +277,13 @@ export function GlobalSearch({
           {/* Results */}
           {!isLoading && hasResults && (
             <div className="py-2">
-              <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
-                Résultats de recherche
-              </div>
 
               {/* Products Section */}
               {results.filter(r => r.type === 'product').length > 0 && (
                 <div>
                   <div className="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-2">
                     <ShoppingBag className="h-3 w-3" />
-                    Produits ({results.filter(r => r.type === 'product').length})
+                    {t('products')} ({results.filter(r => r.type === 'product').length})
                   </div>
                   {results
                     .filter(r => r.type === 'product')
@@ -332,7 +313,7 @@ export function GlobalSearch({
                 <div>
                   <div className="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-2">
                     <Building2 className="h-3 w-3" />
-                    Utilisateurs ({results.filter(r => r.type === 'user').length})
+                    {t('users')} ({results.filter(r => r.type === 'user').length})
                   </div>
                   {results
                     .filter(r => r.type === 'user')
@@ -357,35 +338,7 @@ export function GlobalSearch({
                 </div>
               )}
 
-              {/* Orders Section */}
-              {results.filter(r => r.type === 'order').length > 0 && (
-                <div>
-                  <div className="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-2">
-                    <Truck className="h-3 w-3" />
-                    Commandes ({results.filter(r => r.type === 'order').length})
-                  </div>
-                  {results
-                    .filter(r => r.type === 'order')
-                    .map((order) => (
-                      <button
-                        key={order.id}
-                        onClick={() => navigateToResult(order)}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
-                          selectedIndex === results.indexOf(order) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                        }`}
-                      >
-                        <div className="font-medium text-gray-900 dark:text-white text-sm">
-                          {order.name}
-                        </div>
-                        {order.price && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            ${order.price.toFixed(2)}
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                </div>
-              )}
+              {/* Orders section removed - orders search disabled due to query issues */}
             </div>
           )}
         </div>

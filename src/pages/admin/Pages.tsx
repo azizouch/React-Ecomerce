@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import SoftCard from '../../components/ui/SoftCard';
+// SoftCard unused here
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../../components/ui/button';
 import { FileText, Plus, RefreshCw } from 'lucide-react';
@@ -42,30 +43,30 @@ export default function AdminPages() {
         </div>
       </div>
 
-      <SoftCard className="p-0">
+  
         <div className="overflow-x-auto">
-          <table className="w-full min-w-full">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-                <th className="px-6 py-3 text-left text-sm font-semibold dark:text-gray-200">Title</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold dark:text-gray-200">Status</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold dark:text-gray-200">SEO</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold dark:text-gray-200">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full">
+            <TableHeader>
+              <TableRow className="border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+                <TableHead className="text-sm">Title</TableHead>
+                <TableHead className="text-sm">Status</TableHead>
+                <TableHead className="text-sm">SEO</TableHead>
+                <TableHead className="text-sm">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {pages.map((pg) => (
-                <tr key={pg.id} className="border-b border-gray-100 dark:border-gray-700">
-                  <td className="px-6 py-3 text-sm">{pg.title}</td>
-                  <td className="px-6 py-3 text-sm">{pg.status}</td>
-                  <td className="px-6 py-3 text-sm">-</td>
-                  <td className="px-6 py-3 text-sm">-</td>
-                </tr>
+                <TableRow key={pg.id} className="border-b border-gray-100 dark:border-gray-700">
+                  <TableCell className="text-sm">{pg.title}</TableCell>
+                  <TableCell className="text-sm">{pg.status}</TableCell>
+                  <TableCell className="text-sm">-</TableCell>
+                  <TableCell className="text-sm">-</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </SoftCard>
+    
     </div>
   );
 }
