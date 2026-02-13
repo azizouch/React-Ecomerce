@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase, Category } from '../../lib/supabase';
-import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
-import AdminFooter from '../../components/AdminFooter';
+import { adminCatalog, Category } from '../../lib/supabase';
+import { calculateTotalPages } from '../../lib/pagination';
+import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
@@ -49,19 +49,11 @@ export default function AdminCategories() {
   const loadCategories = async () => {
     try {
       setLoading(true);
-      const { offset, limit } = getPaginationParams(currentPage, itemsPerPage);
-
-      let query = supabase
-        .from('categories')
-        .select('*', { count: 'exact' });
-
-      if (searchQuery.trim()) {
-        query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-      }
-
-      const { data, error, count } = await query
-        .order('name')
-        .range(offset, offset + limit - 1);
+      const { data, error, count } = await adminCatalog.getCategories({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchQuery,
+      });
 
       if (error) throw error;
       setCategories(data || []);
@@ -80,16 +72,18 @@ export default function AdminCategories() {
 
     try {
       if (editingCategory) {
-        const { error } = await supabase
-          .from('categories')
-          .update(formData)
-          .eq('id', editingCategory.id);
+        const { error } = await adminCatalog.updateCategory(
+          editingCategory.id,
+          formData.name,
+          formData.description
+        );
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('categories')
-          .insert([formData]);
+        const { error } = await adminCatalog.createCategory(
+          formData.name,
+          formData.description
+        );
 
         if (error) throw error;
       }
@@ -122,10 +116,7 @@ export default function AdminCategories() {
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', categoryToDelete);
+      const { error } = await adminCatalog.deleteCategory(categoryToDelete);
 
       if (error) throw error;
       loadCategories();

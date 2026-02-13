@@ -1,4 +1,4 @@
-import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2 } from 'lucide-react';
+import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2, MessageCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,7 @@ import { Badge } from '../ui/badge';
 import { useSidebar } from '../ui/sidebar';
 import { GlobalSearch } from '../ui/global-search';
 import { ConfirmationDialog } from '../ui/confirmation-dialog';
+import { ChatHeaderButton } from '../ChatHeaderButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useIsMobile } from '../../hooks/use-mobile';
@@ -238,11 +239,14 @@ export function Header() {
           }}
           onMouseLeave={(e) => e.currentTarget.blur()}
         >
-          LogiTrack
+          E-commerce
         </button>
 
         {/* Right side - Notifications and User (Mobile Only) */}
         <div className="flex items-center space-x-3 lg:hidden">
+          {/* Chat Button */}
+          <ChatHeaderButton isMobile={true} />
+
           {/* Notifications Bell */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
@@ -335,11 +339,14 @@ export function Header() {
         </div>
 
         <div className={`flex items-center gap-4 ${edgeMarginClass}`}>
+          {/* Chat Button */}
+          <ChatHeaderButton isMobile={false} />
+
           {/* Notifications */}
           <Popover open={showDesktopNotifications} onOpenChange={setShowDesktopNotifications}>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 relative">
-                <Bell className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              <Button variant="ghost" size="icon" className="hover:bg-gray-100 dark:hover:bg-gray-700 relative">
+                <Bell className="h-5 w-5 flex-shrink-0 text-gray-600 dark:text-white" />
                 {unreadCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-red-500 text-white rounded-full flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -498,7 +505,7 @@ export function Header() {
           {/* User Menu */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <div className="flex items-center gap-2 cursor-pointer">
+              <div className="flex items-center gap-2 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-gray-700">
                 {/* Desktop: Show user info */}
                 <div className="text-right">
                   <div className="font-medium text-sm text-gray-900 dark:text-gray-100">

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Product, catalog } from '../lib/supabase';
-import { useCart } from '../hooks/useCart';
-import { useLanguage } from '../contexts/LanguageContext';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import { Product, customerCatalog } from '../../lib/supabase';
+import { useCart } from '../../hooks/useCart';
+import { useLanguage } from '../../contexts/LanguageContext';
+import Navbar from '../../components/layout/Navbar';
+import Footer from '../../components/ui/Footer';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
-import { t } from '../lib/translations';
+import { t } from '../../lib/translations';
 
 export default function ProductDetail() {
   const { productId } = useParams<{ productId: string }>();
@@ -27,7 +27,7 @@ export default function ProductDetail() {
 
   const loadProduct = async () => {
     try {
-      const { data, error } = await catalog.getProductById(productId);
+      const { data, error } = await customerCatalog.getProductById(productId);
       if (error) throw error;
       setProduct(data as Product | null);
 

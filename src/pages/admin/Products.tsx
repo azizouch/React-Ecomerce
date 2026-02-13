@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Product, Category, catalog } from '../../lib/supabase';
+import { Product, Category, adminCatalog } from '../../lib/supabase';
 import { calculateTotalPages } from '../../lib/pagination';
-import AdminFooter from '../../components/AdminFooter';
+import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -48,7 +48,7 @@ export default function Products() {
 
   const loadCategories = async () => {
     try {
-      const { data, error } = await catalog.getCategories();
+      const { data, error } = await adminCatalog.getCategories();
       if (error) throw error;
       setCategories(data || []);
     } catch (error) {
@@ -59,7 +59,7 @@ export default function Products() {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const { data, error, count } = await catalog.getProducts({
+      const { data, error, count } = await adminCatalog.getProducts({
         page: currentPage,
         limit: itemsPerPage,
         search: searchQuery,
@@ -94,7 +94,7 @@ export default function Products() {
     if (!productToDelete) return;
 
     try {
-      const { error } = await catalog.deleteProduct(productToDelete);
+      const { error } = await adminCatalog.deleteProduct(productToDelete);
       if (error) throw error;
       loadProducts();
       setDeleteDialogOpen(false);
@@ -229,8 +229,8 @@ export default function Products() {
         {loading ? (
           <SkeletonLoader count={6} height="h-16" className="space-y-3" />
         ) : (
-          <SoftCard className="p-0 bg-transparent dark:bg-transparent border-0">
-            <div className="overflow-x-auto">
+          
+            <div className="space-y-3">
               <div className="space-y-3 sm:space-y-0 mb-4">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('listProducts') || 'Liste des Colis'}</h2>
@@ -350,7 +350,7 @@ export default function Products() {
                 />
               )}
             </div>
-          </SoftCard>
+          
         )}
 
         </div>

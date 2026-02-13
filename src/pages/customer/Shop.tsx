@@ -1,20 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase, Product, Category } from '../lib/supabase';
-import { getPaginationParams, calculateTotalPages } from '../lib/pagination';
-import { useLanguage } from '../contexts/LanguageContext';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-import AddToCartModal from '../components/ui/AddToCartModal';
+import { customerCatalog, Product, Category } from '../../lib/supabase';
+import { calculateTotalPages } from '../../lib/pagination';
+import { useLanguage } from '../../contexts/LanguageContext';
+import Navbar from '../../components/layout/Navbar';
+import Footer from '../../components/ui/Footer';
+import AddToCartModal from '../../components/ui/AddToCartModal';
 import { ShoppingCart, Search, Filter, ChevronDown } from 'lucide-react';
-import { t } from '../lib/translations';
+import { t } from '../../lib/translations';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../components/ui/select';
+} from '../../components/ui/select';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -71,10 +71,7 @@ export default function Shop() {
 
   const loadCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
+      const { data, error } = await customerCatalog.loadCategories();
 
       if (error) throw error;
       setCategories(data || []);
@@ -85,25 +82,11 @@ export default function Shop() {
 
   const loadAvailableSizesAndColors = async () => {
     try {
-      // Load available sizes
-      const { data: sizesData, error: sizesError } = await supabase
-        .from('product_color_sizes')
-        .select('size')
-        .neq('size', null);
+      const { sizes, colors, error } = await customerCatalog.loadAvailableSizesAndColors();
 
-      if (sizesError) throw sizesError;
-      const uniqueSizes = [...new Set((sizesData || []).map(s => s.size))].sort();
-      setAvailableSizes(uniqueSizes);
-
-      // Load available colors
-      const { data: colorsData, error: colorsError } = await supabase
-        .from('product_colors')
-        .select('id, name, hex_code')
-        .neq('hex_code', null);
-
-      if (colorsError) throw colorsError;
-      const uniqueColors = [...new Set((colorsData || []).map(c => JSON.stringify({ id: c.id, name: c.name, hex: c.hex_code })))].map(c => JSON.parse(c));
-      setAvailableColors(uniqueColors);
+      if (error) throw error;
+      setAvailableSizes(sizes);
+      setAvailableColors(colors);
     } catch (error) {
       console.error('Error loading sizes and colors:', error);
     }
@@ -112,128 +95,25 @@ export default function Shop() {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const { offset, limit } = getPaginationParams(currentPage, ITEMS_PER_PAGE);
+      const { data, error, count } = await customerCatalog.loadProductsAdvanced({
+        currentPage,
+        ITEMS_PER_PAGE,
+        selectedCategory,
+        searchQuery,
+        priceRange,
+        selectedSizes,
+        selectedColors,
+        sortBy,
+      });
 
-      // Build the base query with filters
-      let query = supabase
-        .from('products')
-        .select('*', { count: 'exact' });
+      if (error) throw error;
 
-      // Filter by category
-      if (selectedCategory !== 'all') {
-        query = query.eq('category_id', selectedCategory);
-      }
-
-      // Filter by price range
-      query = query
-        .gte('price', priceRange[0])
-        .lte('price', priceRange[1]);
-
-      // Filter by search query
-      if (searchQuery.trim()) {
-        query = query.or(
-          `name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`
-        );
-      }
-
-      // If colors or sizes are selected, we need to filter differently
-      if (selectedColors.length > 0 || selectedSizes.length > 0) {
-        // First, get all products that match basic criteria
-        const { data: allProducts, error: productsError } = await query.order('name');
-        if (productsError) throw productsError;
-
-        // Filter products based on colors and sizes
-        let filteredProducts = allProducts || [];
-        if (selectedColors.length > 0 || selectedSizes.length > 0) {
-          const productIds = await getProductIdsBySizesAndColors();
-          filteredProducts = filteredProducts.filter(p => productIds.has(p.id));
-        }
-
-        // Apply sorting
-        const sortedProducts = applySorting(filteredProducts);
-        
-        // Apply pagination
-        const paginatedProducts = sortedProducts.slice(offset, offset + limit);
-
-        setProducts(paginatedProducts);
-        setTotalProducts(sortedProducts.length);
-      } else {
-        // Apply sorting
-        switch (sortBy) {
-          case 'price-low':
-            query = query.order('price', { ascending: true });
-            break;
-          case 'price-high':
-            query = query.order('price', { ascending: false });
-            break;
-          case 'name':
-          default:
-            query = query.order('name', { ascending: true });
-        }
-
-        // Apply pagination
-        query = query.range(offset, offset + limit - 1);
-
-        const { data, error, count } = await query;
-
-        if (error) throw error;
-
-        setProducts(data || []);
-        setTotalProducts(count || 0);
-      }
+      setProducts(data || []);
+      setTotalProducts(count || 0);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getProductIdsBySizesAndColors = async (): Promise<Set<string>> => {
-    const productIds = new Set<string>();
-
-    try {
-      // Get product IDs that have the selected sizes
-      if (selectedSizes.length > 0) {
-        const { data: sizeResults } = await supabase
-          .from('product_color_sizes')
-          .select('product_colors!inner(product_id)')
-          .in('size', selectedSizes);
-
-        sizeResults?.forEach(result => {
-          if (result.product_colors && typeof result.product_colors === 'object') {
-            const pc = result.product_colors as any;
-            if (pc.product_id) productIds.add(pc.product_id);
-          }
-        });
-      }
-
-      // Get product IDs that have the selected colors
-      if (selectedColors.length > 0) {
-        const { data: colorResults } = await supabase
-          .from('product_colors')
-          .select('product_id')
-          .in('id', selectedColors);
-
-        colorResults?.forEach(result => {
-          if (result.product_id) productIds.add(result.product_id);
-        });
-      }
-    } catch (error) {
-      console.error('Error filtering by sizes and colors:', error);
-    }
-
-    return productIds;
-  };
-
-  const applySorting = (products: Product[]) => {
-    switch (sortBy) {
-      case 'price-low':
-        return [...products].sort((a, b) => a.price - b.price);
-      case 'price-high':
-        return [...products].sort((a, b) => b.price - a.price);
-      case 'name':
-      default:
-        return [...products].sort((a, b) => a.name.localeCompare(b.name));
     }
   };
 

@@ -13,12 +13,12 @@ import { AdminLayout } from './components/layout/AdminLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load components for better performance
-const Login = lazy(() => import('./pages/Login'));
-const Signup = lazy(() => import('./pages/Signup'));
-const Home = lazy(() => import('./pages/Home'));
-const Shop = lazy(() => import('./pages/Shop'));
-const ProductDetail = lazy(() => import('./pages/ProductDetail'));
-const Cart = lazy(() => import('./pages/Cart'));
+const Login = lazy(() => import('./pages/customer/Login'));
+const Signup = lazy(() => import('./pages/customer/Signup'));
+const Home = lazy(() => import('./pages/customer/Home'));
+const Shop = lazy(() => import('./pages/customer/Shop'));
+const ProductDetail = lazy(() => import('./pages/customer/ProductDetail'));
+const Cart = lazy(() => import('./pages/customer/Cart'));
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminProducts = lazy(() => import('./pages/admin/Products'));
 const AdminCategories = lazy(() => import('./pages/admin/Categories'));
@@ -26,6 +26,7 @@ const AdminOrders = lazy(() => import('./pages/admin/Orders'));
 const AdminUsers = lazy(() => import('./pages/admin/Users'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile'));
 const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
+const AdminChats = lazy(() => import('./pages/admin/Chats'));
 const AdminProductDetail = lazy(() => import('./pages/admin/ProductDetail'));
 const AdminProductNew = lazy(() => import('./pages/admin/ProductNew'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments'));
@@ -37,6 +38,8 @@ const AdminPages = lazy(() => import('./pages/admin/Pages'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 const AdminReports = lazy(() => import('./pages/admin/Reports'));
 const AdminActivityLogs = lazy(() => import('./pages/admin/ActivityLogs'));
+const AdminTickets = lazy(() => import('./pages/admin/Tickets'));
+const CustomerSupport = lazy(() => import('./pages/Support'));
 
 function AppContent() {
   const { loading } = useAuth();
@@ -145,6 +148,34 @@ function AppContent() {
               <AdminLayout>
                 <AdminNotifications />
               </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/chats"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminChats />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/tickets"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminTickets />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/support"
+          element={
+            <ProtectedRoute>
+              <CustomerSupport />
             </ProtectedRoute>
           }
         />

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import AdminFooter from '../../components/AdminFooter';
+import AdminFooter from '../../components/ui/AdminFooter';
 import SoftCard from '../../components/ui/SoftCard';
 import { User, Mail, Calendar, Shield, Edit2, Check, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';

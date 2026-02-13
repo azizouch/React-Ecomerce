@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, Category } from '../../lib/supabase';
-import AdminFooter from '../../components/AdminFooter';
+import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { X, Save, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import Swal from 'sweetalert2';

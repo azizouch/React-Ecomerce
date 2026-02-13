@@ -21,6 +21,9 @@ import {
   Star,
   Activity,
   LayoutDashboard,
+  MessageCircle,
+  PanelLeftClose, 
+  PanelLeftOpen,
 } from 'lucide-react';
 
 import {
@@ -76,6 +79,7 @@ export function AppSidebar() {
     { title: t('orders') || 'Orders', url: '/admin/orders', icon: ShoppingCart, isAdmin: true },
     { title: t('users') || 'Users', url: '/admin/users', icon: Users, isAdmin: true },
     { title: t('notifications') || 'Notifications', url: '/admin/notifications', icon: Bell, isAdmin: true },
+    { title: t('supportTickets') || 'Support Tickets', url: '/admin/tickets', icon: MessageCircle, isAdmin: true },
     { title: t('payments') || 'Payments', url: '/admin/payments', icon: CreditCard, isAdmin: true },
     { title: t('shipping') || 'Shipping', url: '/admin/shipping', icon: Truck, isAdmin: true },
     { title: t('discounts') || 'Discounts', url: '/admin/discounts', icon: Tag, isAdmin: true },
@@ -166,9 +170,9 @@ export function AppSidebar() {
             )}
             <div className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" onClick={toggleCollapse}>
               {sidebarSide === 'right' ? (
-                <ChevronRight className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
+                <PanelLeftOpen className={`h-5 w-5 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
               ) : (
-                <ChevronLeft className={`h-4 w-4 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
+                <PanelLeftClose className={`h-5 w-5 transition-transform duration-300 text-sidebar-foreground ${isCollapsed ? 'rotate-180' : ''}`} />
               )}
             </div>
           </div>

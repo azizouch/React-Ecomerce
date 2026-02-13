@@ -4,23 +4,37 @@
 
 -- Example Admin User Profile
 -- Replace 'YOUR_ADMIN_USER_ID_HERE' with the actual UUID from auth.users for admin@example.com
-INSERT INTO profiles (id, email, full_name, is_admin, created_at)
+INSERT INTO profiles (id, email, full_name, is_admin, role, created_at)
 VALUES (
   'cae20ee3-15c0-493e-92ba-b93b382aad34', -- Get this from Supabase Auth → Users for admin@example.com
   'admin@example.com',
   'Admin User',
   true,
+  'admin',
+  NOW()
+) ON CONFLICT (id) DO NOTHING;
+
+-- Example Gestionnaire User Profile (limited admin access)
+-- Replace 'YOUR_GESTIONNAIRE_USER_ID_HERE' with the actual UUID from auth.users for gestionnaire@example.com
+INSERT INTO profiles (id, email, full_name, is_admin, role, created_at)
+VALUES (
+  'cae20ee3-15c0-493e-92ba-b93b382aae35', -- Get this from Supabase Auth → Users for gestionnaire@example.com
+  'gestionnaire@example.com',
+  'Gestionnaire User',
+  true,
+  'gestionnaire',
   NOW()
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Example Normal User Profile
 -- Replace 'YOUR_NORMAL_USER_ID_HERE' with the actual UUID from auth.users for user@example.com
-INSERT INTO profiles (id, email, full_name, is_admin, created_at)
+INSERT INTO profiles (id, email, full_name, is_admin, role, created_at)
 VALUES (
   'cae20ee3-15c0-493e-92ba-b93b382aad34', -- Get this from Supabase Auth → Users for user@example.com
   'user@example.com',
   'Normal User',
   false,
+  'customer',
   NOW()
 ) ON CONFLICT (id) DO NOTHING;
 

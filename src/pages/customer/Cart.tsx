@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '../hooks/useCart';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import Navbar from '../components/Navbar';
+import { useCart } from '../../hooks/useCart';
+import { customerCatalog } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import Navbar from '../../components/layout/Navbar';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
-import { t } from '../lib/translations';
+import { t } from '../../lib/translations';
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -20,18 +20,16 @@ export default function Cart() {
 
     setLoading(true);
     try {
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user?.id,
-          total_amount: cartTotal,
-          status: 'completed',
-        })
-        .select()
-        .single();
+      // Create order using helper
+      const { data: order, error: orderError } = await customerCatalog.createOrder(
+        user?.id || '',
+        cartTotal,
+        'completed'
+      );
 
       if (orderError) throw orderError;
 
+      // Create order items using helper
       const orderItems = cartItems.map((item) => ({
         order_id: order.id,
         product_id: item.product_id,
@@ -39,9 +37,7 @@ export default function Cart() {
         price: item.products?.price || 0,
       }));
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
+      const { error: itemsError } = await customerCatalog.createOrderItems(orderItems);
 
       if (itemsError) throw itemsError;
 

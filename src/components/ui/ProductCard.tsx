@@ -1,15 +1,15 @@
 import { Star, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { memo, useState } from "react";
-import LazyImage from "./ui/LazyImage";
-import AddToCartModal from "./ui/AddToCartModal";
+import LazyImage from "./LazyImage";
+import AddToCartModal from "./AddToCartModal";
 
-const ProductCard = memo(function ProductCard({ product, onAddToCart }) {
+const ProductCard = memo(function ProductCard({ product, onAddToCart }: any) {
   const navigate = useNavigate();
 
   const [modalOpen, setModalOpen] = useState(false);
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     // open modal to choose color/size

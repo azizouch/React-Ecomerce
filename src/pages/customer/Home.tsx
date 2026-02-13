@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Product, Category, catalog } from '../lib/supabase';
-import { useCart } from '../hooks/useCart';
-import AddToCartModal from '../components/ui/AddToCartModal';
-import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import Navbar from '../components/Navbar';
-import Carousel from '../components/Carousel';
-import Footer from '../components/Footer';
+import { Product, Category, customerCatalog } from '../../lib/supabase';
+import { useCart } from '../../hooks/useCart';
+import AddToCartModal from '../../components/ui/AddToCartModal';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import Navbar from '../../components/layout/Navbar';
+import Carousel from '../../components/ui/Carousel';
+import Footer from '../../components/ui/Footer';
 import { ShoppingCart } from 'lucide-react';
-import { t } from '../lib/translations';
+import { t } from '../../lib/translations';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -43,16 +43,12 @@ export default function Home() {
 
   const loadData = async () => {
     try {
-      const [{ data: productsData, error: productsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
-        catalog.getProducts({ page: 1, limit: 1000 }),
-        catalog.getCategories(),
-      ]);
+      const { products: productsData, categories: categoriesData, error } = await customerCatalog.loadHomeData();
 
-      if (productsError) throw productsError;
-      if (categoriesError) throw categoriesError;
+      if (error) throw error;
 
-      setProducts(productsData || []);
-      setCategories(categoriesData || []);
+      setProducts(productsData);
+      setCategories(categoriesData);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {

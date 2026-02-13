@@ -1,4 +1,4 @@
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function AdminFooter() {
   const { t, language } = useLanguage();
@@ -33,11 +33,6 @@ export default function AdminFooter() {
               <li>
                 <a href="/admin/orders" className="hover:text-gray-900 dark:hover:text-white transition">
                   {t('orders')}
-                </a>
-              </li>
-              <li>
-                <a href="/admin/users" className="hover:text-gray-900 dark:hover:text-white transition">
-                  {t('users')}
                 </a>
               </li>
             </ul>

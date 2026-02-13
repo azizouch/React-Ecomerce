@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, Order } from '../../lib/supabase';
-import AdminFooter from '../../components/AdminFooter';
+import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import StatCard from '../../components/ui/StatCard';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';

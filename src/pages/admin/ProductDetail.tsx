@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, Product, Category } from '../../lib/supabase';
-import AdminFooter from '../../components/AdminFooter';
+import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Button } from '../../components/ui/button';

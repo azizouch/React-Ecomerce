@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingCart, User, LogOut, Moon, Sun, ChevronDown, Bell, Search, LayoutDashboard, Package, Tag, ShoppingBag, Users, Globe } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useCart } from '../hooks/useCart';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { supabase, Category } from '../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { useCart } from '../../hooks/useCart';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { supabase, Category } from '../../lib/supabase';
 
 export default function Navbar() {
   const navigate = useNavigate();

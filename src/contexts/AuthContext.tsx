@@ -76,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           full_name: fullName,
           is_admin: false,
+          role: 'customer',
         });
 
       if (profileError) throw profileError;
