@@ -55,6 +55,7 @@ export default function AdminUsers() {
     full_name: '',
     is_admin: false,
   });
+  const [resendingUserId, setResendingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -98,8 +99,20 @@ export default function AdminUsers() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const cleanedEmail = formData.email.trim().toLowerCase();
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanedEmail)) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Invalid email',
+          text: 'Please enter a valid email address (e.g., user@example.com).',
+        });
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
+        email: cleanedEmail,
         password: formData.password,
       });
 
@@ -110,7 +123,7 @@ export default function AdminUsers() {
           .from('profiles')
           .insert({
             id: data.user.id,
-            email: formData.email,
+            email: cleanedEmail,
             full_name: formData.full_name,
             is_admin: formData.is_admin,
           });
@@ -174,19 +187,25 @@ export default function AdminUsers() {
     }
 
     try {
-      if (formData.password) {
-        const { error: passwordError } = await supabase.auth.admin.updateUserById(editingUser.id, {
-          password: formData.password,
-        });
-        if (passwordError) throw passwordError;
-      }
+        const adminClient = getSupabaseAdmin();
+        if (!adminClient) {
+          await Swal.fire({ icon: 'error', title: 'Configuration Error', text: 'Admin functionality is not properly configured on this environment.' });
+          return;
+        }
 
-      if (formData.email !== editingUser.email) {
-        const { error: emailError } = await supabase.auth.admin.updateUserById(editingUser.id, {
-          email: formData.email,
-        });
-        if (emailError) throw emailError;
-      }
+        if (formData.password) {
+          const { error: passwordError } = await adminClient.auth.admin.updateUserById(editingUser.id, {
+            password: formData.password,
+          });
+          if (passwordError) throw passwordError;
+        }
+
+        if (formData.email !== editingUser.email) {
+          const { error: emailError } = await adminClient.auth.admin.updateUserById(editingUser.id, {
+            email: formData.email,
+          });
+          if (emailError) throw emailError;
+        }
 
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
@@ -275,6 +294,39 @@ export default function AdminUsers() {
       setIsDeleting(false);
       setDeleteDialogOpen(false);
       setUserToDelete(null);
+    }
+  };
+
+  const handleResendConfirmation = async (user: UserProfile) => {
+    setResendingUserId(user.id);
+    try {
+      const adminApiBase = (import.meta as any).env?.VITE_ADMIN_API_URL || '/api';
+      const res = await fetch(`${adminApiBase}/admin/resend-confirmation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, id: user.id }),
+      });
+
+      let json: any = {};
+      try {
+        json = await res.json();
+      } catch (e) {
+        // non-json body
+        const text = await res.text().catch(() => '');
+        json = { message: text };
+      }
+
+      if (!res.ok) {
+        const message = json?.message || `Status ${res.status}`;
+        throw new Error(message);
+      }
+
+      toast({ title: 'Confirmation email resent', description: `Sent to ${user.email}` });
+    } catch (error: any) {
+      console.error('Error resending confirmation:', error);
+      await Swal.fire({ icon: 'error', title: 'Failed', text: error.message || 'Failed to resend confirmation' });
+    } finally {
+      setResendingUserId(null);
     }
   };
 
@@ -490,6 +542,14 @@ export default function AdminUsers() {
                           >
                             <Edit className="w-4 h-4" />
                           </button>
+                            <button
+                              onClick={async (e) => { e.stopPropagation(); await handleResendConfirmation(user); }}
+                              className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition font-medium text-sm"
+                              title="Resend confirmation"
+                              disabled={resendingUserId === user.id}
+                            >
+                              <Mail className="w-4 h-4" />
+                            </button>
                           <button
                             onClick={() => handleDeleteUser(user.id)}
                             className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition font-medium text-sm"

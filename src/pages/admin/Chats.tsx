@@ -1,14 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useLocation } from 'react-router-dom';
 import { adminCatalog } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../lib/translations';
 import AdminFooter from '../../components/ui/AdminFooter';
-import { MessageCircle, Send, MoreVertical, Plus, Search, Phone, Video, Settings, Loader, Smile, Paperclip, Mic } from 'lucide-react';
+import { MessageCircle, Send, MoreVertical, Plus, Search, Phone, Video, Settings, Loader, Smile, Paperclip, Mic, MessageSquareText } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import EmojiPicker from '../../components/ui/EmojiPicker';
 import { Badge } from '../../components/ui/badge';
-import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
+import { Avatar, AvatarFallback } from '../../components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,6 +72,7 @@ export default function AdminChats() {
   const { user, profile } = useAuth();
   const { language } = useLanguage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
 
   // State for conversations list
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -72,6 +83,7 @@ export default function AdminChats() {
   // State for chat window
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [otherProfile, setOtherProfile] = useState<any | null>(null);
   const [messageText, setMessageText] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [conversationLoading, setConversationLoading] = useState(false);
@@ -95,6 +107,9 @@ export default function AdminChats() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const messageContainerRef = useRef<HTMLDivElement>(null);
 
   // Admin list for assignment
   // const [admins, setAdmins] = useState<Admin[]>([]);
@@ -103,6 +118,50 @@ export default function AdminChats() {
   useEffect(() => {
     loadConversations();
   }, [searchQuery]);
+
+  // Open conversation from query param ?c=<id>
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const convId = params.get('c');
+    if (convId) {
+      setSelectedConversationId(convId);
+      setShowMobileChat(true);
+    }
+  }, [location.search]);
+
+  // Focus the message input when a conversation is opened
+  useEffect(() => {
+    if (!selectedConversationId) return;
+
+    // wait a short time for the UI to render and messages to load
+    const t = setTimeout(() => {
+      const input = messageInputRef.current as HTMLInputElement | null;
+      if (input) {
+        input.focus();
+        const len = input.value ? input.value.length : messageText.length;
+        try {
+          input.setSelectionRange(len, len);
+        } catch {}
+      }
+    }, 150);
+
+    return () => clearTimeout(t);
+  }, [selectedConversationId]);
+
+  // If URL has a message id (?m=), scroll to that message after messages load
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const messageId = params.get('m');
+    if (!messageId) return;
+
+    // attempt to scroll after messages are rendered
+    const t = setTimeout(() => {
+      const el = document.getElementById(`message-${messageId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+
+    return () => clearTimeout(t);
+  }, [messages, location.search]);
 
   // Load initial customers when modal opens
   useEffect(() => {
@@ -117,6 +176,45 @@ export default function AdminChats() {
       loadConversationDetails();
     }
   }, [selectedConversationId]);
+
+  // determine other participant profile for display (header/avatar)
+  useEffect(() => {
+    const loadOther = async () => {
+      setOtherProfile(null);
+      if (!selectedConversation) return;
+      const myId = user?.id;
+
+      // candidate sources: selectedConversation.profiles (customer), selectedConversation.assigned_admin
+      const candidate = selectedConversation.profiles && selectedConversation.profiles.id !== myId
+        ? selectedConversation.profiles
+        : selectedConversation.assigned_admin && selectedConversation.assigned_admin.id !== myId
+          ? selectedConversation.assigned_admin
+          : null;
+
+      if (candidate) {
+        setOtherProfile(candidate);
+        return;
+      }
+
+      // fallback: try admin_id or customer_id fields
+      const otherId = (selectedConversation.admin_id && selectedConversation.admin_id !== myId)
+        ? selectedConversation.admin_id
+        : (selectedConversation.customer_id && selectedConversation.customer_id !== myId)
+          ? selectedConversation.customer_id
+          : null;
+
+      if (otherId) {
+        try {
+          const { data: p } = await supabase.from('profiles').select('*').eq('id', otherId).maybeSingle();
+          if (p) setOtherProfile(p);
+        } catch (err) {
+          console.error('Error loading other profile', err);
+        }
+      }
+    };
+
+    loadOther();
+  }, [selectedConversation, user]);
 
   // Set up real-time subscription for new messages
   useEffect(() => {
@@ -175,11 +273,6 @@ export default function AdminChats() {
       }
 
       setConversations(filteredData);
-
-      // Auto-select first conversation if not already selected
-      if (data && data.length > 0 && !selectedConversationId) {
-        setSelectedConversationId(data[0].id);
-      }
     } catch (error) {
       console.error('Error loading conversations:', error);
     } finally {
@@ -348,6 +441,82 @@ export default function AdminChats() {
     }
   };
 
+  // Handle emoji button click - toggle emoji picker
+  const handleEmojiClick = () => {
+    setShowEmojiPicker(!showEmojiPicker);
+    // In a real implementation, this would open an emoji picker component
+  };
+
+  // Handle attachment button click - trigger file input
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Handle file selection
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedConversationId || !user) return;
+
+    setSendingMessage(true);
+    try {
+      // Upload file and send message with attachment
+      const { error } = await adminCatalog.sendMessage(
+        selectedConversationId,
+        user.id,
+        'admin',
+        `Attachment: ${file.name}`,
+        file.name // sending file name placeholder; replace with uploaded URL in real implementation
+      );
+
+      if (error) throw error;
+
+      await loadConversationDetails();
+    } catch (error) {
+      console.error('Error sending attachment:', error);
+    } finally {
+      setSendingMessage(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Handle voice message button click
+  const handleVoiceMessageClick = () => {
+    if (isRecording) {
+      // Stop recording
+      setIsRecording(false);
+      // In a real implementation, this would stop the audio recording
+      // and send the voice message
+    } else {
+      // Start recording
+      setIsRecording(true);
+      // In a real implementation, this would start the audio recording
+      // using the Web Audio API or MediaRecorder
+    }
+  };
+
+  // Insert emoji at caret position in the message input (falls back to append)
+  const insertEmoji = (emoji: string) => {
+    const input = messageInputRef.current;
+    if (input && typeof input.selectionStart === 'number') {
+      const start = input.selectionStart ?? messageText.length;
+      const end = (input.selectionEnd ?? start) as number;
+      const next = messageText.slice(0, start) + emoji + messageText.slice(end);
+      setMessageText(next);
+      // restore focus and caret after emoji
+      requestAnimationFrame(() => {
+        input.focus();
+        const pos = start + emoji.length;
+        input.setSelectionRange(pos, pos);
+      });
+    } else {
+      setMessageText((prev) => prev + emoji);
+    }
+    setShowEmojiPicker(false);
+  };
+
   // Format time for conversation list
   const formatTime = (dateString: string) => {
     if (!dateString) return '';
@@ -378,7 +547,7 @@ export default function AdminChats() {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-blue-600" />
+                <MessageSquareText className="w-5 h-5 text-blue-600" />
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">Team Chat</h1>
               </div>
               {profile?.is_admin && (
@@ -389,7 +558,7 @@ export default function AdminChats() {
                       setShowNewConversationModal(true);
                     }
                   }}
-                  className="bg-blue-600 hover:bg-blue-700 h-9"
+                  className="text-sm bg-blue-600 hover:bg-blue-700 h-9"
                 >
                   <Plus className="w-4 h-4 mr-1" />
                   {t(language, 'newConversation')}
@@ -412,12 +581,17 @@ export default function AdminChats() {
 
             {/* Filter Dropdown */}
             <div className="mt-3">
-              <select className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-                <option value="all">All Chats</option>
-                <option value="unread">Unread</option>
-                <option value="admin">Admins</option>
-                <option value="managers">Managers</option>
-              </select>
+              <Select value={chatFilter} onValueChange={setChatFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Chats</SelectItem>
+                  <SelectItem value="unread">Unread</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -433,58 +607,58 @@ export default function AdminChats() {
                 {t(language, 'noConversationsFound')}
               </div>
             ) : (
-              conversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  onClick={() => {
-                    setSelectedConversationId(conv.id);
-                    setShowMobileChat(true);
-                  }}
-                  className={`p-3 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition ${
-                    selectedConversationId === conv.id
-                      ? 'bg-blue-50 dark:bg-blue-950'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Avatar */}
-                    <Avatar className="w-10 h-10 flex-shrink-0">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${conv.profiles?.email || 'default'}`} />
-                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600">
-                        {conv.profiles?.full_name?.substring(0, 2).toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
+              conversations
+                .filter((conv) => {
+                  if (chatFilter === 'all') return true;
+                  if (chatFilter === 'unread') return conv.unread_count > 0;
+                  if (chatFilter === 'resolved') return conv.status === 'resolved';
+                  if (chatFilter === 'open') return conv.status === 'open';
+                  return true;
+                })
+                .map((conv) => (
+                  <div
+                    key={conv.id}
+                    onClick={() => {
+                      setSelectedConversationId(conv.id);
+                      setShowMobileChat(true);
+                    }}
+                    className={`p-3 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition ${
+                      selectedConversationId === conv.id
+                        ? 'bg-blue-50 dark:bg-blue-950'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar className="w-10 h-10 flex-shrink-0">
+                        <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600">
+                          {conv.profiles?.full_name?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                          {conv.profiles?.full_name || 'Unknown'}
-                        </p>
-                        <p className="text-xs text-gray-400 flex-shrink-0">
-                          {formatTime(conv.last_message_at)}
-                        </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                            {conv.profiles?.full_name || 'Unknown'}
+                          </p>
+                          <p className="text-xs text-gray-400 flex-shrink-0">{formatTime(conv.last_message_at)}</p>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{conv.last_message || t(language, 'noMessages')}</p>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {conv.last_message || t(language, 'noMessages')}
-                      </p>
-                    </div>
 
-                    {/* Unread Badge */}
-                    {conv.unread_count > 0 && (
-                      <Badge className="bg-red-500 text-white h-5 w-5 flex items-center justify-center rounded-full p-0 flex-shrink-0">
-                        {conv.unread_count > 9 ? '9+' : conv.unread_count}
-                      </Badge>
-                    )}
+                      {conv.unread_count > 0 && (
+                        <Badge className="bg-red-500 text-white h-5 w-5 flex items-center justify-center rounded-full p-0 flex-shrink-0">
+                          {conv.unread_count > 9 ? '9+' : conv.unread_count}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                ))
             )}
           </div>
         </div>
 
         {/* Right Side - Chat Window */}
-        <div className={`${!showMobileChat ? 'hidden' : 'w-full'} md:block md:flex-1 flex flex-col bg-white dark:bg-slate-900`}>
+        <div ref={messageContainerRef} className={`${!showMobileChat ? 'hidden' : 'w-full'} md:block md:flex-1 flex flex-col bg-white dark:bg-slate-900 relative`}>
           {selectedConversation ? (
             <>
               {/* Chat Header */}
@@ -502,16 +676,15 @@ export default function AdminChats() {
                   </button>
 
                   {/* Avatar and Info */}
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedConversation.profiles?.email || 'default'}`} />
-                    <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600">
-                      {selectedConversation.profiles?.full_name?.substring(0, 2).toUpperCase() || 'U'}
+                  <Avatar className="w-10 h-10 flex-shrink-0">
+                    <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 font-semibold">
+                      {(otherProfile?.full_name || selectedConversation?.profiles?.full_name || 'U').charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
 
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {selectedConversation.profiles?.full_name}
+                      {otherProfile?.full_name || selectedConversation.profiles?.full_name}
                     </h3>
                     <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
                       <span className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full"></span>
@@ -547,7 +720,7 @@ export default function AdminChats() {
               </div>
 
               {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-slate-950">
+              <div className="flex-1 overflow-y-auto p-4 pb-28 space-y-4 bg-gray-50 dark:bg-slate-950">
                 {conversationLoading ? (
                   <div className="text-center text-gray-500 flex items-center justify-center gap-2">
                     <Loader className="w-4 h-4 animate-spin" />
@@ -558,90 +731,104 @@ export default function AdminChats() {
                     {t(language, 'noMessages')}
                   </div>
                 ) : (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className="flex gap-2 max-w-xs">
-                        {msg.sender_type !== 'admin' && (
-                          <Avatar className="w-7 h-7 flex-shrink-0">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedConversation.profiles?.email || 'default'}`} />
-                            <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 text-xs">
-                              {selectedConversation.profiles?.full_name?.substring(0, 2).toUpperCase() || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div className={`${msg.sender_type === 'admin' ? 'flex-row-reverse' : ''} flex gap-2`}>
-                          <div
-                            className={`px-4 py-2 rounded-xl break-words ${
-                              msg.sender_type === 'admin'
-                                ? 'bg-blue-600 text-white rounded-br-none'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
-                            }`}
-                          >
-                            <p className="text-sm">{msg.message}</p>
-                            {msg.attachment_url && (
-                              <a
-                                href={msg.attachment_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs underline mt-1 block"
-                              >
-                                View Attachment
-                              </a>
-                            )}
-                          </div>
-                          <div className={`flex items-center text-xs text-gray-400`}>
-                            <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  messages.map((msg) => {
+                    const isMine = msg.sender_id === user?.id;
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div id={`message-${msg.id}`} className="flex gap-2 max-w-xs">
+                          {!isMine && (
+                            <Avatar className="w-7 h-7 flex-shrink-0">
+                              <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 text-xs">
+                                {selectedConversation.profiles?.full_name?.charAt(0).toUpperCase() || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                          <div className={`${isMine ? 'flex-row-reverse' : ''} flex gap-2`}>
+                            <div
+                              className={`px-4 py-2 rounded-xl break-words ${isMine ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'}`}
+                            >
+                              <p className="text-sm">{msg.message}</p>
+                              {msg.attachment_url && (
+                                <a
+                                  href={msg.attachment_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs underline mt-1 block"
+                                >
+                                  View Attachment
+                                </a>
+                              )}
+                            </div>
+                            <div className={`flex items-center text-xs text-gray-400`}>
+                              <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Message Input */}
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900">
+              {/* Message Input - fixed to bottom of chat pane */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900 z-20">
                 {selectedConversation.status === 'resolved' && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
                     {t(language, 'conversationResolved')}
                   </p>
                 )}
+
                 <div className="flex gap-2 items-end">
-                  {/* Input Toolbar Icons */}
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-slate-800"
-                      title="Emoji"
-                    >
-                      <Smile className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-slate-800"
-                      title="Attachment"
-                    >
-                      <Paperclip className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-slate-800"
-                      title="Voice Message"
-                    >
-                      <Mic className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                    </Button>
+                  {/* Hidden file input for attachments */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
+
+                  {/* Input Toolbar Icons (emoji dropdown anchored here) */}
+                  <div className="relative" ref={toolbarRef}>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-slate-800 ${showEmojiPicker ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+                        title="Emoji"
+                        onClick={handleEmojiClick}
+                      >
+                        <Smile className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-slate-800"
+                        title="Attachment"
+                        onClick={handleAttachmentClick}
+                      >
+                        <Paperclip className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-slate-800 ${isRecording ? 'bg-red-100 dark:bg-red-900' : ''}`}
+                        title="Voice Message"
+                        onClick={handleVoiceMessageClick}
+                      >
+                        <Mic className={`w-5 h-5 ${isRecording ? 'text-red-500 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Message Input */}
                   <Input
                     placeholder={t(language, 'typeMessage')}
+                    ref={messageInputRef}
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyPress={(e) => {
@@ -651,8 +838,11 @@ export default function AdminChats() {
                       }
                     }}
                     disabled={sendingMessage || selectedConversation.status === 'resolved'}
-                    className="flex-1"
+                    className="flex-1 h-9"
                   />
+
+                  {/* Emoji picker will render in a portal to avoid clipping */}
+                  <EmojiPicker anchorRef={toolbarRef} containerRef={messageContainerRef} visible={showEmojiPicker} onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} recent={[]} />
 
                   {/* Send Button */}
                   <Button
@@ -695,7 +885,9 @@ export default function AdminChats() {
               />
               {customers.length > 0 && (
                 <div className="border rounded mt-2 max-h-48 overflow-y-auto">
-                  {customers.map((customer) => (
+                  {customers
+                    .filter((customer) => customer.id !== user?.id)
+                    .map((customer) => (
                     <div
                       key={customer.id}
                       onClick={() => handleSelectCustomer(customer)}

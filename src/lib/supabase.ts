@@ -963,13 +963,32 @@ export const adminCatalog = {
 
       if (messageError) throw messageError;
 
-      // Update conversation last message
+      // Ensure unread_count increments for the recipient (customer->admin and admin->recipient)
+      // Fetch conversation to determine who should receive the unread increment
+      const { data: convData } = await supabase
+        .from('conversations')
+        .select('customer_id, admin_id, assigned_admin_id')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      try {
+        // If sender is a customer, increment unread for admins. If sender is admin, increment unread
+        // only when the conversation's customer_id is not the sender (covers admin-to-admin where
+        // customer_id may hold the recipient admin id).
+        if (senderType === 'customer' || (senderType === 'admin' && convData?.customer_id !== senderId)) {
+          const { error: rpcError } = await supabase.rpc('increment_unread', { id: conversationId });
+          if (rpcError) console.error('Error incrementing unread count via RPC:', rpcError);
+        }
+      } catch (rpcErr) {
+        console.error('RPC increment_unread failed:', rpcErr);
+      }
+
+      // Update conversation last message and timestamp
       const { error: updateError } = await supabase
         .from('conversations')
         .update({
           last_message: message,
           last_message_at: new Date().toISOString(),
-          unread_count: senderType === 'customer' ? supabase.rpc('increment_unread', { id: conversationId }) : 0,
         })
         .eq('id', conversationId);
 

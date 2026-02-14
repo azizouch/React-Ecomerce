@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, Profile } from '../lib/supabase';
+import { supabase, Profile, adminCatalog } from '../lib/supabase';
+import { toast } from '../hooks/use-toast';
+import { startRealtime, stopRealtime } from '../lib/realtime';
 
 interface AuthContextType {
   user: User | null;
@@ -23,6 +25,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         loadProfile(session.user.id);
+        // start realtime subscriptions for this user
+        startRealtime(session.user.id, {
+          onConversationChange: (payload) => {
+            window.dispatchEvent(new CustomEvent('realtime:conversation', { detail: payload }));
+          },
+          onNewMessage: (payload) => {
+            window.dispatchEvent(new CustomEvent('realtime:message', { detail: payload }));
+          }
+        });
       } else {
         setLoading(false);
       }
@@ -33,9 +44,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           await loadProfile(session.user.id);
+          // ensure realtime running for newly signed in user
+          startRealtime(session.user.id, {
+            onConversationChange: (payload) => {
+              window.dispatchEvent(new CustomEvent('realtime:conversation', { detail: payload }));
+            },
+            onNewMessage: (payload) => {
+              window.dispatchEvent(new CustomEvent('realtime:message', { detail: payload }));
+            }
+          });
         } else {
           setProfile(null);
           setLoading(false);
+          stopRealtime();
         }
       })();
     });
@@ -53,6 +74,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       setProfile(data);
+      // notify user at login if there are unread conversations
+      try {
+        const { count } = await adminCatalog.getUnreadConversationsCount();
+        if (count && count > 0) {
+          const tRef = toast({ title: `You have ${count} unread messages`, description: 'Open chats to view them' });
+          if (tRef) {
+            tRef.update({ action: (
+              <button onClick={() => { try { tRef.dismiss(); } catch {} window.location.href = '/admin/chats'; }} className="text-sm text-blue-600">Open</button>
+            ) } as any);
+          }
+        }
+      } catch (e) {
+        // ignore notification errors
+      }
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -118,6 +153,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   };
+
+  // cleanup realtime on unmount
+  useEffect(() => {
+    return () => stopRealtime();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut }}>

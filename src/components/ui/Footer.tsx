@@ -1,5 +1,5 @@
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function Footer() {
   const { t, language } = useLanguage();
