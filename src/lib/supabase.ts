@@ -48,6 +48,11 @@ export type Profile = {
   id: string;
   email: string;
   full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
   is_admin: boolean;
   role: 'customer' | 'gestionnaire' | 'admin' | 'moderator';
   created_at: string;
@@ -827,7 +832,7 @@ export const adminCatalog = {
 
     if (error) return { data: null, error, count: 0 };
 
-    // Fetch customer profiles for each conversation
+    // Fetch customer profiles and assigned admin profiles for each conversation
     let conversationsWithProfiles = [];
     if (data) {
       for (const conv of data) {
@@ -837,10 +842,43 @@ export const adminCatalog = {
           .eq('id', conv.customer_id)
           .single();
 
+        // Fetch assigned_admin profile if present
+        let assignedAdminData = null;
+        if (conv.assigned_admin_id) {
+          const { data: adminData } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .eq('id', conv.assigned_admin_id)
+            .single();
+          assignedAdminData = adminData;
+        }
+
         conversationsWithProfiles.push({
           ...conv,
           profiles: profileData,
+          assigned_admin: assignedAdminData,
         });
+      }
+    }
+
+    // Ensure unread_count reflects actual unseen messages in case messages were inserted
+    // directly without updating the conversations.unread_count column.
+    if (conversationsWithProfiles.length > 0) {
+      for (const conv of conversationsWithProfiles) {
+        try {
+          const { count } = await supabase
+            .from('messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('conversation_id', conv.id)
+            .is('is_seen', false);
+
+          // supabase returns count as number | null
+          // fallback to existing conv.unread_count if unavailable
+          conv.unread_count = (count as number) || conv.unread_count || 0;
+        } catch (e) {
+          // ignore per-conversation errors and keep existing unread_count
+          console.error('Error computing unread count for conversation', conv.id, e);
+        }
       }
     }
 
@@ -956,20 +994,29 @@ export const adminCatalog = {
           sender_type: senderType,
           message,
           attachment_url: attachmentUrl || null,
-          is_seen: senderType === 'admin', // Admin messages are seen by default
+          is_seen: false,
         })
         .select()
         .single();
 
       if (messageError) throw messageError;
 
-      // Update conversation last message
+      // Get current unread count
+      const { data: convData } = await supabase
+        .from('conversations')
+        .select('unread_count')
+        .eq('id', conversationId)
+        .single();
+
+      const currentUnreadCount = convData?.unread_count || 0;
+
+      // Update conversation last message and increment unread count
       const { error: updateError } = await supabase
         .from('conversations')
         .update({
           last_message: message,
           last_message_at: new Date().toISOString(),
-          unread_count: senderType === 'customer' ? supabase.rpc('increment_unread', { id: conversationId }) : 0,
+          unread_count: currentUnreadCount + 1,
         })
         .eq('id', conversationId);
 
@@ -982,14 +1029,39 @@ export const adminCatalog = {
     }
   },
 
-  // Mark conversation as read
-  async markConversationAsRead(conversationId: string) {
-    const { data, error } = await supabase
-      .from('conversations')
-      .update({ unread_count: 0 })
-      .eq('id', conversationId);
+  // Mark conversation as read. If userId is provided, mark messages not sent by that user as seen.
+  async markConversationAsRead(conversationId: string, userId?: string) {
+    try {
+      // If userId is provided, mark messages in this conversation as seen for messages not sent by this user
+      if (userId) {
+        const { error: msgErr } = await supabase
+          .from('messages')
+          .update({ is_seen: true })
+          .eq('conversation_id', conversationId)
+          .neq('sender_id', userId);
 
-    return { data, error };
+        if (msgErr) throw msgErr;
+      } else {
+        // Fallback: mark all messages as seen
+        const { error: msgErr } = await supabase
+          .from('messages')
+          .update({ is_seen: true })
+          .eq('conversation_id', conversationId);
+
+        if (msgErr) throw msgErr;
+      }
+
+      // Reset conversation-level unread counter
+      const { data, error } = await supabase
+        .from('conversations')
+        .update({ unread_count: 0 })
+        .eq('id', conversationId);
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+      return { data: null, error };
+    }
   },
 
   // Update conversation status
@@ -1190,15 +1262,52 @@ export const adminCatalog = {
 
   // Get real-time subscriptions helper (for setting up real-time listeners)
   subscribeToConversationMessages(conversationId: string, callback: (message: any) => void) {
-    const subscription = supabase
-      .channel(`messages:${conversationId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-        (payload) => callback(payload.new)
-      )
-      .subscribe();
+    const channel = supabase.channel(`messages:${conversationId}`);
 
+    // Listen for INSERT
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+      (payload) => callback(payload.new)
+    );
+
+    // Listen for UPDATE (e.g., is_seen changes)
+    channel.on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+      (payload) => callback(payload.new)
+    );
+
+    const subscription = channel.subscribe();
+    return subscription;
+  },
+
+  // Subscribe to all messages to stay updated on unread count
+  subscribeToAllConversationMessages(callback: () => void) {
+    const channel = supabase.channel('all_messages');
+
+    // INSERT
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages' },
+      () => callback()
+    );
+
+    // UPDATE (e.g., marking messages seen) - refresh counts
+    channel.on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'messages' },
+      () => callback()
+    );
+
+    // Also listen for conversation updates so clients refresh when unread_count changes
+    channel.on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'conversations' },
+      () => callback()
+    );
+
+    const subscription = channel.subscribe();
     return subscription;
   },
 

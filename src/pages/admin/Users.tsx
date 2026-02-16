@@ -3,6 +3,7 @@ import { supabase, supabaseAdmin as getSupabaseAdmin } from '../../lib/supabase'
 import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
 import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { t } from '../../lib/translations';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
@@ -33,7 +34,7 @@ interface UserProfile {
 }
 
 export default function AdminUsers() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,24 +124,24 @@ export default function AdminUsers() {
       loadUsers();
       await Swal.fire({
         icon: 'success',
-        title: 'Success!',
-        text: 'User created successfully!',
+        title: t(language, 'success'),
+        text: t(language, 'userCreatedSuccess'),
         timer: 2000,
         showConfirmButton: false
       });
     } catch (error: any) {
       console.error('Error creating user:', error);
 
-      let errorMessage = 'Failed to create user. Please try again.';
+      let errorMessage = t(language, 'registrationFailed');
       if (error.message) {
         if (error.message.includes('already registered') || error.message.includes('User already registered')) {
-          errorMessage = 'This email is already registered. Please use a different email address.';
+          errorMessage = t(language, 'emailAlreadyRegistered');
         } else if (error.message.includes('Email address') && error.message.includes('is invalid')) {
-          errorMessage = 'This email address appears to be invalid or blocked. Please try a different email address (e.g., test123@gmail.com).';
+          errorMessage = t(language, 'invalidEmailBlocked');
         } else if (error.message.includes('invalid') || error.message.includes('Invalid email')) {
-          errorMessage = 'Please enter a valid email address (e.g., user@example.com).';
+          errorMessage = t(language, 'invalidEmailFormat');
         } else if (error.message.includes('Password should be at least') || error.message.includes('password')) {
-          errorMessage = 'Password must be at least 6 characters long.';
+          errorMessage = t(language, 'passwordMinRequired');
         } else if (error.message.includes('signup is disabled')) {
           errorMessage = 'User registration is currently disabled. Please contact an administrator.';
         } else if (error.message.includes('rate limit')) {
@@ -153,7 +154,7 @@ export default function AdminUsers() {
 
       await Swal.fire({
         icon: 'error',
-        title: 'Registration Failed',
+        title: t(language, 'registrationFailed'),
         text: errorMessage,
         confirmButtonText: 'OK'
       });

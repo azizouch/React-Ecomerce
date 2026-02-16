@@ -131,7 +131,7 @@ export default function Shop() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Shop All Products</h1>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{t(language, 'shop')}</h1>
 
             {/* Shop Header Controls */}
             <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
@@ -141,7 +141,7 @@ export default function Shop() {
                   onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
                   className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition text-gray-700 dark:text-gray-300 font-medium min-w-[200px] justify-between"
                 >
-                  <span>{categories.find(c => c.id === selectedCategory)?.name || 'All Categories'}</span>
+                  <span>{categories.find(c => c.id === selectedCategory)?.name || t(language, 'allCategories')}</span>
                   <ChevronDown className={`w-4 h-4 transition ${showCategoriesDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -160,7 +160,7 @@ export default function Shop() {
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
                       }`}
                     >
-                      All Categories
+                      {t(language, 'allCategories')}
                     </button>
                     {categories.map((category) => (
                       <button
@@ -188,7 +188,7 @@ export default function Shop() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder={t(language, 'searchProducts')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
@@ -215,7 +215,7 @@ export default function Shop() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder="Search..."
+                      placeholder={t(language, 'searchPlaceholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
@@ -240,7 +240,7 @@ export default function Shop() {
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
                       }`}
                     >
-                      All Categories
+                      {t(language, 'allCategories')}
                     </button>
                     {categories.map((category) => (
                       <button
@@ -431,7 +431,7 @@ export default function Shop() {
                             </button>
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                            {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                            {product.stock > 0 ? `${product.stock} ${t(language, 'inStock')}` : t(language, 'outOfStock')}
                           </p>
                         </div>
                       </div>

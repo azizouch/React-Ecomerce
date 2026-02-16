@@ -1,4 +1,4 @@
-import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2, MessageCircle } from 'lucide-react';
+import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2, MessageSquareText,Menu } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,8 @@ import { useIsMobile } from '../../hooks/use-mobile';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, adminCatalog } from '../../lib/supabase';
+import { useRef } from 'react';
 
 export function Header() {
   const { toggleSidebar, state: sidebarState } = useSidebar();
@@ -47,6 +48,8 @@ export function Header() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const showedToastsForUser = useRef<string | null>(null);
+  const showedMessageIds = useRef<Set<string>>(new Set());
 
   // Fetch user email from auth session if not available in profile
   useEffect(() => {
@@ -104,6 +107,108 @@ export function Header() {
     loadNotifications();
   }, []);
 
+  // Show toasts for unread conversations when user logs in (only once per session)
+  useEffect(() => {
+    const showUnreadToasts = async () => {
+      try {
+        if (!user || showedToastsForUser.current === user.id) return;
+        const { data } = await adminCatalog.getConversations({ page: 1, limit: 5, status: 'all' });
+        const unread = (data || []).filter((c: any) => c.unread_count && c.unread_count > 0);
+        // For each unread conversation, fetch the latest message id so toasts can be deduped reliably
+        await Promise.all(
+          unread.slice(0, 5).map(async (c: any) => {
+            try {
+              const { data: latest } = await supabase
+                .from('messages')
+                .select('id, message')
+                .eq('conversation_id', c.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              const msgId = latest?.id || c.id;
+              if (msgId && showedMessageIds.current.has(msgId)) return;
+              if (msgId) showedMessageIds.current.add(msgId);
+              toast(t('newMessageFrom', { name: c.profiles?.full_name || t('user') }), {
+                description: latest?.message || c.last_message || '',
+                action: {
+                  label: t('open'),
+                  onClick: () => navigate(`/admin/chats?open=${c.id}`),
+                },
+              });
+            } catch (e) {
+              // fallback to previous behavior
+              const key = c.last_message_at || c.last_message || c.id;
+              if (typeof key === 'string' && showedMessageIds.current.has(key)) return;
+              if (typeof key === 'string') showedMessageIds.current.add(key);
+              toast(t('newMessageFrom', { name: c.profiles?.full_name || t('user') }), {
+                description: c.last_message || '',
+                action: {
+                  label: t('open'),
+                  onClick: () => navigate(`/admin/chats?open=${c.id}`),
+                },
+              });
+            }
+          })
+        );
+        showedToastsForUser.current = user.id;
+      } catch (error) {
+        console.error('Error fetching unread conversations for toasts:', error);
+      }
+    };
+
+    showUnreadToasts();
+  }, [user, navigate]);
+
+  // Real-time listener for new message inserts - show toast when a new message arrives for current admin
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('public:messages')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        async (payload) => {
+          try {
+            const newMsg = payload.new as any;
+            if (!newMsg || !newMsg.id) return;
+            if (showedMessageIds.current.has(newMsg.id)) return;
+            showedMessageIds.current.add(newMsg.id);
+            // Fetch conversation to check if current user is a participant
+            const { data: convData } = await adminCatalog.getConversation(newMsg.conversation_id);
+            const conv = convData;
+            if (!conv) return;
+
+            const isParticipant = conv.admin_id === user.id || conv.assigned_admin_id === user.id;
+            if (!isParticipant) return;
+            if (newMsg.sender_id === user.id) return; // ignore own messages
+
+            const senderName = conv.profiles?.full_name || conv.assigned_admin?.full_name || t('user');
+
+            toast(t('newMessageFrom', { name: senderName || t('user') }), {
+              description: newMsg.message || '',
+              action: {
+                label: t('open'),
+                onClick: () => navigate(`/admin/chats?open=${conv.id}`),
+              },
+            });
+          } catch (error) {
+            console.error('Error handling realtime message:', error);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try {
+        channel.unsubscribe();
+      } catch (e) {
+        // ignore
+      }
+    };
+  }, [user, navigate]);
+
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, lu: true })));
     setUnreadCount(0);
@@ -140,8 +245,8 @@ export function Header() {
       navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
-      toast.error('Erreur lors de la déconnexion', {
-        description: 'Une erreur est survenue lors de la déconnexion',
+      toast.error(t('logoutError'), {
+        description: t('logoutErrorDesc'),
         duration: 4000,
       });
     }
@@ -203,31 +308,30 @@ export function Header() {
       <div className="flex items-center justify-between w-full lg:hidden">
         {/* Left side - Hamburger and Search */}
         <div className="flex items-center space-x-6">
-          <button
+          <Button
+            variant="ghost" size="icon"
             onClick={toggleSidebar}
-            className="h-4 w-4 p-0 hover:bg-transparent flex items-center justify-center"
+            className="h-5 w-5 p-0 hover:bg-transparent flex items-center justify-center"
           >
-            <svg className="h-4 w-4 text-gray-600 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-          </button>
-          <button
+          <Menu className="h-5 w-5 flex-shrink-0 text-gray-600 dark:text-white" />
+          </Button>
+
+          <Button
+            variant="ghost" size="icon"
             onClick={() => setShowMobileSearch(!showMobileSearch)}
             className="h-4 w-4 p-0 hover:bg-transparent flex items-center justify-center"
           >
             {showMobileSearch ? (
-              <X className="h-4 w-4 text-gray-600 dark:text-white" />
+              <X className="h-5 w-5 flex-shrink-0 text-gray-600 dark:text-white" />
             ) : (
-              <Search className="h-4 w-4 text-gray-600 dark:text-white" />
+              <Search className="h-5 w-5 flex-shrink-0 text-gray-600 dark:text-white" />
             )}
-          </button>
+          </Button>
         </div>
 
         {/* Center - App Title */}
-        <button
-          className="text-lg font-bold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:text-gray-900 dark:focus:text-white transition-colors select-none bg-transparent border-none p-0 m-0"
+          <button
+          className="text-lg font-bold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none transition-colors select-none bg-transparent border-none p-0 m-0"
           onClick={() => {
             // Prevent navigation while auth/profile is still loading to avoid flash
             if (loading) return;
@@ -239,42 +343,128 @@ export function Header() {
           }}
           onMouseLeave={(e) => e.currentTarget.blur()}
         >
-          E-commerce
+          {t('companyName')}
         </button>
 
         {/* Right side - Notifications and User (Mobile Only) */}
-        <div className="flex items-center space-x-3 lg:hidden">
+        <div className="flex items-center gap-1 lg:hidden">
           {/* Chat Button */}
-          <ChatHeaderButton isMobile={true} />
+          <ChatHeaderButton isMobile={false} />
 
           {/* Notifications Bell */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative h-7 w-7">
-                <Bell className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="hover:bg-gray-100 dark:hover:bg-slate-800 relative">
+                <Bell className="h-5 w-5 flex-shrink-0 text-gray-600 dark:text-white" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                  <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-red-500 text-white rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Badge>
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-gray-500">No notifications</div>
-              ) : (
-                notifications.map((notif) => (
-                  <DropdownMenuItem key={notif.id} className="flex flex-col items-start px-4 py-2 cursor-pointer">
-                    <div className="font-medium text-sm">{notif.title}</div>
-                    <div className="text-xs text-gray-500">{notif.description}</div>
-                  </DropdownMenuItem>
-                ))
-              )}
+            <DropdownMenuContent align="end" className="w-80 p-0">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between bg-white dark:bg-slate-800">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('notifications')}</p>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={markAllAsRead}
+                  >
+                    <CheckCheck className="mr-1 h-3.5 w-3.5" />
+                    {t('markAsRead')}
+                  </Button>
+                )}
+              </div>
+
+              <div className="max-h-[60vh] overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+                    <p>{t('noNotificationsThere')}</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors relative ${!notification.lu ? 'bg-gray-100 dark:bg-slate-800/50' : ''}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <p className={`text-sm ${!notification.lu ? 'font-medium' : ''}`}>
+                                {notification.title || notification.titre}
+                              </p>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-gray-400 hover:text-red-600 ml-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                    }}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <span className="sr-only">{t('delete')}</span>
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{t('confirmDelete')}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {t('deleteWarning')}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteNotification(notification.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      {t('delete')}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                              {notification.description || notification.message}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {formatRelativeTime(notification.date_creation || notification.time)}
+                            </p>
+                          </div>
+                        </div>
+                        {!notification.lu && (
+                          <span className="absolute right-4 top-3 h-2 w-2 rounded-full bg-red-500" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <DropdownMenuItem asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="text-xs w-full justify-center cursor-pointer"
+                  onClick={() => navigate('/admin/notifications')}
+                >
+                  {t('viewAll')}
+                </Button>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* User Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full border border-gray-300 dark:border-gray-600 p-0 hover:bg-transparent">
+              <Button variant="ghost" size="icon" className="h-7 w-7 ml-2 rounded-full border border-gray-300 dark:border-gray-600 p-0 hover:bg-transparent">
                 <Avatar className="h-7 w-7">
                   <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs font-bold">
                     {profile?.full_name?.[0] || user?.email?.[0] || '?'}
@@ -286,10 +476,10 @@ export function Header() {
               <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">
                 <div className="flex flex-col space-y-1">
                   <div className="font-medium">
-                    {profile?.full_name || user?.email || 'User'}
+                    {profile?.full_name || user?.email || t('user')}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">
-                    {userEmail || user?.email || 'No email'}
+                    {userEmail || user?.email || t('notProvided')}
                   </div>
                 </div>
               </DropdownMenuLabel>
@@ -358,10 +548,8 @@ export function Header() {
               <Card className="shadow-lg border-border animate-in fade-in zoom-in-95 duration-200">
                 <CardHeader className="pb-3 pt-4 px-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-medium">
-                      {t('notifications') || 'Notifications'}
-                    </CardTitle>
-                    {unreadCount > 0 && (
+                    <CardTitle className="text-base font-medium">{t('notifications')}</CardTitle>
+                        {unreadCount > 0 && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -369,7 +557,7 @@ export function Header() {
                         onClick={markAllAsRead}
                       >
                         <CheckCheck className="mr-1 h-3.5 w-3.5" />
-                        Tout marquer comme lu
+                        {t('markAsRead')}
                       </Button>
                     )}
                   </div>
@@ -377,7 +565,7 @@ export function Header() {
                 <CardContent className="px-2 py-0 max-h-[60vh] overflow-y-auto">
                   {notifications.length === 0 ? (
                     <div className="text-center py-8 text-sm text-muted-foreground">
-                      <p>Aucune notification</p>
+                      <p>{t('noNotificationsThere')}</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-border">
@@ -409,19 +597,19 @@ export function Header() {
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                      <AlertDialogTitle>{t('confirmDelete')}</AlertDialogTitle>
                                       <AlertDialogDescription>
                                         Êtes-vous sûr de vouloir supprimer cette notification ?
                                         Cette action est irréversible.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                      <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                                       <AlertDialogAction
                                         onClick={() => deleteNotification(notification.id)}
                                         className="bg-red-600 hover:bg-red-700"
                                       >
-                                        Supprimer
+                                        {t('delete')}
                                       </AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
@@ -455,7 +643,7 @@ export function Header() {
                         setShowDesktopNotifications(false);
                       }}
                     >
-                      Voir tout
+                      {t('viewAll')}
                     </Button>
                     <Button
                       variant="ghost"
@@ -463,7 +651,7 @@ export function Header() {
                       className="text-xs"
                       onClick={() => setShowDesktopNotifications(false)}
                     >
-                      Fermer
+                      {t('close')}
                     </Button>
                   </div>
                 </CardFooter>
@@ -485,19 +673,19 @@ export function Header() {
                 className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                 onClick={() => setLanguage('en')}
               >
-                {language === 'en' && '✓ '} English
+                {language === 'en' && '✓ '} {t('english')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                 onClick={() => setLanguage('ar')}
               >
-                {language === 'ar' && '✓ '} العربية
+                {language === 'ar' && '✓ '} {t('arabic')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                 onClick={() => setLanguage('fr')}
               >
-                {language === 'fr' && '✓ '} Français
+                {language === 'fr' && '✓ '} {t('french')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -509,11 +697,11 @@ export function Header() {
                 {/* Desktop: Show user info */}
                 <div className="text-right">
                   <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                    {profile?.full_name || user?.email || 'Utilisateur'}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {userEmail || user?.email || 'Aucun email'}
-                  </div>
+                      {profile?.full_name || user?.email || t('user')}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {userEmail || user?.email || t('notProvided')}
+                    </div>
                 </div>
                 <Avatar className="h-8 w-8 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-bold">
@@ -549,10 +737,10 @@ export function Header() {
       <ConfirmationDialog
         open={showLogoutConfirm}
         onOpenChange={handleModalClose}
-        title="Confirmer la déconnexion"
-        description="Êtes-vous sûr de vouloir vous déconnecter ? Vous devrez vous reconnecter pour accéder à votre compte."
-        confirmText="Se déconnecter"
-        cancelText="Annuler"
+        title={t('confirmLogout')}
+        description={t('areYouSure')}
+        confirmText={t('logout')}
+        cancelText={t('cancel')}
         onConfirm={handleLogoutConfirm}
         variant="destructive"
       />

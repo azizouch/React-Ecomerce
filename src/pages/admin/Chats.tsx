@@ -1,20 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
-import { adminCatalog } from '../../lib/supabase';
+import { useLocation } from 'react-router-dom';
+import { adminCatalog, supabase } from '../../lib/supabase';
+import wsClient from '../../lib/wsClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../lib/translations';
 import AdminFooter from '../../components/ui/AdminFooter';
-import { MessageCircle, Send, MoreVertical, Plus, Search, Phone, Video, Settings, Loader, Smile, Paperclip, Mic } from 'lucide-react';
+import { MessageSquareText, Send, MoreVertical, Plus, Search, Phone, Video, Settings, Loader, Smile, Paperclip, Mic } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../components/ui/dropdown-menu';
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../../components/ui/select';
+
 import {
   Dialog,
   DialogContent,
@@ -22,6 +26,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/dialog';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../components/ui/alert-dialog';
 
 interface Conversation {
   id: string;
@@ -62,6 +77,8 @@ export default function AdminChats() {
   const { user, profile } = useAuth();
   const { language } = useLanguage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // State for conversations list
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -91,13 +108,33 @@ export default function AdminChats() {
   // Chat filter state
   const [chatFilter, setChatFilter] = useState('all');
 
-  // File upload and voice recording state
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Delete confirmation state
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+
+  // Dropdown menu state
+  const [showChatOptionsDropdown, setShowChatOptionsDropdown] = useState(false);
+
+  // File upload and voice recording state (for future use)
+  // const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  // const [isRecording, setIsRecording] = useState(false);
+  // const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Admin list for assignment
   // const [admins, setAdmins] = useState<Admin[]>([]);
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowChatOptionsDropdown(false);
+      }
+    }
+
+    if (showChatOptionsDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showChatOptionsDropdown]);
 
   // Load conversations
   useEffect(() => {
@@ -118,25 +155,125 @@ export default function AdminChats() {
     }
   }, [selectedConversationId]);
 
-  // Set up real-time subscription for new messages
+  // Open conversation from query param if provided (e.g. ?open=<id>)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const openId = params.get('open');
+    if (openId) {
+      setSelectedConversationId(openId);
+    }
+  }, [location.search]);
+
+  // Helper to determine the other participant (for header/avatar) and message sender display
+  const getOtherParticipant = () => {
+    if (!selectedConversation) return null;
+    // If conversation involves an assigned admin (admin-to-admin), prefer that when it's not the current user
+    if (selectedConversation.assigned_admin && selectedConversation.assigned_admin.id !== user?.id) {
+      return selectedConversation.assigned_admin;
+    }
+    // If conversation has a customer profile and it's not the current user, use it
+    if (selectedConversation.profiles && selectedConversation.profiles.id !== user?.id) {
+      return selectedConversation.profiles;
+    }
+    // Fallback to assigned_admin or profiles if present
+    return selectedConversation.assigned_admin || selectedConversation.profiles || null;
+  };
+
+  const getSenderDisplay = (msg: any) => {
+    if (!selectedConversation) return { name: 'User', email: 'default' };
+    if (msg.sender_type === 'admin') {
+      if (selectedConversation.assigned_admin && msg.sender_id === selectedConversation.assigned_admin.id) {
+        return { name: selectedConversation.assigned_admin.full_name, email: selectedConversation.assigned_admin.email };
+      }
+      // If assigned_admin not matching, fall back to profiles or generic admin label
+      return { name: selectedConversation.assigned_admin?.full_name || selectedConversation.profiles?.full_name || 'Admin', email: selectedConversation.assigned_admin?.email || selectedConversation.profiles?.email || 'default' };
+    }
+
+    // Customer sender
+    return { name: selectedConversation.profiles?.full_name || 'User', email: selectedConversation.profiles?.email || 'default' };
+  };
+
+  // Determine display name/email for a conversation in the list (so each user sees the correct other party)
+  const getConversationDisplay = (conv: any) => {
+    // If assigned_admin exists and is not current user, show them
+    if (conv.assigned_admin && conv.assigned_admin.id !== user?.id) {
+      return { name: conv.assigned_admin.full_name, email: conv.assigned_admin.email };
+    }
+    // Otherwise show profiles (customer or other participant)
+    if (conv.profiles) {
+      return { name: conv.profiles.full_name, email: conv.profiles.email };
+    }
+    return { name: 'Unknown', email: 'default' };
+  };
+
+  // Set up real-time subscription for new messages via WebSocket server
   useEffect(() => {
     if (selectedConversationId && subscription) {
       subscription.unsubscribe();
     }
 
     if (selectedConversationId) {
-      const sub = adminCatalog.subscribeToConversationMessages(selectedConversationId, (newMessage: Message) => {
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
+      try {
+        wsClient.connectWS();
+      } catch (e) {
+        // ignore connect errors
+      }
+
+      wsClient.subscribeConversation(selectedConversationId);
+
+      const off = wsClient.on('message', (newMessage: Message) => {
+        if (!newMessage) return;
+        if (newMessage.conversation_id !== selectedConversationId) return;
+
+        setMessages((prevMessages) => {
+          const exists = prevMessages.find((m) => m.id === newMessage.id);
+          if (exists) {
+            return prevMessages.map((m) => (m.id === newMessage.id ? { ...m, ...newMessage } : m));
+          }
+          return [...prevMessages, newMessage];
+        });
+
+        // If messages were marked seen (update), refresh conversation counts
+        if (newMessage?.is_seen) {
+          void loadConversations();
+        }
+
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       });
 
-      setSubscription(sub);
+      setSubscription({ unsubscribe: () => { wsClient.unsubscribeConversation(selectedConversationId); off(); } });
     }
 
     return () => {
       if (subscription) subscription.unsubscribe();
     };
   }, [selectedConversationId]);
+
+  // Subscribe to all messages to refresh conversation list when new messages arrive
+  useEffect(() => {
+    if (!user?.id) return;
+
+    try {
+      wsClient.connectWS();
+      wsClient.subscribeUser(user.id);
+    } catch (e) {
+      // ignore
+    }
+
+    const handleRealtime = () => {
+      loadConversations();
+    };
+
+    const offMessage = wsClient.on('message', handleRealtime);
+    const offConversation = wsClient.on('conversation', handleRealtime);
+    const offConvMark = wsClient.on('conversation_mark_read', handleRealtime);
+
+    return () => {
+      offMessage();
+      offConversation();
+      offConvMark();
+    };
+  }, []);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -174,12 +311,27 @@ export default function AdminChats() {
         );
       }
 
-      setConversations(filteredData);
+      // Enrich conversations with unread count for current user only
+      const enriched = await Promise.all(
+        (filteredData as any[]).map(async (conv) => {
+          try {
+            const { count } = await supabase
+              .from('messages')
+              .select('id', { count: 'exact', head: true })
+              .eq('conversation_id', conv.id)
+              .is('is_seen', false)
+              .neq('sender_id', user?.id);
 
-      // Auto-select first conversation if not already selected
-      if (data && data.length > 0 && !selectedConversationId) {
-        setSelectedConversationId(data[0].id);
-      }
+            return { ...conv, unread_count: (count as number) || 0 };
+          } catch (e) {
+            return { ...conv, unread_count: conv.unread_count || 0 };
+          }
+        })
+      );
+
+      setConversations(enriched as any[]);
+
+      // Do not auto-select a conversation; wait for user to open one
     } catch (error) {
       console.error('Error loading conversations:', error);
     } finally {
@@ -197,9 +349,28 @@ export default function AdminChats() {
       setSelectedConversation(data);
       setMessages(data?.messages || []);
 
-      // Mark as read
-      if (data?.unread_count > 0) {
-        await adminCatalog.markConversationAsRead(selectedConversationId || '');
+      // Mark conversation as read (server-side) so unread_count is cleared
+      try {
+        if (selectedConversationId && user?.id) {
+          try {
+            wsClient.connectWS();
+            wsClient.markConversationRead(selectedConversationId, user.id);
+            // ask header to refresh immediately (optimistic UI)
+            try { window.dispatchEvent(new CustomEvent('chats:refresh', { detail: { conversationId: selectedConversationId } })); } catch(e) {}
+          } catch (e) {
+            // fallback to direct API if WS not available
+            await adminCatalog.markConversationAsRead(selectedConversationId, user.id);
+          }
+        }
+      } catch (e) {
+        console.error('Error marking conversation as read:', e);
+      }
+
+      // Update UI: refresh conversation list counts
+      try {
+        await loadConversations();
+      } catch (e) {
+        // ignore
       }
     } catch (error) {
       console.error('Error loading conversation details:', error);
@@ -213,15 +384,20 @@ export default function AdminChats() {
 
     setSendingMessage(true);
     try {
-      const { error } = await adminCatalog.sendMessage(
-        selectedConversationId,
-        user.id,
-        'admin',
-        messageText
-      );
+      try {
+        wsClient.connectWS();
+      } catch (e) {
+        // ignore
+      }
 
-      if (error) throw error;
+      wsClient.sendMessage({
+        conversation_id: selectedConversationId,
+        sender_id: user.id,
+        sender_type: 'admin',
+        message: messageText,
+      });
 
+      // Clear input immediately; messages will arrive via WS and refresh UI
       setMessageText('');
       await loadConversationDetails();
     } catch (error) {
@@ -286,26 +462,42 @@ export default function AdminChats() {
   // Search customers for new conversation modal
   const handleSearchCustomers = async (query: string) => {
     setCustomerSearchQuery(query);
-    if (query.length > 0) {
-      const { data, error } = await adminCatalog.getCustomersList(query);
-      if (!error && data) {
-        setCustomers(data);
+    try {
+      if (query.length > 0) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, role')
+          .in('role', ['admin', 'gestionnaire'])
+          .ilike('full_name', `%${query}%`)
+          .neq('id', user?.id)
+          .order('full_name');
+
+        if (!error && data) {
+          setCustomers(data as Customer[]);
+        }
+      } else {
+        await loadInitialCustomers();
       }
-    } else {
-      // If search is cleared, load initial customers again
-      await loadInitialCustomers();
+    } catch (error) {
+      console.error('Error searching users:', error);
     }
   };
 
-  // Load initial customers list when modal opens or search is cleared
+  // Load initial admins/gestionnaires when modal opens or search is cleared
   const loadInitialCustomers = async () => {
     try {
-      const { data, error } = await adminCatalog.getCustomersList();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, role')
+        .in('role', ['admin', 'gestionnaire'])
+        .neq('id', user?.id)
+        .order('full_name');
+
       if (!error && data) {
-        setCustomers(data.slice(0, 10)); // Show first 10 customers
+        setCustomers((data as Customer[]).slice(0, 20));
       }
     } catch (error) {
-      console.error('Error loading initial customers:', error);
+      console.error('Error loading initial users:', error);
     }
   };
 
@@ -378,7 +570,7 @@ export default function AdminChats() {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-blue-600" />
+                <MessageSquareText className="w-5 h-5 text-blue-600" />
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">Team Chat</h1>
               </div>
               {profile?.is_admin && (
@@ -412,12 +604,17 @@ export default function AdminChats() {
 
             {/* Filter Dropdown */}
             <div className="mt-3">
-              <select className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-                <option value="all">All Chats</option>
-                <option value="unread">Unread</option>
-                <option value="admin">Admins</option>
-                <option value="managers">Managers</option>
-              </select>
+              <Select onValueChange={(v) => setChatFilter(v)} defaultValue={chatFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All Chats" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Chats</SelectItem>
+                  <SelectItem value="unread">Unread</SelectItem>
+                  <SelectItem value="admin">Admins</SelectItem>
+                  <SelectItem value="managers">Managers</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -433,52 +630,57 @@ export default function AdminChats() {
                 {t(language, 'noConversationsFound')}
               </div>
             ) : (
-              conversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  onClick={() => {
-                    setSelectedConversationId(conv.id);
-                    setShowMobileChat(true);
-                  }}
-                  className={`p-3 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition ${
-                    selectedConversationId === conv.id
-                      ? 'bg-blue-50 dark:bg-blue-950'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Avatar */}
-                    <Avatar className="w-10 h-10 flex-shrink-0">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${conv.profiles?.email || 'default'}`} />
-                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600">
-                        {conv.profiles?.full_name?.substring(0, 2).toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
+              conversations.map((conv) => {
+                const display = getConversationDisplay(conv);
+                const initials = String(display.name || '').substring(0, 2).toUpperCase() || 'U';
+                return (
+                  <div
+                    key={conv.id}
+                    onClick={() => {
+                      setSelectedConversationId(conv.id);
+                      setShowMobileChat(true);
+                    }}
+                    className={`p-3 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition ${
+                      selectedConversationId === conv.id
+                        ? 'bg-blue-50 dark:bg-blue-950'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Avatar (initials only) */}
+                      <Avatar className="w-10 h-10 flex-shrink-0">
+                        <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                          {conv.profiles?.full_name || 'Unknown'}
-                        </p>
-                        <p className="text-xs text-gray-400 flex-shrink-0">
-                          {formatTime(conv.last_message_at)}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                            {display.name || 'Unknown'}
+                          </p>
+                          <p className="text-xs text-gray-400 flex-shrink-0">
+                            {formatTime(conv.last_message_at)}
+                          </p>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {conv.last_message || t(language, 'noMessages')}
                         </p>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {conv.last_message || t(language, 'noMessages')}
-                      </p>
-                    </div>
 
-                    {/* Unread Badge */}
-                    {conv.unread_count > 0 && (
-                      <Badge className="bg-red-500 text-white h-5 w-5 flex items-center justify-center rounded-full p-0 flex-shrink-0">
-                        {conv.unread_count > 9 ? '9+' : conv.unread_count}
-                      </Badge>
-                    )}
+                      {/* Unread Badge */}
+                      <div className="flex items-end">
+                        {conv.unread_count > 0 && (
+                          <Badge className="bg-red-500 text-white h-5 w-5 flex items-center justify-center rounded-full p-0 flex-shrink-0">
+                            {conv.unread_count > 9 ? '9+' : conv.unread_count}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -502,22 +704,30 @@ export default function AdminChats() {
                   </button>
 
                   {/* Avatar and Info */}
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedConversation.profiles?.email || 'default'}`} />
-                    <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600">
-                      {selectedConversation.profiles?.full_name?.substring(0, 2).toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
+                  {(() => {
+                    const other = getOtherParticipant();
+                    const name = other?.full_name || other?.email || 'User';
+                    const email = other?.email || 'default';
+                    return (
+                      <>
+                        <Avatar className="w-10 h-10">
+                          <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 font-semibold">
+                            {String(name).substring(0, 2).toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
 
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {selectedConversation.profiles?.full_name}
-                    </h3>
-                    <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                      <span className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full"></span>
-                      Online
-                    </p>
-                  </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {name}
+                          </h3>
+                          <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                            <span className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full"></span>
+                            Online
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Action Buttons */}
@@ -531,23 +741,36 @@ export default function AdminChats() {
                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
                     <Settings className="w-4 h-4" />
                   </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleDeleteConversation} className="text-red-600">
-                        {t(language, 'deleteConversation')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="relative" ref={dropdownRef}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 w-9 p-0"
+                      onClick={() => setShowChatOptionsDropdown(!showChatOptionsDropdown)}
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+
+                    {/* Chat Options Dropdown */}
+                    {showChatOptionsDropdown && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
+                        <button
+                          onClick={() => {
+                            setShowDeleteConfirmation(true);
+                            setShowChatOptionsDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                        >
+                          {t(language, 'deleteConversation')}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-slate-950">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-slate-950 pr-4">
                 {conversationLoading ? (
                   <div className="text-center text-gray-500 flex items-center justify-center gap-2">
                     <Loader className="w-4 h-4 animate-spin" />
@@ -558,59 +781,65 @@ export default function AdminChats() {
                     {t(language, 'noMessages')}
                   </div>
                 ) : (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className="flex gap-2 max-w-xs">
-                        {msg.sender_type !== 'admin' && (
-                          <Avatar className="w-7 h-7 flex-shrink-0">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedConversation.profiles?.email || 'default'}`} />
-                            <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 text-xs">
-                              {selectedConversation.profiles?.full_name?.substring(0, 2).toUpperCase() || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div className={`${msg.sender_type === 'admin' ? 'flex-row-reverse' : ''} flex gap-2`}>
-                          <div
-                            className={`px-4 py-2 rounded-xl break-words ${
-                              msg.sender_type === 'admin'
-                                ? 'bg-blue-600 text-white rounded-br-none'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
-                            }`}
-                          >
-                            <p className="text-sm">{msg.message}</p>
-                            {msg.attachment_url && (
-                              <a
-                                href={msg.attachment_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs underline mt-1 block"
-                              >
-                                View Attachment
-                              </a>
-                            )}
-                          </div>
-                          <div className={`flex items-center text-xs text-gray-400`}>
-                            <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  messages.map((msg) => {
+                    const isMine = user?.id === msg.sender_id;
+                    return (
+                      <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                        <div className="flex gap-2 max-w-xs">
+                          {!isMine && (() => {
+                            const sender = getSenderDisplay(msg);
+                            const seed = sender.email || 'default';
+                            const initials = String(sender.name || '').substring(0, 2).toUpperCase() || 'U';
+                            return (
+                              <Avatar className="w-7 h-7 flex-shrink-0">
+                                <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 text-xs font-semibold">
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                            );
+                          })()}
+
+                          <div className={`${isMine ? 'flex-row-reverse' : ''} flex gap-2`}>
+                            <div
+                              className={`px-4 py-2 rounded-xl break-words ${
+                                isMine
+                                  ? 'bg-blue-600 text-white rounded-br-none'
+                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
+                              }`}
+                            >
+                              <p className="text-sm">{msg.message}</p>
+                              {msg.attachment_url && (
+                                <a
+                                  href={msg.attachment_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs underline mt-1 block"
+                                >
+                                  View Attachment
+                                </a>
+                              )}
+                            </div>
+
+                            <div className={`flex items-center text-xs text-gray-400`}>
+                              <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Message Input */}
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900">
+              {/* Message Input - At bottom of chat window */}
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900 flex-shrink-0">
                 {selectedConversation.status === 'resolved' && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
                     {t(language, 'conversationResolved')}
                   </p>
                 )}
-                <div className="flex gap-2 items-end">
+                <div className="flex gap-2 items-end w-full">
                   {/* Input Toolbar Icons */}
                   <div className="flex gap-1">
                     <Button
@@ -668,7 +897,7 @@ export default function AdminChats() {
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
               <div className="text-center">
-                <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <MessageSquareText className="w-12 h-12 mx-auto mb-3 opacity-20" />
                 <p>{t(language, 'selectConversation')}</p>
               </div>
             </div>
@@ -747,6 +976,30 @@ export default function AdminChats() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this conversation? This action cannot be undone and all messages will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={async () => {
+                await handleDeleteConversation();
+                setShowDeleteConfirmation(false);
+              }} 
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AdminFooter />
     </div>

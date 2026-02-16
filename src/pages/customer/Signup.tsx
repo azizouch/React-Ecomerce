@@ -1,10 +1,13 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { ShoppingBag } from 'lucide-react';
+import { t } from '../../lib/translations';
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -21,7 +24,7 @@ export default function Signup() {
       await signUp(email, password, fullName);
       navigate('/');
     } catch (err: any) {
-      setError(err.message || 'Failed to create account');
+      setError(err.message || t(language, 'registrationFailed'));
     } finally {
       setLoading(false);
     }
@@ -34,8 +37,8 @@ export default function Signup() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
             <ShoppingBag className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-600 mt-2">Start shopping with us today</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t(language, 'createAccount')}</h1>
+          <p className="text-gray-600 mt-2">{t(language, 'startShoppingToday')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -47,7 +50,7 @@ export default function Signup() {
 
           <div>
             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
+              {t(language, 'fullName')}
             </label>
             <input
               id="fullName"
@@ -56,13 +59,13 @@ export default function Signup() {
               onChange={(e) => setFullName(e.target.value)}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              placeholder="John Doe"
+              placeholder={t(language, 'placeholderFullName')}
             />
           </div>
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
+              {t(language, 'emailAddress')}
             </label>
             <input
               id="email"
@@ -71,13 +74,13 @@ export default function Signup() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              placeholder="you@example.com"
+              placeholder={t(language, 'placeholderEmail')}
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
+              {t(language, 'password')}
             </label>
             <input
               id="password"
@@ -89,7 +92,7 @@ export default function Signup() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               placeholder="••••••••"
             />
-            <p className="mt-1 text-sm text-gray-500">Must be at least 6 characters</p>
+            <p className="mt-1 text-sm text-gray-500">{t(language, 'passwordMinLength')}</p>
           </div>
 
           <button
@@ -97,18 +100,18 @@ export default function Signup() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating account...' : 'Sign Up'}
+            {loading ? t(language, 'creatingAccount') : t(language, 'signUp')}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Already have an account?{' '}
+            {t(language, 'alreadyHaveAccount')}{' '}
             <button
               onClick={() => navigate('/login')}
               className="text-blue-600 hover:text-blue-700 font-semibold"
             >
-              Sign In
+              {t(language, 'signIn')}
             </button>
           </p>
         </div>

@@ -1,248 +1,371 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useLanguage } from '../../contexts/LanguageContext';
-import AdminFooter from '../../components/ui/AdminFooter';
-import SoftCard from '../../components/ui/SoftCard';
-import { User, Mail, Calendar, Shield, Edit2, Check, X } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, Profile } from '../../lib/supabase';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
+import { Mail, Phone, MapPin, Calendar, Edit, Save, X, Camera, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AdminProfile() {
-  const { language } = useLanguage();
-  const { user, profile } = useAuth();
+  const { profile: authProfile } = useAuth();
+  const { t } = useLanguage();
+  const [profile, setProfile] = useState<Profile | null>(authProfile || null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: profile?.full_name || '',
-    email: profile?.email || '',
+    first_name: '',
+    last_name: '',
+    phone: '',
+    address: '',
+    city: '',
   });
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
+  const fileInputRef: any = null;
 
   useEffect(() => {
-    if (profile) {
+    if (authProfile) {
+      setProfile(authProfile);
       setFormData({
-        full_name: profile.full_name || '',
-        email: profile.email || '',
+        first_name: authProfile.first_name || '',
+        last_name: authProfile.last_name || '',
+        phone: authProfile.phone || '',
+        address: authProfile.address || '',
+        city: authProfile.city || '',
       });
     }
-  }, [profile]);
+  }, [authProfile]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [field]: value,
     }));
   };
 
-  const handleSaveChanges = async () => {
-    setError(null);
-    setSuccess(null);
+  const handleSave = async () => {
+    if (!profile) return;
 
-    if (!formData.full_name.trim()) {
-      setError('Full name is required');
-      return;
-    }
-
+    setIsSaving(true);
     try {
-      setIsSaving(true);
-
-      // Update profile in database
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: formData.full_name,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          full_name: `${formData.first_name} ${formData.last_name}`.trim(),
         })
-        .eq('id', user?.id);
+        .eq('id', profile.id);
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
-      setSuccess('Profile updated successfully!');
+      setProfile({
+        ...profile,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+      });
+
       setIsEditing(false);
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update profile');
+      toast.success('Profil mis à jour avec succès');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Erreur lors de la mise à jour du profil');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleCancel = () => {
-    setFormData({
-      full_name: profile?.full_name || '',
-      email: profile?.email || '',
-    });
+    if (profile) {
+      setFormData({
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        phone: profile.phone || '',
+        address: profile.address || '',
+        city: profile.city || '',
+      });
+    }
     setIsEditing(false);
-    setError(null);
+  };
+
+  const handleCameraClick = () => {
+    toast.info(t('updateProfile'));
+  };
+
+  const handleDeleteImage = () => {
+    toast.info(t('updateProfile'));
+  };
+
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
+      </div>
+    );
+  }
+
+  const initials = `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase() || 'A';
+  const memberSince = profile.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR') : '';
+  const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.full_name || profile.email;
+  const roleDisplay = profile.role === 'customer' ? t('user') : profile.role === 'admin' ? t('administrator') : profile.role;
+
+  const getRoleBadgeClassName = () => {
+    if (profile.role === 'admin') {
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+    }
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
   };
 
   return (
-    <>
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-10">
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">Admin Profile</h1>
-            <p className="text-gray-600 dark:text-gray-400">Manage your profile information and account settings.</p>
-          </div>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('myProfile')}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSaving}
+              >
+                <X className="mr-2 h-4 w-4" />
+                {t('cancel')}
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {isSaving ? t('saving') : t('save')}
+              </Button>
+            </>
+          ) : (
+            <Button
+              onClick={() => setIsEditing(true)}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              {t('modify')}
+            </Button>
+          )}
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Profile Card */}
-            <SoftCard className="lg:col-span-2 p-6 dark:bg-slate-800">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Profile Information</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        {/* Profile Card - Left Column */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 relative inline-block">
+              <Avatar className="w-24 h-24">
+                <AvatarImage
+                  src=""
+                  alt={fullName}
+                />
+                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-2xl font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+
+              {/* Upload/Camera Button */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                disabled={!isEditing || uploadingImage}
+                onClick={handleCameraClick}
+              >
+                {uploadingImage ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+              </Button>
+
+              {/* Delete Button */}
+              {isEditing && profileData?.image_url && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="absolute -bottom-2 -left-2 rounded-full w-8 h-8 p-0 bg-red-50 hover:bg-red-100 border-red-200 text-red-600 hover:text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:border-red-700"
+                  disabled={uploadingImage}
+                  onClick={handleDeleteImage}
+                  title="Supprimer la photo de profil"
+                >
+                  {uploadingImage ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+            </div>
+            <CardTitle className="text-xl">{fullName}</CardTitle>
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <Badge className={getRoleBadgeClassName()}>{roleDisplay}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 md:space-y-4">
+            <div className="flex items-center gap-3 text-sm">
+              <Mail className="h-4 w-4 text-gray-500" />
+              <span className="text-gray-600 dark:text-gray-400">{profile.email}</span>
+            </div>
+            {formData.phone && (
+              <div className="flex items-center gap-3 text-sm">
+                <Phone className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600 dark:text-gray-400">{formData.phone}</span>
+              </div>
+            )}
+            {formData.address && (
+              <div className="flex items-center gap-3 text-sm">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600 dark:text-gray-400">{formData.address}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-3 text-sm">
+              <Calendar className="h-4 w-4 text-gray-500" />
+              <span className="text-gray-600 dark:text-gray-400">
+                Membre depuis {memberSince}
+              </span>
             </div>
 
-            {/* Success Message */}
-            {success && (
-              <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-lg">
-                <p className="text-sm text-emerald-700 dark:text-emerald-400">{success}</p>
+            {/* Quick Info Section */}
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
+              <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('quickInfo')}</h3>
+              
+              {/* Status */}
+              <div className="p-3 rounded bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900">
+                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase mb-1">{t('status')}</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">{t('active')}</p>
               </div>
-            )}
-
-            {/* Error Message */}
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
-                <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+              
+              {/* Role */}
+              <div className="p-3 rounded bg-green-50 dark:bg-green-950 border border-green-100 dark:border-green-900">
+                <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase mb-1">{t('role')}</p>
+                <p className="text-sm text-green-700 dark:text-green-300 font-medium">{roleDisplay}</p>
               </div>
-            )}
+              
+              {/* Permissions */}
+              <div className="p-3 rounded bg-purple-50 dark:bg-purple-950 border border-purple-100 dark:border-purple-900">
+                <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase mb-1">{t('permissions')}</p>
+                <p className="text-sm text-purple-700 dark:text-purple-300 font-medium">{t('fullAccess')}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <div className="space-y-6">
-              {/* Full Name */}
-              <div>
-                <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <User className="w-4 h-4 mr-2" />
-                  Full Name
-                </label>
+        {/* Profile Information - Right Column */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>{t('personalInformation')}</CardTitle>
+            <CardDescription>
+              {t('updatePersonalInfo')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 md:space-y-6">
+            {/* Row 1: First Name and Last Name */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              <div className="space-y-1 md:space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('firstName')}</label>
                 {isEditing ? (
-                  <input
-                    type="text"
-                    name="full_name"
-                    value={formData.full_name}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 transition"
+                  <Input
+                    value={formData.first_name}
+                    onChange={(e) => handleInputChange('first_name', e.target.value)}
+                    placeholder={t('firstName')}
                   />
                 ) : (
-                  <p className="text-gray-900 dark:text-gray-100">{profile?.full_name || 'Not set'}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 py-2">
+                    {formData.first_name || t('notProvided')}
+                  </p>
                 )}
               </div>
 
-              {/* Email */}
-              <div>
-                <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Email Address
-                </label>
-                <p className="text-gray-900 dark:text-gray-100">{profile?.email || 'N/A'}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Email cannot be changed. Contact support if needed.</p>
-              </div>
-
-              {/* Account Type */}
-              <div>
-                <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <Shield className="w-4 h-4 mr-2" />
-                  Account Type
-                </label>
-                <div className="flex items-center space-x-2">
-                  <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-sm font-medium">
-                    Administrator
-                  </span>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Full system access</p>
-                </div>
-              </div>
-
-              {/* Joined Date */}
-              <div>
-                <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Member Since
-                </label>
-                <p className="text-gray-900 dark:text-gray-100">
-                  {profile?.created_at
-                    ? new Date(profile.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })
-                    : 'N/A'}
-                </p>
-              </div>
-
-              {/* Last Sign In */}
-              <div>
-                <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Member Since
-                </label>
-                <p className="text-gray-900 dark:text-gray-100">
-                  {user?.created_at
-                    ? new Date(user.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })
-                    : 'N/A'}
-                </p>
+              <div className="space-y-1 md:space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('lastName')}</label>
+                {isEditing ? (
+                  <Input
+                    value={formData.last_name}
+                    onChange={(e) => handleInputChange('last_name', e.target.value)}
+                    placeholder={t('lastName')}
+                  />
+                ) : (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 py-2">
+                    {formData.last_name || t('notProvided')}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="mt-8 flex space-x-4 border-t border-gray-200 dark:border-slate-700 pt-6">
+            {/* Row 2: Email and Phone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              <div className="space-y-1 md:space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('email')}</label>
+                <p className="text-sm text-gray-600 dark:text-gray-400 py-2">
+                  {profile.email}
+                </p>
+              </div>
+
+              <div className="space-y-1 md:space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('phone')}</label>
+                {isEditing ? (
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="+212 6XX-XXXXXX"
+                  />
+                ) : (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 py-2">
+                    {formData.phone || t('notProvided')}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Row 3: Address */}
+            <div className="space-y-1 md:space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('address')}</label>
               {isEditing ? (
-                <>
-                  <button
-                    onClick={handleSaveChanges}
-                    disabled={isSaving}
-                    className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition font-medium"
-                  >
-                    <Check className="w-4 h-4" />
-                    <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    className="flex items-center space-x-2 px-6 py-2 bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium"
-                  >
-                    <X className="w-4 h-4" />
-                    <span>Cancel</span>
-                  </button>
-                </>
+                <Input
+                  value={formData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  placeholder={t('address')}
+                />
               ) : (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span>Edit Profile</span>
-                </button>
+                <p className="text-sm text-gray-600 dark:text-gray-400 py-2">
+                  {formData.address || t('notProvided')}
+                </p>
               )}
             </div>
-          </SoftCard>
 
-          {/* Quick Info Card */}
-          <SoftCard className="p-6 dark:bg-slate-800">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Info</h3>
-            
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase">Status</p>
-                <p className="text-sm text-blue-900 dark:text-blue-200 font-medium mt-1">Active</p>
-              </div>
-
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg">
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold uppercase">Role</p>
-                <p className="text-sm text-emerald-900 dark:text-emerald-200 font-medium mt-1">System Administrator</p>
-              </div>
-
-              <div className="p-4 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
-                <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold uppercase">Permissions</p>
-                <p className="text-sm text-purple-900 dark:text-purple-200 font-medium mt-1">Full Access</p>
-              </div>
+            {/* Row 4: City */}
+            <div className="space-y-1 md:space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('city')}</label>
+              {isEditing ? (
+                <Input
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  placeholder={t('city')}
+                />
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-400 py-2">
+                  {formData.city || t('notProvided')}
+                </p>
+              )}
             </div>
-          </SoftCard>
-          </div>
+          </CardContent>
+        </Card>
       </div>
-      <AdminFooter />
-    </>
+    </div>
   );
 }
