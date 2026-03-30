@@ -72,36 +72,59 @@ export function AppSidebar() {
 
   const isCollapsed = state === 'collapsed';
 
-  const navigationItems: any[] = [
-    // Admin sectionLayoutDashboard
-    { title: t('dashboard') || 'Dashboard', url: '/admin', icon: LayoutDashboard, isAdmin: true },
-    { title: t('products') || 'Products', url: '/admin/products', icon: Package, isAdmin: true },
-    { title: t('orders') || 'Orders', url: '/admin/orders', icon: ShoppingCart, isAdmin: true },
-    { title: t('users') || 'Users', url: '/admin/users', icon: Users, isAdmin: true },
-    { title: t('notifications') || 'Notifications', url: '/admin/notifications', icon: Bell, isAdmin: true },
-    { title: t('supportTickets') || 'Support Tickets', url: '/admin/tickets', icon: MessageCircle, isAdmin: true },
-    { title: t('payments') || 'Payments', url: '/admin/payments', icon: CreditCard, isAdmin: true },
-    { title: t('shipping') || 'Shipping', url: '/admin/shipping', icon: Truck, isAdmin: true },
-    { title: t('discounts') || 'Discounts', url: '/admin/discounts', icon: Tag, isAdmin: true },
-    { title: t('inventory') || 'Inventory', url: '/admin/inventory', icon: Package, isAdmin: true },
-    { title: t('reviews') || 'Reviews', url: '/admin/reviews', icon: Star, isAdmin: true },
-    { title: t('pages') || 'Pages', url: '/admin/pages', icon: FileText, isAdmin: true },
-    { title: t('reports') || 'Reports & Analytics', url: '/admin/reports', icon: BarChart2, isAdmin: true },
-    { title: t('activityLogs') || 'Activity Logs', url: '/admin/activity-logs', icon: Activity, isAdmin: true },
-    { title: t('settings') || 'Settings', url: '/admin/settings', icon: Settings, isAdmin: true },
+  const navigationGroups: any[] = [
+    {
+      sectionKey: 'sidebar.main',
+      items: [
+        { titleKey: 'dashboard', url: '/admin', icon: LayoutDashboard },
+        { titleKey: 'reports', url: '/admin/reports', icon: BarChart2 },
+        { titleKey: 'activityLogs', url: '/admin/activity-logs', icon: Activity },
+      ],
+    },
+    {
+      sectionKey: 'sidebar.catalog',
+      descriptionKey: 'sidebar.catalogWhy',
+      items: [
+        { titleKey: 'products', url: '/admin/products', icon: Package },
+        { titleKey: 'categoriesManage', url: '/admin/categories', icon: FileText },
+        { titleKey: 'inventory', url: '/admin/inventory', icon: Package },
+        { titleKey: 'reviews', url: '/admin/reviews', icon: Star },
+        { titleKey: 'discounts', url: '/admin/discounts', icon: Tag },
+        { titleKey: 'pages', url: '/admin/pages', icon: FileText },
+      ],
+    },
+    {
+      sectionKey: 'sidebar.sales',
+      descriptionKey: 'sidebar.salesWhy',
+      items: [
+        { titleKey: 'orders', url: '/admin/orders', icon: ShoppingCart },
+        { titleKey: 'payments', url: '/admin/payments', icon: CreditCard },
+        { titleKey: 'shipping', url: '/admin/shipping', icon: Truck },
+      ],
+    },
+    {
+      sectionKey: 'sidebar.customers',
+      descriptionKey: 'sidebar.customersWhy',
+      items: [
+        { titleKey: 'users', url: '/admin/users', icon: Users },
+        { titleKey: 'notifications', url: '/admin/notifications', icon: Bell },
+        { titleKey: 'supportTickets', url: '/admin/tickets', icon: MessageCircle },
+      ],
+    },
+    {
+      sectionKey: 'sidebar.system',
+      items: [
+        { titleKey: 'settings', url: '/admin/settings', icon: Settings },
+      ],
+    },
   ];
 
   useEffect(() => {
     if (!isCollapsed) {
-      const activeDropdown = navigationItems.find(item => item.items && item.items.some((subItem: any) => location.pathname === subItem.url));
-      if (activeDropdown) {
-        setExpandedItems(prev => prev.includes(activeDropdown.title) ? prev : [activeDropdown.title]);
-      } else {
-        const isRegularPage = navigationItems.some(item => item.url && location.pathname === item.url);
-        if (isRegularPage) setExpandedItems(prev => prev.length > 0 ? [] : prev);
-      }
+      // Navigation changed while expanded — clear any expanded dropdown state.
+      setExpandedItems([]);
     }
-  }, [location.pathname, isCollapsed, navigationItems]);
+  }, [location.pathname, isCollapsed]);
 
   // For now show all links in the layout sidebar (admin links included).
   const hasAccess = (_itemRoles?: string[]) => true;
@@ -165,7 +188,7 @@ export function AppSidebar() {
                   if (isMobile) toggleSidebar();
                 }}
               >
-                E-commerce
+                {t('companyName')}
               </button>
             )}
             <div className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" onClick={toggleCollapse}>
@@ -182,72 +205,49 @@ export function AppSidebar() {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
-                {navigationItems.map((item) => {
-                  if (!hasAccess(item.roles)) return null;
-                  const isItemActive = item.url ? isActive(item.url) : false;
-                  const hasActiveChild = item.items ? isParentActive(item.items) : false;
-                  const expanded = isExpanded(item.title);
-
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      {item.url ? (
-                        <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
-                          <Link to={item.url} onClick={handleLinkClick}>
-                            <div className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${!isCollapsed ? 'w-full justify-start space-x-2 px-3 py-2.5' : 'w-10 h-10 justify-center'} ${isItemActive ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item' : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'}`} onMouseEnter={(e) => handleMouseEnter(e, item.title)} onMouseLeave={handleMouseLeave}>
-                              <item.icon className={`h-5 w-5 flex-shrink-0 ${isItemActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'}`} />
-                              {!isCollapsed && (
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{item.title}</span>
-                                  {item.badgeCount !== undefined && (
-                                    <Badge variant="secondary" className="ml-2 bg-gray-200 text-black dark:bg-gray-700 dark:text-white text-xs px-2 py-0.5 min-w-[20px] h-5 flex items-center justify-center">{item.badgeCount}</Badge>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </Link>
+                {navigationGroups.map((group) => (
+                  <div key={group.sectionKey} className="mb-4">
+                    <div className={`px-3 py-2 text-xs font-semibold text-sidebar-section uppercase text-sidebar-foreground ${isCollapsed ? 'text-center' : ''} border-b border-sidebar-border`}> 
+                      {!isCollapsed ? (
+                        <div className="flex items-center justify-between">
+                          <div>{t(group.sectionKey)}</div>
                         </div>
                       ) : (
-                        <div className="space-y-1">
-                          <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
-                            {isCollapsed ? (
-                              <div onClick={(e) => handleDropdownClick(e, item.items || [])}>
-                                <div className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer ${!isCollapsed ? 'w-full justify-start space-x-2 px-3 py-2.5' : 'w-10 h-10 justify-center'} ${hasActiveChild ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item' : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground hover-item'}`} onMouseEnter={(e) => handleMouseEnter(e, item.title)} onMouseLeave={handleMouseLeave}>
-                                  <item.icon className={`h-5 w-5 flex-shrink-0 ${hasActiveChild ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'}`} />
-                                  {!isCollapsed && <span>{item.title}</span>}
-                                </div>
-                              </div>
-                            ) : (
-                              <button onClick={() => toggleExpanded(item.title)} className={`flex items-center text-sm font-medium rounded-md transition-colors cursor-pointer w-full justify-between px-3 py-2.5 ${hasActiveChild ? 'bg-sidebar-primary text-sidebar-primary-foreground active-item' : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover-text-sidebar-foreground hover-item'}`} onMouseEnter={(e) => handleMouseEnter(e, item.title)} onMouseLeave={handleMouseLeave}>
-                                <div className="flex items-center space-x-2">
-                                  <item.icon className={`h-5 w-5 flex-shrink-0 ${hasActiveChild ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'}`} />
-                                  <span>{item.title}</span>
-                                </div>
-                                {item.hasDropdown && (<div>{expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}</div>)}
-                              </button>
-                            )}
-                          </div>
-
-                          {!isCollapsed && expanded && item.items && (
-                            <div className="ml-8 space-y-1 mt-2">
-                              {item.items.map((subItem: any) => {
-                                if (subItem.roles && !hasAccess(subItem.roles)) return null;
-                                const isSubItemActive = isActive(subItem.url);
-                                return (
-                                  <Link key={subItem.url} to={subItem.url} onClick={handleLinkClick} className="block">
-                                    <div className={`w-full flex items-center space-x-2 px-3 py-1.5 text-sm rounded-md transition-colors cursor-pointer ${isSubItemActive ? 'bg-black/20 dark:bg-blue-900 text-black dark:text-blue-100 font-medium border-l-4 border-black dark:border-sidebar-ring shadow-sm' : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover-text-sidebar-foreground'}`}>
-                                      <subItem.icon className="h-4 w-4" />
-                                      <span>{subItem.title}</span>
-                                    </div>
-                                  </Link>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
+                        <div>{t(group.sectionKey)}</div>
                       )}
-                    </SidebarMenuItem>
-                  );
-                })}
+                    </div>
+
+                    {/* Description removed - showing only section title per request */}
+
+                    <SidebarMenu className="space-y-1 px-1">
+                      {group.items.map((item: any) => {
+                        if (!hasAccess(item.roles)) return null;
+                        const isItemActive = item.url ? isActive(item.url) : false;
+                        return (
+                          <SidebarMenuItem key={item.titleKey}>
+                            <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
+                              <Link to={item.url} onClick={handleLinkClick}>
+                                {/** Collapsed: icon-only circle. Expanded: tile/card-like link. */}
+                                <div
+                                  className={`flex items-center text-sm font-medium transition-colors cursor-pointer ${isCollapsed ? 'w-10 h-10 justify-center rounded-md' : 'w-full justify-start space-x-3 px-3 py-3 rounded-md'} ${isItemActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'}`}
+                                  onMouseEnter={(e) => handleMouseEnter(e, t(item.titleKey))}
+                                  onMouseLeave={handleMouseLeave}
+                                >
+                                  <item.icon className={`h-5 w-5 flex-shrink-0 ${isItemActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'}`} />
+                                  {!isCollapsed && (
+                                    <div className="flex items-center justify-between w-full">
+                                      <span className="font-medium">{t(item.titleKey)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </Link>
+                            </div>
+                          </SidebarMenuItem>
+                        );
+                      })}
+                    </SidebarMenu>
+                  </div>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

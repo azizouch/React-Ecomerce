@@ -216,6 +216,18 @@ export const translations = {
     backToHome: 'Back to Home',
     backToProducts: 'Back to Products',
     productNotFound: 'Product not found',
+      // Sidebar sections
+      sidebar: {
+        main: '🏠 MAIN',
+        catalog: '🛍 CATALOG',
+        catalogWhy: 'Everything related to product content & store display goes here.',
+        sales: '🛒 SALES',
+        salesWhy: 'This section is about transactions & fulfillment.',
+        customers: '👥 CUSTOMERS & USERS',
+        customersWhy: 'This section is about people & communication.',
+        system: '⚙ SYSTEM',
+        viewWhyPrefix: '👉 Why?'
+      },
     
     // Home Page
     discoverProducts: 'Discover Products',
@@ -734,6 +746,18 @@ export const translations = {
     loadingProduct: 'Chargement du produit...',
     backToHome: 'Retour à l\'accueil',
     backToProducts: 'Retour aux produits',
+      // Sidebar sections
+      sidebar: {
+        main: '🏠 PRINCIPAL',
+        catalog: '🛍 CATALOGUE',
+        catalogWhy: 'Tout ce qui concerne le contenu des produits et l’affichage de la boutique est ici.',
+        sales: '🛒 VENTES',
+        salesWhy: 'Cette section concerne les transactions et l’exécution des commandes.',
+        customers: '👥 CLIENTS & UTILISATEURS',
+        customersWhy: 'Cette section concerne les personnes et la communication.',
+        system: '⚙ SYSTÈME',
+        viewWhyPrefix: '👉 Pourquoi?'
+      },
     productNotFound: 'Produit non trouvé',
     
     // Home Page
@@ -1220,6 +1244,18 @@ export const translations = {
     reviews: 'المراجعات',
     pages: 'الصفحات',
     reports: 'التقارير والتحليلات',
+      // Sidebar sections
+      sidebar: {
+        main: '🏠 الرئيسي',
+        catalog: '🛍 الفهرس',
+        catalogWhy: 'كل ما يتعلق بمحتوى المنتج وعرض المتجر موجود هنا.',
+        sales: '🛒 المبيعات',
+        salesWhy: 'هذا القسم يتعلق بالمعاملات والتنفيذ.',
+        customers: '👥 العملاء والمستخدمون',
+        customersWhy: 'هذا القسم يتعلق بالأشخاص والاتصال.',
+        system: '⚙ النظام',
+        viewWhyPrefix: '👉 لماذا؟'
+      },
     activityLogs: 'سجلات النشاط',
     settings: 'الإعدادات',
     profile: 'الملف الشخصي',
