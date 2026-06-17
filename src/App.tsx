@@ -39,6 +39,16 @@ const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 const AdminReports = lazy(() => import('./pages/admin/Reports'));
 const AdminActivityLogs = lazy(() => import('./pages/admin/ActivityLogs'));
 const AdminTickets = lazy(() => import('./pages/admin/Tickets'));
+const AdminVendors = lazy(() => import('./pages/admin/Vendors'));
+const AdminStores = lazy(() => import('./pages/admin/Stores'));
+const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'));
+const VendorDashboard = lazy(() => import('./pages/vendor/Dashboard'));
+const VendorProducts = lazy(() => import('./pages/vendor/Products'));
+const VendorOrders = lazy(() => import('./pages/vendor/Orders'));
+const VendorCustomers = lazy(() => import('./pages/vendor/Customers'));
+const VendorSettings = lazy(() => import('./pages/vendor/Settings'));
+const VendorAnalytics = lazy(() => import('./pages/vendor/Analytics'));
+const VendorNotifications = lazy(() => import('./pages/vendor/Notifications'));
 const CustomerSupport = lazy(() => import('./pages/Support'));
 
 function AppContent() {
@@ -67,6 +77,56 @@ function AppContent() {
             <ProtectedRoute>
               <AdminLayout>
                 <AdminDashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <VendorDashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/products"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <VendorProducts />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/orders"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <VendorOrders />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/customers"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <VendorCustomers />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/settings"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <VendorSettings />
               </AdminLayout>
             </ProtectedRoute>
           }
@@ -265,6 +325,56 @@ function AppContent() {
             <ProtectedRoute>
               <AdminLayout>
                 <AdminSettings />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/vendors"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminVendors />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/stores"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminStores />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminAnalytics />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/analytics"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <VendorAnalytics />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/notifications"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <VendorNotifications />
               </AdminLayout>
             </ProtectedRoute>
           }

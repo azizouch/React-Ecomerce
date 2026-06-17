@@ -24,6 +24,7 @@ import {
   MessageCircle,
   PanelLeftClose, 
   PanelLeftOpen,
+  TrendingUp,
 } from 'lucide-react';
 
 import {
@@ -51,73 +52,68 @@ export function AppSidebar() {
   const sidebarSide = language === 'ar' ? 'right' : 'left';
   const isMobile = useIsMobile();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [dropdownPopup, setDropdownPopup] = useState<{ items: any[]; x: number; y: number } | null>(null);
 
-  useEffect(() => {
-    const updateTheme = () => {
-      const savedTheme = localStorage.getItem('theme');
-      const isDark = savedTheme === 'dark' || (!savedTheme && document.documentElement.classList.contains('dark'));
-      setIsDarkMode(isDark);
-      if (isDark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
-    };
-
-    updateTheme();
-    const handleStorageChange = (e: StorageEvent) => { if (e.key === 'theme') updateTheme(); };
-    window.addEventListener('storage', handleStorageChange);
-    const interval = setInterval(updateTheme, 100);
-    return () => { window.removeEventListener('storage', handleStorageChange); clearInterval(interval); };
-  }, []);
-
   const isCollapsed = state === 'collapsed';
+  const userRole = authState.profile?.role;
 
-  const navigationGroups: any[] = [
+  // Admin Navigation
+  const adminNavigationGroups: any[] = [
     {
-      titleKey: 'sidebar.main',
       items: [
         { titleKey: 'dashboard', url: '/admin', icon: LayoutDashboard },
-        { titleKey: 'reports', url: '/admin/reports', icon: BarChart2 },
-        { titleKey: 'activityLogs', url: '/admin/activity-logs', icon: Activity },
-      ],
-    },
-    {
-      titleKey: 'sidebar.catalog',
-      descriptionKey: 'sidebar.catalogWhy',
-      items: [
+        { titleKey: 'vendors', url: '/admin/vendors', icon: Truck },
+        { titleKey: 'stores', url: '/admin/stores', icon: Package },
         { titleKey: 'products', url: '/admin/products', icon: Package },
-        { titleKey: 'categoriesManage', url: '/admin/categories', icon: FileText },
-        { titleKey: 'inventory', url: '/admin/inventory', icon: Package },
-        { titleKey: 'reviews', url: '/admin/reviews', icon: Star },
-        { titleKey: 'discounts', url: '/admin/discounts', icon: Tag },
-        { titleKey: 'pages', url: '/admin/pages', icon: FileText },
-      ],
-    },
-    {
-      titleKey: 'sidebar.sales',
-      descriptionKey: 'sidebar.salesWhy',
-      items: [
         { titleKey: 'orders', url: '/admin/orders', icon: ShoppingCart },
-        { titleKey: 'payments', url: '/admin/payments', icon: CreditCard },
+        { titleKey: 'adminUsers', url: '/admin/users', icon: Users },
+        { titleKey: 'categoriesManage', url: '/admin/categories', icon: FileText },
+      ],
+    },
+    {
+      items: [
+        { titleKey: 'reports', url: '/admin/analytics', icon: BarChart2 },
+        { titleKey: 'discounts', url: '/admin/discounts', icon: Tag },
         { titleKey: 'shipping', url: '/admin/shipping', icon: Truck },
+        { titleKey: 'payments', url: '/admin/payments', icon: CreditCard },
       ],
     },
     {
-      titleKey: 'sidebar.customers',
-      descriptionKey: 'sidebar.customersWhy',
       items: [
-        { titleKey: 'users', url: '/admin/users', icon: Users },
-        { titleKey: 'notifications', url: '/admin/notifications', icon: Bell },
+        { titleKey: 'notificationsPage', url: '/admin/notifications', icon: Bell },
         { titleKey: 'supportTickets', url: '/admin/tickets', icon: MessageCircle },
-      ],
-    },
-    {
-      titleKey: 'sidebar.system',
-      items: [
-        { titleKey: 'settings', url: '/admin/settings', icon: Settings },
+        { titleKey: 'activityLogs', url: '/admin/activity-logs', icon: Activity },
+        { titleKey: 'storeSettings', url: '/admin/settings', icon: Settings },
       ],
     },
   ];
+
+  // Vendor Navigation
+  const vendorNavigationGroups: any[] = [
+    {
+      items: [
+        { titleKey: 'dashboard', url: '/vendor', icon: LayoutDashboard },
+        { titleKey: 'products', url: '/vendor/products', icon: Package },
+        { titleKey: 'orders', url: '/vendor/orders', icon: ShoppingCart },
+        { titleKey: 'customers', url: '/vendor/customers', icon: Users },
+      ],
+    },
+    {
+      items: [
+        { titleKey: 'analytics', url: '/vendor/analytics', icon: BarChart2 },
+        { titleKey: 'notificationsPage', url: '/vendor/notifications', icon: Bell },
+      ],
+    },
+    {
+      items: [
+        { titleKey: 'storeSettings', url: '/vendor/settings', icon: Settings },
+      ],
+    },
+  ];
+
+  // Select navigation based on user role
+  const navigationGroups = userRole === 'vendor' ? vendorNavigationGroups : adminNavigationGroups;
 
   const navigationItems = navigationGroups.flatMap((group) => group.items);
 
@@ -147,11 +143,6 @@ export function AppSidebar() {
   const isExpanded = (itemTitle: string) => expandedItems.includes(itemTitle);
 
   const toggleCollapse = () => toggleSidebar();
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDarkMode; setIsDarkMode(newDarkMode);
-    if (newDarkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('theme','dark'); } else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme','light'); }
-  };
 
   const handleMouseEnter = (event: React.MouseEvent, text: string) => {
     if (!isCollapsed) return;
@@ -185,7 +176,7 @@ export function AppSidebar() {
                 onClick={() => {
                   // Prevent navigation while auth/profile is loading
                   if (authState.loading) return;
-                  const target = authState.profile?.is_admin ? '/admin' : '/';
+                  const target = authState.profile?.role === 'vendor' ? '/vendor' : authState.profile?.role === 'admin' ? '/admin' : '/';
                   navigate(target);
                   if (isMobile) toggleSidebar();
                 }}
@@ -216,13 +207,17 @@ export function AppSidebar() {
                         <Link to={item.url} onClick={handleLinkClick}>
                           {/** Collapsed: icon-only circle. Expanded: tile/card-like link. */}
                           <div
-                            className={`flex items-center text-sm font-medium transition-colors cursor-pointer ${isCollapsed ? 'w-10 h-10 justify-center rounded-md' : 'w-full justify-start space-x-3 px-3 py-3 rounded-md'} ${isItemActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'}`}
+                            className={`flex items-center text-sm font-medium transition-colors cursor-pointer ${isCollapsed ? 'w-10 h-10 justify-center rounded-md' : 'w-full justify-start space-x-3 px-3 py-3 rounded-md'} ${isItemActive ? 'bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' : 'border-l-transparent text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'}`}
                             onMouseEnter={(e) => handleMouseEnter(e, t(item.titleKey))}
                             onMouseLeave={handleMouseLeave}
                           >
-                            <item.icon className={`h-5 w-5 flex-shrink-0 ${isItemActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'}`} />
+                            <item.icon className={`h-5 w-5 flex-shrink-0 ${isItemActive ? 'text-blue-600 dark:text-blue-400' : 'text-sidebar-foreground'}`} />
                             {!isCollapsed && (
-                              <div className="flex items-center justify-between w-full">
+                              <div className="relative flex items-center justify-between w-full pr-3">
+                                {isItemActive && (
+                                  <div className="absolute right-0 top-0.5 bottom-0.5 w-1 bg-blue-600 rounded-full" />
+                                )}
+
                                 <span className="font-medium">{t(item.titleKey)}</span>
                               </div>
                             )}
@@ -236,12 +231,6 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-          <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md" onClick={toggleDarkMode}>
-            {isDarkMode ? <Sun className="h-5 w-5 transition-colors text-white" /> : <Moon className="h-5 w-5 transition-colors text-sidebar-foreground" />}
-          </Button>
-        </div>
       </Sidebar>
 
       {tooltip && createPortal(

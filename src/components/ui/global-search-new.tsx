@@ -33,7 +33,7 @@ interface User {
   id: string;
   email: string;
   full_name?: string;
-  is_admin: boolean;
+  role: 'customer' | 'vendor' | 'admin';
   type: 'user';
 }
 
@@ -128,7 +128,7 @@ export function GlobalSearch({
       // Search users (profiles)
       const { data: usersData } = await supabase
         .from('profiles')
-        .select('id, email, full_name, is_admin')
+        .select('id, email, full_name, role')
         .or(`email.ilike.${searchPattern},full_name.ilike.${searchPattern}`)
         .limit(5);
 
@@ -431,9 +431,9 @@ export function GlobalSearch({
                             {user.email}
                           </div>
                         </div>
-                        {user.is_admin && (
+                        {(user.role === 'admin' || user.role === 'vendor') && (
                           <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
-                            Admin
+                            {user.role === 'admin' ? 'Admin' : 'Vendor'}
                           </span>
                         )}
                       </div>

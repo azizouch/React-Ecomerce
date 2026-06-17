@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingCart, User, LogOut, Moon, Sun, ChevronDown, Bell, Search, LayoutDashboard, Package, Tag, ShoppingBag, Users, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -6,6 +6,14 @@ import { useCart } from '../../hooks/useCart';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase, Category } from '../../lib/supabase';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '../ui/dropdown-menu';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -15,48 +23,15 @@ export default function Navbar() {
   const { language, setLanguage, t } = useLanguage();
   const { cartCount } = useCart();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
-  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
-  const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
-  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<'categories' | 'language' | 'notifications' | 'profile' | 'account' | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const profileDropdownRef = useRef<HTMLDivElement>(null);
-  const notificationsDropdownRef = useRef<HTMLDivElement>(null);
-  const accountDropdownRef = useRef<HTMLDivElement>(null);
-  const categoriesDropdownRef = useRef<HTMLDivElement>(null);
-  const languageDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!profile?.is_admin) {
+    if (profile?.role !== 'admin') {
       loadCategories();
     }
-  }, [profile?.is_admin]);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
-        setShowProfileDropdown(false);
-      }
-      if (notificationsDropdownRef.current && !notificationsDropdownRef.current.contains(event.target as Node)) {
-        setShowNotificationsDropdown(false);
-      }
-      if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target as Node)) {
-        setShowAccountDropdown(false);
-      }
-      if (categoriesDropdownRef.current && !categoriesDropdownRef.current.contains(event.target as Node)) {
-        setShowCategoriesDropdown(false);
-      }
-      if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target as Node)) {
-        setShowLanguageDropdown(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [profile?.role]);
 
   const loadCategories = async () => {
     try {
@@ -83,7 +58,7 @@ export default function Navbar() {
     }
   };
 
-  const isAdmin = profile?.is_admin;
+  const isAdmin = profile?.role === 'admin';
   const shopHubColor = isDark ? 'text-blue-600' : 'text-black';
 
   return (
@@ -137,35 +112,35 @@ export default function Navbar() {
                 </button>
 
                 {/* Categories Dropdown */}
-                <div className="relative" ref={categoriesDropdownRef}>
-                  <button
-                    onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
-                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium flex items-center space-x-1"
+            <DropdownMenu
+              modal={false}
+              open={openDropdown === 'categories'}
+              onOpenChange={(open) => setOpenDropdown(open ? 'categories' : null)}
+            >
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium flex items-center space-x-1"
+                >
+                  <span>{t('categories')}</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[14rem] bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50 overflow-hidden">
+                {categories.map((category) => (
+                  <DropdownMenuItem
+                    key={category.id}
+                    onSelect={() => {
+                      navigate(`/shop?category=${category.id}`);
+                      setOpenDropdown(null);
+                    }}
+                    className="text-gray-700 dark:text-gray-300"
                   >
-                    <span>{t('categories')}</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-
-                  {/* Categories Dropdown Menu */}
-                  {showCategoriesDropdown && (
-                    <div className="absolute left-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
-                      <div className="py-2">
-                        {categories.map((category) => (
-                          <button
-                            key={category.id}
-                            onClick={() => {
-                              navigate(`/shop?category=${category.id}`);
-                              setShowCategoriesDropdown(false);
-                            }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
-                          >
-                            {category.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    {category.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
                 {/* Deals Link */}
                 <button
@@ -219,100 +194,92 @@ export default function Navbar() {
               </button>
 
             {/* Language Selector */}
-            <div className="relative" ref={languageDropdownRef}>
-              <button
-                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-300 flex items-center space-x-1"
-                title={t('language')}
-              >
-                <Globe className="w-5 h-5" />
-                <span className="text-xs font-semibold uppercase">{language}</span>
-              </button>
+            <DropdownMenu
+              modal={false}
+              open={openDropdown === 'language'}
+              onOpenChange={(open) => setOpenDropdown(open ? 'language' : null)}
+            >
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-300 flex items-center space-x-1"
+                  title={t('language')}
+                >
+                  <Globe className="w-5 h-5" />
+                  <span className="text-xs font-semibold uppercase">{language}</span>
+                </button>
+              </DropdownMenuTrigger>
 
-              {/* Language Dropdown */}
-              {showLanguageDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
-                  <button
-                    onClick={() => {
-                      setLanguage('en');
-                      setShowLanguageDropdown(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 text-sm transition flex items-center space-x-2 ${
-                      language === 'en'
-                        ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span>🇬🇧</span>
-                    <span>English</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setLanguage('fr');
-                      setShowLanguageDropdown(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 text-sm transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700 ${
-                      language === 'fr'
-                        ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span>🇫🇷</span>
-                    <span>Français</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setLanguage('ar');
-                      setShowLanguageDropdown(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 text-sm transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700 ${
-                      language === 'ar'
-                        ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span>🇸🇦</span>
-                    <span>العربية</span>
-                  </button>
-                </div>
-              )}
-            </div>
+              <DropdownMenuContent align="end" className="bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setLanguage('en');
+                    setOpenDropdown(null);
+                  }}
+                  className={language === 'en' ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}
+                >
+                  <span>English</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setLanguage('fr');
+                    setOpenDropdown(null);
+                  }}
+                  className={`border-t border-gray-200 dark:border-slate-700 ${language === 'fr' ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+                >
+                  <span>Français</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setLanguage('ar');
+                    setOpenDropdown(null);
+                  }}
+                  className={`border-t border-gray-200 dark:border-slate-700 ${language === 'ar' ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+                >
+                  <span>العربية</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Notifications (Admin Only) */}
             {isAdmin && (
-              <div className="relative" ref={notificationsDropdownRef}>
-                <button
-                  onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
-                  className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-300"
-                  title="Notifications"
-                >
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
+              <DropdownMenu
+                modal={false}
+                open={openDropdown === 'notifications'}
+                onOpenChange={(open) => setOpenDropdown(open ? 'notifications' : null)}
+              >
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-300"
+                    title="Notifications"
+                  >
+                    <Bell className="w-5 h-5" />
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  </button>
+                </DropdownMenuTrigger>
 
-                {/* Notifications Dropdown */}
-                {showNotificationsDropdown && (
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('notifications')}</p>
-                    </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                        <p className="text-sm">{t('noNotifications')}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigate('/admin/notifications');
-                        setShowNotificationsDropdown(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition border-t border-gray-200 dark:border-slate-700 font-medium"
-                    >
-                      {t('viewAllNotifications')}
-                    </button>
+                <DropdownMenuContent align="end" className="w-80 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50 p-0 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('notifications')}</p>
                   </div>
-                )}
-              </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      <p className="text-sm">{t('noNotifications')}</p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator className="bg-gray-200 dark:bg-slate-700" />
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      navigate('/admin/notifications');
+                      setOpenDropdown(null);
+                    }}
+                    className="text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-700 font-medium"
+                  >
+                    {t('viewAllNotifications')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
 
             {/* Cart Icon (Client Only) */}
@@ -334,134 +301,146 @@ export default function Navbar() {
             {user ? (
               <>
                 {isAdmin ? (
-                  <div className="relative" ref={profileDropdownRef}>
-                    <button
-                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 p-2"
-                    >
-                      <User className="w-5 h-5" />
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-
-                    {/* Admin Profile Dropdown Menu */}
-                    {showProfileDropdown && (
-                      <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
-                        <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile?.full_name || 'Admin User'}</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{profile?.email}</p>
+                  <DropdownMenu
+                    modal={false}
+                    open={openDropdown === 'profile'}
+                    onOpenChange={(open) => setOpenDropdown(open ? 'profile' : null)}
+                  >
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 p-2"
+                      >
+                        <User className="w-5 h-5" />
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-[14rem] bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50 overflow-hidden">
+                      <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">
+                        <div className="flex flex-col space-y-1">
+                          <div className="font-medium">{profile?.full_name || 'Admin User'}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate">{profile?.email}</div>
                         </div>
-                        <button
-                          onClick={() => {
-                            navigate('/admin/profile');
-                            setShowProfileDropdown(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2"
-                        >
-                          <User className="w-4 h-4" />
-                          <span>{t('viewProfile')}</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowLogoutModal(true);
-                            setShowProfileDropdown(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          <span>{t('logout')}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-gray-200 dark:bg-slate-700" />
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          navigate('/admin/profile');
+                          setOpenDropdown(null);
+                        }}
+                        className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        {t('viewProfile')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-gray-200 dark:bg-slate-700" />
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          setShowLogoutModal(true);
+                          setOpenDropdown(null);
+                        }}
+                        className="text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        {t('logout')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ) : (
-                  /* Client Account Dropdown */
-                  <div className="relative" ref={accountDropdownRef}>
-                    <button
-                      onClick={() => setShowAccountDropdown(!showAccountDropdown)}
-                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 p-2"
-                    >
-                      <User className="w-5 h-5" />
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-
-                    {/* Client Account Dropdown Menu - Logged In */}
-                    {showAccountDropdown && (
-                      <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
-                        <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile?.full_name || 'Customer'}</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{profile?.email}</p>
+                  <DropdownMenu
+                    modal={false}
+                    open={openDropdown === 'account'}
+                    onOpenChange={(open) => setOpenDropdown(open ? 'account' : null)}
+                  >
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 p-2"
+                      >
+                        <User className="w-5 h-5" />
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50 overflow-hidden">
+                      <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">
+                        <div className="flex flex-col space-y-1">
+                          <div className="font-medium">{profile?.full_name || 'Customer'}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 font-normal truncate">{profile?.email}</div>
                         </div>
-                        <button
-                          onClick={() => {
-                            setShowAccountDropdown(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2"
-                        >
-                          <ShoppingCart className="w-4 h-4" />
-                          <span>{t('myOrders')}</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            navigate('/support');
-                            setShowAccountDropdown(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2"
-                        >
-                          <ShoppingCart className="w-4 h-4" />
-                          <span>{t('support')}</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowLogoutModal(true);
-                            setShowAccountDropdown(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          <span>{t('logout')}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-gray-200 dark:bg-slate-700" />
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          setOpenDropdown(null);
+                        }}
+                        className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        {t('myOrders')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          navigate('/support');
+                          setOpenDropdown(null);
+                        }}
+                        className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        {t('support')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-gray-200 dark:bg-slate-700" />
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          setShowLogoutModal(true);
+                          setOpenDropdown(null);
+                        }}
+                        className="text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        {t('logout')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </>
             ) : (
-              /* Not Logged In - Account Dropdown */
-              <div className="relative" ref={accountDropdownRef}>
-                <button
-                  onClick={() => setShowAccountDropdown(!showAccountDropdown)}
-                  className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 p-2"
-                >
-                  <User className="w-5 h-5" />
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-
-                {/* Account Dropdown - Not Logged In */}
-                {showAccountDropdown && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
-                    <button
-                      onClick={() => {
-                        navigate('/login');
-                        setShowAccountDropdown(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2"
-                    >
-                      <User className="w-4 h-4" />
-                      <span>{t('login')}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate('/signup');
-                        setShowAccountDropdown(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center space-x-2 border-t border-gray-200 dark:border-slate-700"
-                    >
-                      <User className="w-4 h-4" />
-                      <span>{t('signup')}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+              <DropdownMenu
+                modal={false}
+                open={openDropdown === 'account'}
+                onOpenChange={(open) => setOpenDropdown(open ? 'account' : null)}
+              >
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 p-2"
+                  >
+                    <User className="w-5 h-5" />
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50 overflow-hidden">
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      navigate('/login');
+                      setOpenDropdown(null);
+                    }}
+                    className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 whitespace-nowrap"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    {t('login')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      navigate('/signup');
+                      setOpenDropdown(null);
+                    }}
+                    className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 border-t border-gray-200 dark:border-slate-700 whitespace-nowrap"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    {t('signup')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>

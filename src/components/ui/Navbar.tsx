@@ -29,10 +29,10 @@ export default function Navbar() {
   const languageDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!profile?.is_admin) {
+    if (profile?.role !== 'admin') {
       loadCategories();
     }
-  }, [profile?.is_admin]);
+  }, [profile?.role]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function Navbar() {
     }
   };
 
-  const isAdmin = profile?.is_admin;
+  const isAdmin = profile?.role === 'admin';
   const shopHubColor = isDark ? 'text-blue-600' : 'text-black';
 
   return (

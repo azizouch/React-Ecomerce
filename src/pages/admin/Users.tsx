@@ -28,7 +28,7 @@ interface UserProfile {
   id: string;
   email: string;
   full_name: string | null;
-  is_admin: boolean;
+  role: 'customer' | 'vendor' | 'admin';
   created_at: string;
   last_sign_in_at: string | null;
 }
@@ -54,7 +54,7 @@ export default function AdminUsers() {
     password: '',
     confirmPassword: '',
     full_name: '',
-    is_admin: false,
+    role: 'customer' as 'customer' | 'vendor' | 'admin',
   });
 
   useEffect(() => {
@@ -71,9 +71,11 @@ export default function AdminUsers() {
         .select('*', { count: 'exact' });
 
       if (selectedRole === 'admin') {
-        query = query.eq('is_admin', true);
+        query = query.eq('role', 'admin');
+      } else if (selectedRole === 'vendor') {
+        query = query.eq('role', 'vendor');
       } else if (selectedRole === 'customer') {
-        query = query.eq('is_admin', false);
+        query = query.eq('role', 'customer');
       }
 
       if (searchQuery.trim()) {
@@ -113,14 +115,14 @@ export default function AdminUsers() {
             id: data.user.id,
             email: formData.email,
             full_name: formData.full_name,
-            is_admin: formData.is_admin,
+            role: formData.role,
           });
 
         if (profileError) throw profileError;
       }
 
       setShowCreateModal(false);
-      setFormData({ email: '', password: '', confirmPassword: '', full_name: '', is_admin: false });
+      setFormData({ email: '', password: '', confirmPassword: '', full_name: '', role: 'customer' });
       loadUsers();
       await Swal.fire({
         icon: 'success',
@@ -201,7 +203,7 @@ export default function AdminUsers() {
 
       const updateData = {
         full_name: formData.full_name,
-        is_admin: formData.is_admin,
+        role: formData.role,
         email: formData.email,
       };
 
@@ -225,7 +227,7 @@ export default function AdminUsers() {
 
       setShowEditModal(false);
       setEditingUser(null);
-      setFormData({ email: '', password: '', confirmPassword: '', full_name: '', is_admin: false });
+      setFormData({ email: '', password: '', confirmPassword: '', full_name: '', role: 'customer' });
       await loadUsers();
       await Swal.fire({
         icon: 'success',
@@ -332,7 +334,7 @@ export default function AdminUsers() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">{t('adminUsers')}</p>
-                <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400 mt-1">{users.filter(u => u.is_admin).length}</p>
+                <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400 mt-1">{users.filter(u => u.role === 'admin').length}</p>
               </div>
               <Crown className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
@@ -341,7 +343,7 @@ export default function AdminUsers() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Customer Users</p>
-                <p className="text-2xl font-semibold text-green-600 dark:text-green-400 mt-1">{users.filter(u => !u.is_admin).length}</p>
+                <p className="text-2xl font-semibold text-green-600 dark:text-green-400 mt-1">{users.filter(u => u.role === 'customer').length}</p>
               </div>
               <Users className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
@@ -379,6 +381,7 @@ export default function AdminUsers() {
                 <SelectContent>
                   <SelectItem value="all">All roles</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="vendor">Vendor</SelectItem>
                   <SelectItem value="customer">Customer</SelectItem>
                 </SelectContent>
               </Select>
@@ -462,8 +465,10 @@ export default function AdminUsers() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {user.is_admin ? (
+                        {user.role === 'admin' ? (
                           <StatusBadge status="active" label="Admin" />
+                        ) : user.role === 'vendor' ? (
+                          <StatusBadge status="active" label="Vendor" />
                         ) : (
                           <StatusBadge status="inactive" label="Customer" />
                         )}

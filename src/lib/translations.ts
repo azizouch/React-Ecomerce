@@ -269,6 +269,14 @@ export const translations = {
     sortPriceHigh: 'Price: High to Low',
     filter: 'Filters',
     
+    // Menu Items
+    vendors: 'Vendors',
+    stores: 'Stores',
+    storeSettings: 'Store Settings',
+    supportTickets: 'Support Tickets',
+    customers: 'Customers',
+    analytics: 'Analytics',
+    
     // Modals & Alerts
     deleteConfirm: 'Are you sure?',
     deleteWarning: 'You won\'t be able to revert this!',
@@ -800,6 +808,14 @@ export const translations = {
     sortPriceHigh: 'Prix: élevé à bas',
     filter: 'Filtres',
     
+    // Menu Items
+    vendors: 'Vendeurs',
+    stores: 'Magasins',
+    storeSettings: 'Paramètres du Magasin',
+    supportTickets: 'Tickets de Support',
+    customers: 'Clients',
+    analytics: 'Analytique',
+    
     // Modals & Alerts
     deleteConfirm: 'Êtes-vous sûr?',
     deleteWarning: 'Vous ne pourrez pas annuler cela!',
@@ -1330,6 +1346,14 @@ export const translations = {
     sortPriceLow: 'السعر: من الأقل إلى الأعلى',
     sortPriceHigh: 'السعر: من الأعلى إلى الأقل',
     filter: 'المرشحات',
+    
+    // Menu Items
+    vendors: 'البائعون',
+    stores: 'المتاجر',
+    storeSettings: 'إعدادات المتجر',
+    supportTickets: 'تذاكر الدعم',
+    customers: 'العملاء',
+    analytics: 'التحليلات',
     
     // Modals & Alerts
     deleteConfirm: 'هل أنت متأكد؟',

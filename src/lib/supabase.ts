@@ -53,8 +53,7 @@ export type Profile = {
   phone: string | null;
   address: string | null;
   city: string | null;
-  is_admin: boolean;
-  role: 'customer' | 'gestionnaire' | 'admin' | 'moderator';
+  role: 'customer' | 'vendor' | 'admin';
   created_at: string;
 };
 
@@ -903,7 +902,6 @@ export const adminCatalog = {
         id,
         customer_id,
         order_id,
-        admin_id,
         assigned_admin_id,
         status,
         last_message,
@@ -1119,11 +1117,10 @@ export const adminCatalog = {
   },
 
   // Create canned response
-  async createCannedResponse(title: string, content: string, category: string = 'general', adminId: string) {
+  async createCannedResponse(title: string, content: string, category: string = 'general') {
     const { data, error } = await supabase
       .from('canned_responses')
       .insert({
-        admin_id: adminId,
         title,
         content,
         category,
@@ -1144,12 +1141,12 @@ export const adminCatalog = {
     return { data, error };
   },
 
-  // Get list of admins and gestionnaires for chat modal (excluding current user)
+  // Get list of admins and vendors for chat modal (excluding current user)
   async getCustomersList(searchQuery?: string) {
     let query: any = supabase
       .from('profiles')
       .select('id, full_name, email')
-      .in('role', ['admin', 'gestionnaire'])
+      .in('role', ['admin', 'vendor'])
       .order('full_name');
 
     if (searchQuery) {
@@ -1198,7 +1195,6 @@ export const adminCatalog = {
           customer_id: customerId,
           order_id: orderId || null,
           assigned_admin_id: adminId,
-          admin_id: adminId,
           status: 'open',
         })
         .select()

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase, Order } from '../../lib/supabase';
 import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { t } from '../../lib/translations';
 import StatCard from '../../components/ui/StatCard';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
@@ -9,6 +10,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import CircularChart from '../../components/ui/CircularChart';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { Package, ShoppingCart, DollarSign, Users, TrendingUp, ArrowRight, Filter, ChevronDown } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Stats {
   totalProducts: number;
@@ -18,6 +20,10 @@ interface Stats {
   totalCategories: number;
   lowStockProducts: number;
   pendingOrders: number;
+  totalVendors: number;
+  activeVendors: number;
+  trialVendors: number;
+  expiredVendors: number;
 }
 
 interface RecentOrder extends Order {
@@ -52,7 +58,33 @@ export default function AdminDashboard() {
     totalCategories: 15,
     lowStockProducts: 8,
     pendingOrders: 12,
+    totalVendors: 0,
+    activeVendors: 0,
+    trialVendors: 0,
+    expiredVendors: 0,
   });
+  const [vendorGrowthData] = useState([
+    { month: 'Jan', vendors: 0 },
+    { month: 'Feb', vendors: 0 },
+    { month: 'Mar', vendors: 0 },
+    { month: 'Apr', vendors: 0 },
+    { month: 'May', vendors: 1 },
+    { month: 'Jun', vendors: 1 },
+  ]);
+  const [ordersVsProductsData] = useState([
+    { month: 'Jan', orders: 0, products: 0 },
+    { month: 'Feb', orders: 0, products: 0 },
+    { month: 'Mar', orders: 0, products: 0 },
+    { month: 'Apr', orders: 0, products: 5 },
+    { month: 'May', orders: 0, products: 8 },
+    { month: 'Jun', orders: 0, products: 12 },
+    { month: 'Jul', orders: 0, products: 12 },
+    { month: 'Aug', orders: 0, products: 12 },
+    { month: 'Sep', orders: 0, products: 12 },
+    { month: 'Oct', orders: 0, products: 12 },
+    { month: 'Nov', orders: 0, products: 12 },
+    { month: 'Dec', orders: 0, products: 12 },
+  ]);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([
     {
       id: '123f4567-e89b-12d3-a456-426614174000',
@@ -117,7 +149,27 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
 
   useEffect(() => {
     // Data is pre-loaded with examples, no database queries needed
+    fetchVendorStats();
   }, []);
+
+  const fetchVendorStats = async () => {
+    try {
+      const { data: vendors } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'vendor');
+
+      setStats(prev => ({
+        ...prev,
+        totalVendors: vendors?.length || 0,
+        activeVendors: vendors?.length || 0,
+        trialVendors: 0,
+        expiredVendors: 0,
+      }));
+    } catch (error) {
+      console.error('Error fetching vendor stats:', error);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -140,6 +192,174 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">{t('dashboard')}</h1>
             <p className="text-gray-600 dark:text-gray-400">{t('welcomeBack')}</p>
           </div>
+
+          {/* Vendor Stats - 8 Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Total Vendors */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Vendors</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalVendors}</p>
+                </div>
+                <div className="bg-orange-100 dark:bg-orange-900/30 p-4 rounded-lg">
+                  <Users className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Active Vendors */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Active Vendors</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.activeVendors}</p>
+                </div>
+                <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg">
+                  <Users className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Trial Vendors */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Trial Vendors</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.trialVendors}</p>
+                </div>
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-lg">
+                  <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Expired Vendors */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Expired Vendors</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.expiredVendors}</p>
+                </div>
+                <div className="bg-red-100 dark:bg-red-900/30 p-4 rounded-lg">
+                  <Users className="w-8 h-8 text-red-600 dark:text-red-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Total Products */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Products</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalProducts}</p>
+                </div>
+                <div className="bg-purple-100 dark:bg-purple-900/30 p-4 rounded-lg">
+                  <Package className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Total Orders */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Orders</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalOrders}</p>
+                </div>
+                <div className="bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-lg">
+                  <ShoppingCart className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Total Customers */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Customers</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalCustomers}</p>
+                </div>
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-lg">
+                  <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Total Revenue */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Revenue</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">${stats.totalRevenue}</p>
+                </div>
+                <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg">
+                  <DollarSign className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Vendor Growth Chart */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Vendor Growth</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={vendorGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
+                  <XAxis dataKey="month" stroke="#9ca3af" className="dark:stroke-gray-500" />
+                  <YAxis stroke="#9ca3af" className="dark:stroke-gray-500" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1f2937', 
+                      border: '1px solid #374151',
+                      borderRadius: '0.5rem',
+                      color: '#fff'
+                    }}
+                  />
+                  <Bar dataKey="vendors" fill="#f97316" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Orders vs Products Chart */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Orders vs Products</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={ordersVsProductsData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
+                  <XAxis dataKey="month" stroke="#9ca3af" className="dark:stroke-gray-500" />
+                  <YAxis stroke="#9ca3af" className="dark:stroke-gray-500" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1f2937', 
+                      border: '1px solid #374151',
+                      borderRadius: '0.5rem',
+                      color: '#fff'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="orders" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6', r: 5 }}
+                    activeDot={{ r: 7 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="products" 
+                    stroke="#10b981" 
+                    strokeWidth={2}
+                    dot={{ fill: '#10b981', r: 5 }}
+                    activeDot={{ r: 7 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          
           {loading ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

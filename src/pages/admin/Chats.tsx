@@ -42,7 +42,6 @@ interface Conversation {
   id: string;
   customer_id: string;
   order_id?: string;
-  admin_id?: string;
   assigned_admin_id?: string;
   status: string;
   last_message: string;
@@ -467,7 +466,7 @@ export default function AdminChats() {
         const { data, error } = await supabase
           .from('profiles')
           .select('id, full_name, email, role')
-          .in('role', ['admin', 'gestionnaire'])
+          .in('role', ['admin', 'vendor'])
           .ilike('full_name', `%${query}%`)
           .neq('id', user?.id)
           .order('full_name');
@@ -483,13 +482,13 @@ export default function AdminChats() {
     }
   };
 
-  // Load initial admins/gestionnaires when modal opens or search is cleared
+  // Load initial admins/vendors when modal opens or search is cleared
   const loadInitialCustomers = async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, email, role')
-        .in('role', ['admin', 'gestionnaire'])
+        .in('role', ['admin', 'vendor'])
         .neq('id', user?.id)
         .order('full_name');
 
@@ -573,11 +572,11 @@ export default function AdminChats() {
                 <MessageSquareText className="w-5 h-5 text-blue-600" />
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">Team Chat</h1>
               </div>
-              {profile?.is_admin && (
+              {(profile?.role === 'admin' || profile?.role === 'vendor') && (
                 <Button
                   size="sm"
                   onClick={() => {
-                    if (profile && profile.is_admin) {
+                    if (profile && (profile.role === 'admin' || profile.role === 'vendor')) {
                       setShowNewConversationModal(true);
                     }
                   }}

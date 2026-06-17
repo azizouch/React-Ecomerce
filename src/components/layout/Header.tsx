@@ -1,4 +1,4 @@
-import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2, MessageSquareText,Menu } from 'lucide-react';
+import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2, MessageSquareText,Menu, Moon, Sun } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +50,22 @@ export function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const showedToastsForUser = useRef<string | null>(null);
   const showedMessageIds = useRef<Set<string>>(new Set());
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+      const updateTheme = () => {
+        const savedTheme = localStorage.getItem('theme');
+        const isDark = savedTheme === 'dark' || (!savedTheme && document.documentElement.classList.contains('dark'));
+        setIsDarkMode(isDark);
+        if (isDark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
+      };
+  
+      updateTheme();
+      const handleStorageChange = (e: StorageEvent) => { if (e.key === 'theme') updateTheme(); };
+      window.addEventListener('storage', handleStorageChange);
+      const interval = setInterval(updateTheme, 100);
+      return () => { window.removeEventListener('storage', handleStorageChange); clearInterval(interval); };
+    }, []);
 
   // Fetch user email from auth session if not available in profile
   useEffect(() => {
@@ -180,7 +196,7 @@ export function Header() {
             const conv = convData;
             if (!conv) return;
 
-            const isParticipant = conv.admin_id === user.id || conv.assigned_admin_id === user.id;
+            const isParticipant = conv.assigned_admin_id === user.id || conv.customer_id === user.id;
             if (!isParticipant) return;
             if (newMsg.sender_id === user.id) return; // ignore own messages
 
@@ -208,6 +224,11 @@ export function Header() {
       }
     };
   }, [user, navigate]);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode; setIsDarkMode(newDarkMode);
+    if (newDarkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('theme','dark'); } else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme','light'); }
+  };
 
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, lu: true })));
@@ -335,8 +356,10 @@ export function Header() {
           onClick={() => {
             // Prevent navigation while auth/profile is still loading to avoid flash
             if (loading) return;
-            if (profile?.is_admin) {
+            if (profile?.role === 'admin') {
               navigate('/admin');
+            } else if (profile?.role === 'vendor') {
+              navigate('/vendor');
             } else {
               navigate('/');
             }
@@ -689,6 +712,11 @@ export function Header() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Theme toggler */}
+          <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md" onClick={toggleDarkMode}>
+            {isDarkMode ? <Sun className="h-5 w-5 transition-colors text-white" /> : <Moon className="h-5 w-5 transition-colors text-sidebar-foreground" />}
+          </Button>
 
           {/* User Menu */}
           <DropdownMenu modal={false}>

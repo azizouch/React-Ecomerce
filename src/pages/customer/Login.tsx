@@ -18,26 +18,45 @@ export default function Login() {
 
   // Redirect if already authenticated
   useEffect(() => {
+    console.log('📍 Login: Checking redirect conditions', {
+      authLoading,
+      hasUser: !!user,
+      hasProfile: !!profile,
+      userEmail: user?.email,
+      profileRole: profile?.role,
+      currentPath: location.pathname,
+    });
+
     // Only redirect if we're still on the login page
     if (!authLoading && user && profile && location.pathname === '/login') {
-      if (profile.is_admin) {
+      console.log('🚀 Login: Redirecting user with role:', profile.role);
+      if (profile.role === 'admin') {
+        console.log('➡️ Login: Redirecting to /admin');
         navigate('/admin', { replace: true });
+      } else if (profile.role === 'vendor') {
+        console.log('➡️ Login: Redirecting to /vendor');
+        navigate('/vendor', { replace: true });
       } else {
+        console.log('➡️ Login: Redirecting to /');
         navigate('/', { replace: true });
       }
     }
-  }, [user, profile, authLoading, location.pathname]); // Don't include navigate in deps
+  }, [user, profile, authLoading, location.pathname]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    console.log('📝 Login: Form submitted with email:', email);
 
     try {
+      console.log('🔄 Login: Calling signIn...');
       await signIn(email, password);
+      console.log('✅ Login: signIn completed successfully');
       // After signIn, the AuthContext will trigger auth state change
       // and the above useEffect will redirect when user/profile update
     } catch (err: any) {
+      console.error('❌ Login: signIn failed -', err.message);
       setError(err.message || t(language, 'invalidEmailOrPassword'));
     } finally {
       setLoading(false);

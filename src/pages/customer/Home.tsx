@@ -16,10 +16,14 @@ export default function Home() {
   const { user, profile, loading: authLoading } = useAuth();
   const { language } = useLanguage();
 
-  // Redirect admin users to dashboard immediately
+  // Redirect admin/vendor users to their dashboards immediately
   useEffect(() => {
-    if (user && profile?.is_admin) {
-      navigate('/admin');
+    if (user && profile) {
+      if (profile.role === 'admin') {
+        navigate('/admin');
+      } else if (profile.role === 'vendor') {
+        navigate('/vendor');
+      }
     }
   }, [user, profile, navigate]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -33,13 +37,6 @@ export default function Home() {
   useEffect(() => {
     loadData();
   }, []);
-
-  useEffect(() => {
-    // Redirect admin users to dashboard
-    if (user && profile?.is_admin) {
-      navigate('/admin');
-    }
-  }, [user, profile, navigate]);
 
   const loadData = async () => {
     try {
