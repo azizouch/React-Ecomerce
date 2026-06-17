@@ -74,7 +74,7 @@ export function AppSidebar() {
 
   const navigationGroups: any[] = [
     {
-      sectionKey: 'sidebar.main',
+      titleKey: 'sidebar.main',
       items: [
         { titleKey: 'dashboard', url: '/admin', icon: LayoutDashboard },
         { titleKey: 'reports', url: '/admin/reports', icon: BarChart2 },
@@ -82,7 +82,7 @@ export function AppSidebar() {
       ],
     },
     {
-      sectionKey: 'sidebar.catalog',
+      titleKey: 'sidebar.catalog',
       descriptionKey: 'sidebar.catalogWhy',
       items: [
         { titleKey: 'products', url: '/admin/products', icon: Package },
@@ -94,7 +94,7 @@ export function AppSidebar() {
       ],
     },
     {
-      sectionKey: 'sidebar.sales',
+      titleKey: 'sidebar.sales',
       descriptionKey: 'sidebar.salesWhy',
       items: [
         { titleKey: 'orders', url: '/admin/orders', icon: ShoppingCart },
@@ -103,7 +103,7 @@ export function AppSidebar() {
       ],
     },
     {
-      sectionKey: 'sidebar.customers',
+      titleKey: 'sidebar.customers',
       descriptionKey: 'sidebar.customersWhy',
       items: [
         { titleKey: 'users', url: '/admin/users', icon: Users },
@@ -112,12 +112,14 @@ export function AppSidebar() {
       ],
     },
     {
-      sectionKey: 'sidebar.system',
+      titleKey: 'sidebar.system',
       items: [
         { titleKey: 'settings', url: '/admin/settings', icon: Settings },
       ],
     },
   ];
+
+  const navigationItems = navigationGroups.flatMap((group) => group.items);
 
   useEffect(() => {
     if (!isCollapsed) {
@@ -205,49 +207,31 @@ export function AppSidebar() {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
-                {navigationGroups.map((group) => (
-                  <div key={group.sectionKey} className="mb-4">
-                    <div className={`px-3 py-2 text-xs font-semibold text-sidebar-section uppercase text-sidebar-foreground ${isCollapsed ? 'text-center' : ''} border-b border-sidebar-border`}> 
-                      {!isCollapsed ? (
-                        <div className="flex items-center justify-between">
-                          <div>{t(group.sectionKey)}</div>
-                        </div>
-                      ) : (
-                        <div>{t(group.sectionKey)}</div>
-                      )}
-                    </div>
-
-                    {/* Description removed - showing only section title per request */}
-
-                    <SidebarMenu className="space-y-1 px-1">
-                      {group.items.map((item: any) => {
-                        if (!hasAccess(item.roles)) return null;
-                        const isItemActive = item.url ? isActive(item.url) : false;
-                        return (
-                          <SidebarMenuItem key={item.titleKey}>
-                            <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
-                              <Link to={item.url} onClick={handleLinkClick}>
-                                {/** Collapsed: icon-only circle. Expanded: tile/card-like link. */}
-                                <div
-                                  className={`flex items-center text-sm font-medium transition-colors cursor-pointer ${isCollapsed ? 'w-10 h-10 justify-center rounded-md' : 'w-full justify-start space-x-3 px-3 py-3 rounded-md'} ${isItemActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'}`}
-                                  onMouseEnter={(e) => handleMouseEnter(e, t(item.titleKey))}
-                                  onMouseLeave={handleMouseLeave}
-                                >
-                                  <item.icon className={`h-5 w-5 flex-shrink-0 ${isItemActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'}`} />
-                                  {!isCollapsed && (
-                                    <div className="flex items-center justify-between w-full">
-                                      <span className="font-medium">{t(item.titleKey)}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </Link>
-                            </div>
-                          </SidebarMenuItem>
-                        );
-                      })}
-                    </SidebarMenu>
-                  </div>
-                ))}
+                {navigationItems.map((item: any) => {
+                  if (!hasAccess(item.roles)) return null;
+                  const isItemActive = item.url ? isActive(item.url) : false;
+                  return (
+                    <SidebarMenuItem key={item.titleKey}>
+                      <div className={`relative ${isCollapsed ? 'flex justify-center' : ''}`}>
+                        <Link to={item.url} onClick={handleLinkClick}>
+                          {/** Collapsed: icon-only circle. Expanded: tile/card-like link. */}
+                          <div
+                            className={`flex items-center text-sm font-medium transition-colors cursor-pointer ${isCollapsed ? 'w-10 h-10 justify-center rounded-md' : 'w-full justify-start space-x-3 px-3 py-3 rounded-md'} ${isItemActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'}`}
+                            onMouseEnter={(e) => handleMouseEnter(e, t(item.titleKey))}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            <item.icon className={`h-5 w-5 flex-shrink-0 ${isItemActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'}`} />
+                            {!isCollapsed && (
+                              <div className="flex items-center justify-between w-full">
+                                <span className="font-medium">{t(item.titleKey)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                      </div>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
