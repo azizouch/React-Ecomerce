@@ -25,6 +25,9 @@ import {
   PanelLeftClose, 
   PanelLeftOpen,
   TrendingUp,
+  Home,
+  Store,
+  ShoppingBag,
 } from 'lucide-react';
 
 import {
@@ -64,25 +67,12 @@ export function AppSidebar() {
       items: [
         { titleKey: 'dashboard', url: '/admin', icon: LayoutDashboard },
         { titleKey: 'vendors', url: '/admin/vendors', icon: Truck },
-        { titleKey: 'stores', url: '/admin/stores', icon: Package },
+        { titleKey: 'stores', url: '/admin/stores', icon: Store },
         { titleKey: 'products', url: '/admin/products', icon: Package },
-        { titleKey: 'orders', url: '/admin/orders', icon: ShoppingCart },
+        { titleKey: 'orders', url: '/admin/orders', icon: ShoppingBag },
         { titleKey: 'adminUsers', url: '/admin/users', icon: Users },
-        { titleKey: 'categoriesManage', url: '/admin/categories', icon: FileText },
-      ],
-    },
-    {
-      items: [
-        { titleKey: 'reports', url: '/admin/analytics', icon: BarChart2 },
-        { titleKey: 'discounts', url: '/admin/discounts', icon: Tag },
-        { titleKey: 'shipping', url: '/admin/shipping', icon: Truck },
-        { titleKey: 'payments', url: '/admin/payments', icon: CreditCard },
-      ],
-    },
-    {
-      items: [
+        { titleKey: 'categories', url: '/', icon: Tag },
         { titleKey: 'notificationsPage', url: '/admin/notifications', icon: Bell },
-        { titleKey: 'supportTickets', url: '/admin/tickets', icon: MessageCircle },
         { titleKey: 'activityLogs', url: '/admin/activity-logs', icon: Activity },
         { titleKey: 'storeSettings', url: '/admin/settings', icon: Settings },
       ],
@@ -95,18 +85,13 @@ export function AppSidebar() {
       items: [
         { titleKey: 'dashboard', url: '/vendor', icon: LayoutDashboard },
         { titleKey: 'products', url: '/vendor/products', icon: Package },
+        { titleKey: 'categoriesManage', url: '/vendor/categories', icon: Tag },
         { titleKey: 'orders', url: '/vendor/orders', icon: ShoppingCart },
         { titleKey: 'customers', url: '/vendor/customers', icon: Users },
-      ],
-    },
-    {
-      items: [
         { titleKey: 'analytics', url: '/vendor/analytics', icon: BarChart2 },
+        { titleKey: 'discounts', url: '/admin/discounts', icon: Tag },
+        { titleKey: 'shipping', url: '/admin/shipping', icon: Truck },
         { titleKey: 'notificationsPage', url: '/vendor/notifications', icon: Bell },
-      ],
-    },
-    {
-      items: [
         { titleKey: 'storeSettings', url: '/vendor/settings', icon: Settings },
       ],
     },

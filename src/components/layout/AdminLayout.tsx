@@ -32,7 +32,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <Header />
         <div className="flex w-full flex-1" style={{ direction: language === 'ar' ? 'rtl' : 'ltr', flexDirection: language === 'ar' ? 'row-reverse' : 'row' }}>
           <AppSidebar />
-          <main className="main-responsive flex-1 min-h-screen bg-slate-50 dark:bg-slate-950 pt-16 w-full">
+          <main className="main-responsive flex-1 min-h-screen bg-slate-50 dark:bg-slate-950 w-full">
             {children}
           </main>
         </div>

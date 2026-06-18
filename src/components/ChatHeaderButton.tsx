@@ -102,7 +102,15 @@ export function ChatHeaderButton({ className = '', isMobile = false }: ChatHeade
   const loadUnreadList = async () => {
     try {
       // Load all conversations (not just first 100) to catch any unread messages
-      const { data } = await adminCatalog.getConversations({ page: 1, limit: 100, status: 'all' });
+      const { data, error } = await adminCatalog.getConversations({ page: 1, limit: 100, status: 'all' });
+      
+      // If table doesn't exist or RLS blocks access, silently fail
+      if (error || !data) {
+        setUnreadCount(0);
+        setUnreadConvs([]);
+        return;
+      }
+
       const convs = data || [];
 
       const enriched = await Promise.all(
@@ -149,7 +157,13 @@ export function ChatHeaderButton({ className = '', isMobile = false }: ChatHeade
 
   const markAllAsRead = async () => {
     try {
-      const { data } = await adminCatalog.getConversations({ page: 1, limit: 50, status: 'all' });
+      const { data, error } = await adminCatalog.getConversations({ page: 1, limit: 50, status: 'all' });
+      
+      // If table doesn't exist or RLS blocks access, silently return
+      if (error || !data) {
+        return;
+      }
+
       const list = (data || []).filter((c: any) => c.unread_count && c.unread_count > 0);
       await Promise.all(list.map(async (c: any) => {
         try {

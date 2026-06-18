@@ -1,4 +1,13 @@
 import React from 'react';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 
 type State = { hasError: boolean; error?: Error; info?: React.ErrorInfo };
 
@@ -18,16 +27,46 @@ export default class ErrorBoundary extends React.Component<React.PropsWithChildr
     this.setState({ hasError: true, error, info });
   }
 
+  handleClose = () => {
+    this.setState({ hasError: false, error: undefined, info: undefined });
+  };
+
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-6">
-          <h2 className="text-lg font-semibold mb-2">An error occurred</h2>
-          <pre className="whitespace-pre-wrap text-sm text-red-700 bg-red-50 p-3 rounded">
-            {String(this.state.error?.message)}
-            {this.state.info?.componentStack && `\n\nComponent stack:\n${this.state.info.componentStack}`}
-          </pre>
-        </div>
+        <AlertDialog open={this.state.hasError}>
+          <AlertDialogContent className="bg-black border-2 border-red-600">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-red-600 text-xl font-bold">
+                ⚠️ Error Occurred
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-red-400 mt-4">
+                <div className="space-y-3">
+                  <p className="font-semibold text-red-500">Error Message:</p>
+                  <pre className="whitespace-pre-wrap text-sm bg-red-950 border border-red-700 p-3 rounded text-red-300 overflow-auto max-h-40">
+                    {String(this.state.error?.message)}
+                  </pre>
+                  {this.state.info?.componentStack && (
+                    <>
+                      <p className="font-semibold text-red-500 mt-4">Component Stack:</p>
+                      <pre className="whitespace-pre-wrap text-xs bg-red-950 border border-red-700 p-3 rounded text-red-300 overflow-auto max-h-32">
+                        {this.state.info.componentStack}
+                      </pre>
+                    </>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction
+                onClick={this.handleClose}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+              >
+                Close
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       );
     }
 

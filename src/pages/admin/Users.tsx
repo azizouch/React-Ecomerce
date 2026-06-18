@@ -288,7 +288,7 @@ export default function AdminUsers() {
       password: '',
       confirmPassword: '',
       full_name: user.full_name || '',
-      is_admin: user.is_admin,
+      role: user.role,
     });
     setShowEditModal(true);
   };
@@ -586,17 +586,19 @@ export default function AdminUsers() {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-                <div className="flex items-center pt-2">
-                  <input
-                    type="checkbox"
-                    id="is_admin"
-                    checked={formData.is_admin}
-                    onChange={(e) => setFormData({ ...formData, is_admin: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded"
-                  />
-                  <label htmlFor="is_admin" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
-                    Admin User
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Role
                   </label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'customer' | 'vendor' | 'admin' })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  >
+                    <option value="customer">Customer</option>
+                    <option value="vendor">Vendor</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
                 <div className="flex space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700">
                   <button
@@ -680,17 +682,19 @@ export default function AdminUsers() {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-                <div className="flex items-center pt-2">
-                  <input
-                    type="checkbox"
-                    id="edit_is_admin"
-                    checked={formData.is_admin}
-                    onChange={(e) => setFormData({ ...formData, is_admin: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded"
-                  />
-                  <label htmlFor="edit_is_admin" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
-                    Admin User
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Role
                   </label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'customer' | 'vendor' | 'admin' })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  >
+                    <option value="customer">Customer</option>
+                    <option value="vendor">Vendor</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
                 <div className="flex space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700">
                   <button

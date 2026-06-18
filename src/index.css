@@ -63,15 +63,18 @@ body[style*="margin-right"] {
   left: 0 !important; /* Mobile: always start from left edge */
 }
 
-/* Mobile and tablet: ensure top padding for header */
+/* Main content must sit below the fixed header */
+.main-responsive {
+  padding-top: 4rem !important;
+}
+
+/* Mobile and tablet: ensure top padding for header and full-width layout */
 @media (max-width: 1023px) {
   .main-responsive {
-    padding-top: 5.5rem !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
 
-  /* Ensure header spans full width on small screens only */
   .header-responsive {
     right: 0 !important;
     width: 100% !important;

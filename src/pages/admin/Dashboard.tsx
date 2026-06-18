@@ -5,7 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../lib/translations';
 import StatCard from '../../components/ui/StatCard';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import StatusBadge from '../../components/ui/StatusBadge';
 import CircularChart from '../../components/ui/CircularChart';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
@@ -187,121 +187,121 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
 
   return (
     <>
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-10">
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">{t('dashboard')}</h1>
-            <p className="text-gray-600 dark:text-gray-400">{t('welcomeBack')}</p>
+      <div className="w-full px-4 sm:px-4 lg:px-4 py-4 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('dashboard')}</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('welcomeBack')}</p>
           </div>
 
           {/* Vendor Stats - 8 Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {/* Total Vendors */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Vendors</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalVendors}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalVendors}</p>
                 </div>
-                <div className="bg-orange-100 dark:bg-orange-900/30 p-4 rounded-lg">
-                  <Users className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                <div className="bg-orange-100 dark:bg-orange-900/30 p-4 rounded-2xl">
+                  <Users className="w-7 h-7 text-orange-600 dark:text-orange-400" />
                 </div>
               </div>
             </div>
 
             {/* Active Vendors */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Active Vendors</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.activeVendors}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-3">{stats.activeVendors}</p>
                 </div>
-                <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg">
-                  <Users className="w-8 h-8 text-green-600 dark:text-green-400" />
+                <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-2xl">
+                  <Users className="w-7 h-7 text-green-600 dark:text-green-400" />
                 </div>
               </div>
             </div>
 
             {/* Trial Vendors */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Trial Vendors</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.trialVendors}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-3">{stats.trialVendors}</p>
                 </div>
-                <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-lg">
-                  <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-2xl">
+                  <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </div>
 
             {/* Expired Vendors */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Expired Vendors</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.expiredVendors}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-3">{stats.expiredVendors}</p>
                 </div>
-                <div className="bg-red-100 dark:bg-red-900/30 p-4 rounded-lg">
-                  <Users className="w-8 h-8 text-red-600 dark:text-red-400" />
+                <div className="bg-red-100 dark:bg-red-900/30 p-4 rounded-2xl">
+                  <Users className="w-7 h-7 text-red-600 dark:text-red-400" />
                 </div>
               </div>
             </div>
 
             {/* Total Products */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Products</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalProducts}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalProducts}</p>
                 </div>
-                <div className="bg-purple-100 dark:bg-purple-900/30 p-4 rounded-lg">
-                  <Package className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                <div className="bg-purple-100 dark:bg-purple-900/30 p-4 rounded-2xl">
+                  <Package className="w-7 h-7 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
             </div>
 
             {/* Total Orders */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Orders</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalOrders}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalOrders}</p>
                 </div>
-                <div className="bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-lg">
-                  <ShoppingCart className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                <div className="bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-2xl">
+                  <ShoppingCart className="w-7 h-7 text-yellow-600 dark:text-yellow-400" />
                 </div>
               </div>
             </div>
 
             {/* Total Customers */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Customers</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalCustomers}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-3">{stats.totalCustomers}</p>
                 </div>
-                <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-lg">
-                  <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-2xl">
+                  <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </div>
 
             {/* Total Revenue */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Revenue</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-3">${stats.totalRevenue}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-3">${stats.totalRevenue}</p>
                 </div>
-                <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg">
-                  <DollarSign className="w-8 h-8 text-green-600 dark:text-green-400" />
+                <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-2xl">
+                  <DollarSign className="w-7 h-7 text-green-600 dark:text-green-400" />
                 </div>
               </div>
             </div>
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* Vendor Growth Chart */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Vendor Growth</h2>
@@ -372,7 +372,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
           ) : (
             <>
               {/* Top 4 Stat Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <StatCard
                   title={t('totalSales')}
                   value={`$${(stats.totalRevenue / 1000).toFixed(1)}K`}
@@ -401,21 +401,20 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                   iconColor="green"
                   subtext=""
                 />
-              </div>
+              </div> */}
 
               {/* Sales Statistic and Shipment Status */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 {/* Sales Statistic Chart */}
-                <SoftCard className="lg:col-span-2 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('salesStatistic')}</h2>
-                    </div>
+                <Card className="lg:col-span-2">
+                  <CardHeader className="flex items-center justify-between">
+                    <CardTitle>{t('salesStatistic')}</CardTitle>
                     <button className="flex items-center gap-2 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
                       <Filter className="w-4 h-4" />
                       {t('monthly')}
                     </button>
-                  </div>
+                  </CardHeader>
+                  <CardContent>
 
                   {monthlyRevenue.length > 0 ? (
                     <div className="relative w-full pl-12 pr-4">
@@ -524,16 +523,18 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                       <p className="text-gray-500 dark:text-gray-400">No revenue data yet</p>
                     </div>
                   )}
-                </SoftCard>
+                  </CardContent>
+                </Card>
 
                 {/* Shipment Status Pie Chart */}
-                <SoftCard className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('shipmentStatus')}</h2>
+                <Card>
+                  <CardHeader className="flex items-center justify-between">
+                    <CardTitle>{t('shipmentStatus')}</CardTitle>
                     <button className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium">
                       {t('today')}
                     </button>
-                  </div>
+                  </CardHeader>
+                  <CardContent>
                   
                   <div className="flex flex-col items-center gap-6">
                     {/* Simple Pie Chart */}
@@ -570,15 +571,16 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                       </div>
                     </div>
                   </div>
-                </SoftCard>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Recent Orders and Sales Overview */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 {/* Recent Orders Table */}
-                <SoftCard className="lg:col-span-2 p-6">
-                  <div className="mb-6 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('recentOrders')}</h2>
+                <Card className="lg:col-span-2">
+                  <CardHeader className="flex items-center justify-between">
+                    <CardTitle>{t('recentOrders')}</CardTitle>
                     <div className="relative" ref={sortDropdownRef}>
                       <button 
                         onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
@@ -611,7 +613,8 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                         </div>
                       )}
                     </div>
-                  </div>
+                  </CardHeader>
+                  <CardContent>
 
                   {recentOrders.length > 0 ? (
                     <div className="overflow-x-auto">
@@ -673,13 +676,15 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                       <p className="text-gray-500 dark:text-gray-400">{t('noOrdersYet')}</p>
                     </div>
                   )}
-                </SoftCard>
+                  </CardContent>
+                </Card>
 
                 {/* Sales Overview */}
-                <SoftCard className="p-6">
-                  <div className="mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('salesOverview')}</h2>
-                  </div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t('salesOverview')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
 
                   <div className="space-y-6">
                     {/* Growth indicator */}
@@ -707,7 +712,8 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                       </div>
                     ))}
                   </div>
-                </SoftCard>
+                  </CardContent>
+                </Card>
               </div>
             </>
           )}

@@ -9,6 +9,7 @@ import { Input } from '../../components/ui/input';
 type StoreRow = {
   id: string;
   store_name: string | null;
+  owner_id: string;
   vendor_name: string | null;
   vendor_email: string | null;
   products_count: number;
@@ -18,7 +19,7 @@ type StoreRow = {
 };
 
 export default function AdminStores() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
@@ -30,47 +31,62 @@ export default function AdminStores() {
   const loadStores = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      const { data: storesData, error: storesError } = await supabase
+        .from('stores')
+        .select('id, owner_id, name, status, created_at')
+        .order('created_at', { ascending: false });
+
+      if (storesError) throw storesError;
+      if (!storesData) {
+        setStores([]);
+        return;
+      }
+
+      const ownerIds = [...new Set(storesData.map((store) => store.owner_id))];
+      const { data: ownersData, error: ownersError } = await supabase
         .from('profiles')
-        .select('id, full_name, email, role, created_at')
-        .eq('role', 'vendor');
+        .select('id, full_name, email')
+        .in('id', ownerIds);
 
-      if (error) throw error;
+      if (ownersError) throw ownersError;
 
-      const vendorProfiles = data || [];
-      const mappedStores = vendorProfiles.map((vendor: any) => ({
-        id: vendor.id,
-        store_name: vendor.full_name || vendor.email || 'Vendor Store',
-        vendor_name: vendor.full_name || 'Vendor',
-        vendor_email: vendor.email,
-        products_count: 0,
-        orders_count: 0,
-        status: 'active',
-        created_at: vendor.created_at,
-      }));
+      const ownerMap = (ownersData || []).reduce((map: Record<string, { full_name: string | null; email: string | null }>, owner: any) => {
+        map[owner.id] = { full_name: owner.full_name, email: owner.email };
+        return map;
+      }, {});
 
-      const productCounts = await Promise.all(
-        mappedStores.map(async (store) => {
-          const { data: products, error: productError } = await supabase
-            .from('products')
-            .select('id', { count: 'exact' })
-            .eq('created_at', store.created_at); // temporary placeholder
-
-          if (productError) {
-            console.error('Product count error', productError);
-            return store;
-          }
+      const storesWithCounts = await Promise.all(
+        (storesData || []).map(async (store) => {
+          const [{ count: productCount }, { count: orderCount }] = await Promise.all([
+            supabase
+              .from('products')
+              .select('id', { count: 'exact', head: true })
+              .eq('store_id', store.id),
+            supabase
+              .from('orders')
+              .select('id', { count: 'exact', head: true })
+              .eq('store_id', store.id),
+          ]);
 
           return {
-            ...store,
-            products_count: products?.length || 0,
+            id: store.id,
+            owner_id: store.owner_id,
+            store_name: store.name,
+            vendor_name: ownerMap[store.owner_id]?.full_name || 'Vendor',
+            vendor_email: ownerMap[store.owner_id]?.email || 'Unknown',
+            products_count: productCount || 0,
+            orders_count: orderCount || 0,
+            status: store.status === 1 ? 'active' : 'inactive',
+            created_at: store.created_at,
           };
         })
       );
 
-      setStores(productCounts);
+      setStores(storesWithCounts);
     } catch (error) {
       console.error('Error loading stores:', error);
+      setStores([]);
     } finally {
       setLoading(false);
     }

@@ -5,7 +5,7 @@ export default function AdminFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className={`border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors mt-12 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+    <footer className={`border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors ${language === 'ar' ? 'text-right' : 'text-left'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           {/* About */}

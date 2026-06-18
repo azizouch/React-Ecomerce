@@ -19,28 +19,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔐 AuthProvider: Initializing - Getting session');
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('🔐 AuthProvider: Initial session:', session?.user?.email || 'No session');
       setUser(session?.user ?? null);
       if (session?.user) {
-        console.log('🔐 AuthProvider: Loading profile for user:', session.user.id);
         loadProfile(session.user.id);
       } else {
-        console.log('🔐 AuthProvider: No initial session, setting loading to false');
         setLoading(false);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('🔐 AuthProvider: Auth state changed - Event:', _event, 'User:', session?.user?.email || 'No user');
       (async () => {
         setUser(session?.user ?? null);
         if (session?.user) {
-          console.log('🔐 AuthProvider: Auth state change - Loading profile for:', session.user.id);
           await loadProfile(session.user.id);
         } else {
-          console.log('🔐 AuthProvider: Auth state change - Clearing profile and user');
           setProfile(null);
           setLoading(false);
         }
@@ -52,7 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     try {
-      console.log('👤 loadProfile: Starting for userId:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -60,14 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (error) {
-        console.error('❌ loadProfile: Database error:', error);
         throw error;
       }
       
       // If profile doesn't exist, create one
       if (!data) {
-        console.warn('⚠️ loadProfile: Profile not found, creating new profile for user:', userId);
-        
         // Get user info from auth
         const { data: { user: authUser } } = await supabase.auth.getUser();
         
@@ -90,21 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .insert(newProfile);
 
           if (insertError) {
-            console.error('❌ loadProfile: Failed to create profile:', insertError);
             throw insertError;
           }
           
-          console.log('✅ loadProfile: New profile created with role: customer');
           setProfile(newProfile);
         }
       } else {
-        console.log('✅ loadProfile: Profile data found:', data?.email, 'Role:', data?.role);
         setProfile(data);
       }
     } catch (error) {
-      console.error('❌ loadProfile: Error loading profile:', error);
+      // Silently fail - profile loading errors shouldn't break the app
     } finally {
-      console.log('✅ loadProfile: Setting loading to false');
       setLoading(false);
     }
   };
@@ -133,27 +118,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('🔑 signIn: Attempting login for:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error('❌ signIn: Authentication error:', error.message);
         throw error;
       }
 
-      console.log('✅ signIn: Authentication successful for:', data.user?.email);
-
       if (data.user) {
-        console.log('📥 signIn: Loading profile for user:', data.user.id);
         // Directly load profile after successful auth
         await loadProfile(data.user.id);
-        console.log('✅ signIn: Profile loaded, returning');
       }
     } catch (error: any) {
-      console.error('❌ signIn: Failed -', error.message);
       throw error;
     }
   };

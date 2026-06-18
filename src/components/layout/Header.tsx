@@ -26,7 +26,7 @@ import { Badge } from '../ui/badge';
 import { useSidebar } from '../ui/sidebar';
 import { GlobalSearch } from '../ui/global-search';
 import { ConfirmationDialog } from '../ui/confirmation-dialog';
-import { ChatHeaderButton } from '../ChatHeaderButton';
+
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useIsMobile } from '../../hooks/use-mobile';
@@ -371,9 +371,6 @@ export function Header() {
 
         {/* Right side - Notifications and User (Mobile Only) */}
         <div className="flex items-center gap-1 lg:hidden">
-          {/* Chat Button */}
-          <ChatHeaderButton isMobile={false} />
-
           {/* Notifications Bell */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
@@ -552,9 +549,6 @@ export function Header() {
         </div>
 
         <div className={`flex items-center gap-4 ${edgeMarginClass}`}>
-          {/* Chat Button */}
-          <ChatHeaderButton isMobile={false} />
-
           {/* Notifications */}
           <Popover open={showDesktopNotifications} onOpenChange={setShowDesktopNotifications}>
             <PopoverTrigger asChild>

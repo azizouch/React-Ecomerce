@@ -20,6 +20,7 @@ import {
 const DEFAULT_ITEMS_PER_PAGE = 10;
 
 interface OrderWithItems extends Order {
+  status: number | string;
   order_items?: OrderItem[];
   profiles?: {
     email: string;
@@ -63,11 +64,11 @@ export default function Orders() {
         );
 
       if (selectedStatus !== 'all') {
-        query = query.eq('status', selectedStatus);
+        query = query.eq('status', Number(selectedStatus));
       }
 
       if (searchQuery.trim()) {
-        query = query.ilike('id', `%${searchQuery}%`);
+        query = query.or(`order_number.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%`);
       }
 
       const { data, error, count } = await query
@@ -120,7 +121,7 @@ export default function Orders() {
     try {
       const { error } = await supabase
         .from('orders')
-        .update({ status })
+        .update({ status: Number(status) })
         .eq('id', orderId);
 
       if (error) throw error;
@@ -189,12 +190,12 @@ export default function Orders() {
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                   <SelectItem value="all">All Orders</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="0">Pending</SelectItem>
+                  <SelectItem value="1">Confirmed</SelectItem>
+                  <SelectItem value="2">Processing</SelectItem>
+                  <SelectItem value="3">Shipped</SelectItem>
+                  <SelectItem value="4">Delivered</SelectItem>
+                  <SelectItem value="5">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -271,7 +272,7 @@ export default function Orders() {
                     <div className="mt-4 flex items-center space-x-4 pt-4 border-t border-gray-100 dark:border-slate-600">
                       <span className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Update Status:</span>
                       <Select
-                        value={order.status}
+                        value={String(order.status)}
                         onValueChange={(value) => {
                           handleStatusChange(order.id, value);
                         }}
@@ -280,12 +281,12 @@ export default function Orders() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="confirmed">Confirmed</SelectItem>
-                          <SelectItem value="processing">Processing</SelectItem>
-                          <SelectItem value="shipped">Shipped</SelectItem>
-                          <SelectItem value="delivered">Delivered</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="0">Pending</SelectItem>
+                          <SelectItem value="1">Confirmed</SelectItem>
+                          <SelectItem value="2">Processing</SelectItem>
+                          <SelectItem value="3">Shipped</SelectItem>
+                          <SelectItem value="4">Delivered</SelectItem>
+                          <SelectItem value="5">Cancelled</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -307,12 +308,12 @@ export default function Orders() {
                           onClick={(e) => e.stopPropagation()}
                           className="px-3 py-1 rounded-lg text-xs font-medium border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                         >
-                          <option value="pending">Pending</option>
-                          <option value="confirmed">Confirmed</option>
-                          <option value="processing">Processing</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
+                          <option value="0">Pending</option>
+                          <option value="1">Confirmed</option>
+                          <option value="2">Processing</option>
+                          <option value="3">Shipped</option>
+                          <option value="4">Delivered</option>
+                          <option value="5">Cancelled</option>
                         </select>
                       </div>
                     </div>
