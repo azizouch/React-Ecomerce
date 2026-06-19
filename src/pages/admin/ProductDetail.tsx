@@ -1,7 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, Product, Category } from '../../lib/supabase';
-import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Button } from '../../components/ui/button';
@@ -408,7 +407,6 @@ export default function ProductDetail() {
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <SkeletonLoader count={5} />
         </div>
-        <AdminFooter />
       </>
     );
   }
@@ -419,7 +417,6 @@ export default function ProductDetail() {
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center">
           <p className="text-gray-500">{t('noOrdersYet')}</p>
         </div>
-        <AdminFooter />
       </>
     );
   }
@@ -857,7 +854,6 @@ export default function ProductDetail() {
           onConfirm={confirmDelete}
           variant="destructive"
         />
-      <AdminFooter />
     </>
   );
 }

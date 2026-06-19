@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, supabaseAdmin as getSupabaseAdmin } from '../../lib/supabase';
 import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
-import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../lib/translations';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
@@ -728,7 +727,6 @@ export default function AdminUsers() {
           variant="destructive"
         />
         </div>
-      <AdminFooter />
     </>
   );
 }

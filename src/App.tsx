@@ -26,7 +26,6 @@ const AdminOrders = lazy(() => import('./pages/admin/Orders'));
 const AdminUsers = lazy(() => import('./pages/admin/Users'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile'));
 const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
-const AdminChats = lazy(() => import('./pages/admin/Chats'));
 const AdminProductDetail = lazy(() => import('./pages/admin/ProductDetail'));
 const AdminProductNew = lazy(() => import('./pages/admin/ProductNew'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments'));
@@ -40,6 +39,8 @@ const AdminReports = lazy(() => import('./pages/admin/Reports'));
 const AdminActivityLogs = lazy(() => import('./pages/admin/ActivityLogs'));
 const AdminTickets = lazy(() => import('./pages/admin/Tickets'));
 const AdminVendors = lazy(() => import('./pages/admin/Vendors'));
+const AdminVendorDetail = lazy(() => import('./pages/admin/VendorDetail'));
+const AdminVendorEdit = lazy(() => import('./pages/admin/VendorEdit'));
 const AdminStores = lazy(() => import('./pages/admin/Stores'));
 const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'));
 const VendorDashboard = lazy(() => import('./pages/vendor/Dashboard'));
@@ -222,16 +223,6 @@ function AppContent() {
           }
         />
         <Route
-          path="/admin/chats"
-          element={
-            <ProtectedRoute>
-              <AdminLayout>
-                <AdminChats />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/admin/tickets"
           element={
             <ProtectedRoute>
@@ -345,6 +336,26 @@ function AppContent() {
             <ProtectedRoute>
               <AdminLayout>
                 <AdminVendors />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/vendors/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminVendorEdit />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/vendors/:id"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminVendorDetail />
               </AdminLayout>
             </ProtectedRoute>
           }

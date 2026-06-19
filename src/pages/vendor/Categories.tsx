@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminCatalog, Category } from '../../lib/supabase';
 import { calculateTotalPages } from '../../lib/pagination';
-import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
@@ -357,7 +356,6 @@ export default function AdminCategories() {
           variant="destructive"
         />
         </div>
-      <AdminFooter />
     </>
   );
 }

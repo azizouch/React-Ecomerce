@@ -3,7 +3,6 @@ import { adminCatalog } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../lib/translations';
-import AdminFooter from '../../components/ui/AdminFooter';
 import { MessageCircle, Send, MoreVertical, Mail, Phone, ShoppingBag, Clock, AlertCircle, Plus } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -619,8 +618,6 @@ export default function AdminTickets() {
           </div>
         </div>
       </div>
-
-      <AdminFooter />
     </div>
   );
 }

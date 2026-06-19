@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, Order, OrderItem } from '../../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
-import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import SoftCard from '../../components/ui/SoftCard';
@@ -374,7 +373,6 @@ export default function Orders() {
           </div>
         )}
         </div>
-      <AdminFooter />
     </>
   );
 }

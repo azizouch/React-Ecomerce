@@ -17,6 +17,8 @@ export default function Pagination({
   onPageChange,
   onItemsPerPageChange,
 }: PaginationProps) {
+  const perPageOptions = [5, 10, 25, 50];
+
   // Generate page numbers to display
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
@@ -110,8 +112,22 @@ export default function Pagination({
         </button>
       </div>
 
-      <div className="text-sm text-gray-600 dark:text-gray-400">
-        Page {currentPage} sur {totalPages}
+      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+        <label className="flex items-center gap-2">
+          <span>Per page</span>
+          <select
+            value={itemsPerPage}
+            onChange={(event) => onItemsPerPageChange(Number(event.target.value))}
+            className="rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-gray-100 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {perPageOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span>Page {currentPage} of {totalPages}</span>
       </div>
     </div>
   );

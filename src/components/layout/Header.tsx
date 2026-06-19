@@ -1,4 +1,4 @@
-import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2, MessageSquareText,Menu, Moon, Sun } from 'lucide-react';
+import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2, Menu, Moon, Sun } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,8 +33,7 @@ import { useIsMobile } from '../../hooks/use-mobile';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { supabase, adminCatalog } from '../../lib/supabase';
-import { useRef } from 'react';
+import { supabase } from '../../lib/supabase';
 
 export function Header() {
   const { toggleSidebar, state: sidebarState } = useSidebar();
@@ -48,8 +47,6 @@ export function Header() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const showedToastsForUser = useRef<string | null>(null);
-  const showedMessageIds = useRef<Set<string>>(new Set());
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
@@ -122,108 +119,6 @@ export function Header() {
 
     loadNotifications();
   }, []);
-
-  // Show toasts for unread conversations when user logs in (only once per session)
-  useEffect(() => {
-    const showUnreadToasts = async () => {
-      try {
-        if (!user || showedToastsForUser.current === user.id) return;
-        const { data } = await adminCatalog.getConversations({ page: 1, limit: 5, status: 'all' });
-        const unread = (data || []).filter((c: any) => c.unread_count && c.unread_count > 0);
-        // For each unread conversation, fetch the latest message id so toasts can be deduped reliably
-        await Promise.all(
-          unread.slice(0, 5).map(async (c: any) => {
-            try {
-              const { data: latest } = await supabase
-                .from('messages')
-                .select('id, message')
-                .eq('conversation_id', c.id)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-              const msgId = latest?.id || c.id;
-              if (msgId && showedMessageIds.current.has(msgId)) return;
-              if (msgId) showedMessageIds.current.add(msgId);
-              toast(t('newMessageFrom', { name: c.profiles?.full_name || t('user') }), {
-                description: latest?.message || c.last_message || '',
-                action: {
-                  label: t('open'),
-                  onClick: () => navigate(`/admin/chats?open=${c.id}`),
-                },
-              });
-            } catch (e) {
-              // fallback to previous behavior
-              const key = c.last_message_at || c.last_message || c.id;
-              if (typeof key === 'string' && showedMessageIds.current.has(key)) return;
-              if (typeof key === 'string') showedMessageIds.current.add(key);
-              toast(t('newMessageFrom', { name: c.profiles?.full_name || t('user') }), {
-                description: c.last_message || '',
-                action: {
-                  label: t('open'),
-                  onClick: () => navigate(`/admin/chats?open=${c.id}`),
-                },
-              });
-            }
-          })
-        );
-        showedToastsForUser.current = user.id;
-      } catch (error) {
-        console.error('Error fetching unread conversations for toasts:', error);
-      }
-    };
-
-    showUnreadToasts();
-  }, [user, navigate]);
-
-  // Real-time listener for new message inserts - show toast when a new message arrives for current admin
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('public:messages')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        async (payload) => {
-          try {
-            const newMsg = payload.new as any;
-            if (!newMsg || !newMsg.id) return;
-            if (showedMessageIds.current.has(newMsg.id)) return;
-            showedMessageIds.current.add(newMsg.id);
-            // Fetch conversation to check if current user is a participant
-            const { data: convData } = await adminCatalog.getConversation(newMsg.conversation_id);
-            const conv = convData;
-            if (!conv) return;
-
-            const isParticipant = conv.assigned_admin_id === user.id || conv.customer_id === user.id;
-            if (!isParticipant) return;
-            if (newMsg.sender_id === user.id) return; // ignore own messages
-
-            const senderName = conv.profiles?.full_name || conv.assigned_admin?.full_name || t('user');
-
-            toast(t('newMessageFrom', { name: senderName || t('user') }), {
-              description: newMsg.message || '',
-              action: {
-                label: t('open'),
-                onClick: () => navigate(`/admin/chats?open=${conv.id}`),
-              },
-            });
-          } catch (error) {
-            console.error('Error handling realtime message:', error);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      try {
-        channel.unsubscribe();
-      } catch (e) {
-        // ignore
-      }
-    };
-  }, [user, navigate]);
 
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode; setIsDarkMode(newDarkMode);

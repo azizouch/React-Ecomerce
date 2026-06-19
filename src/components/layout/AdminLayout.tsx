@@ -3,6 +3,7 @@ import { SidebarProvider as RadixSidebarProvider } from '../ui/sidebar';
 import { AppSidebar } from './sidebar';
 import { Header } from './Header';
 import { ScrollToTop } from '../ui/scroll-to-top';
+import AdminFooter from '../ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface AdminLayoutProps {
@@ -34,6 +35,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <AppSidebar />
           <main className="main-responsive flex-1 min-h-screen bg-slate-50 dark:bg-slate-950 w-full">
             {children}
+            <AdminFooter />
           </main>
         </div>
       </div>

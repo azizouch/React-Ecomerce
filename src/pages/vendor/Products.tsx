@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Product, Category, adminCatalog } from '../../lib/supabase';
 import { calculateTotalPages } from '../../lib/pagination';
-import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -354,7 +353,6 @@ export default function Products() {
         )}
 
         </div>
-      <AdminFooter />
     </>
   );
 }

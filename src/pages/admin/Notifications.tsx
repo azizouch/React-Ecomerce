@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import AdminFooter from '../../components/ui/AdminFooter';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SoftCard from '../../components/ui/SoftCard';
 import { Button } from '../../components/ui/button';
@@ -234,7 +233,6 @@ export default function AdminNotifications() {
           )}
         </div>
       </div>
-      <AdminFooter />
     </>
   );
 }
