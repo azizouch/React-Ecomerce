@@ -31,6 +31,7 @@ export default function AdminStores() {
   const [createOpen, setCreateOpen] = useState(false);
   const [vendors, setVendors] = useState<Array<{ id: string; full_name: string | null; email: string | null }>>([]);
   const [creating, setCreating] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [createForm, setCreateForm] = useState({
     name: '',
     owner_id: '',
@@ -53,6 +54,18 @@ export default function AdminStores() {
     loadStores();
     loadVendors();
   }, []);
+
+  // Ensure vendors are fresh when opening the create modal
+  useEffect(() => {
+    if (createOpen) loadVendors();
+  }, [createOpen]);
+  
+  // When vendors load, if there's at least one and no owner selected, preselect the first
+  useEffect(() => {
+    if (createOpen && vendors.length > 0 && !createForm.owner_id) {
+      setCreateForm((f) => ({ ...f, owner_id: vendors[0].id }));
+    }
+  }, [vendors, createOpen]);
 
   const loadStores = async () => {
     try {
@@ -180,9 +193,23 @@ export default function AdminStores() {
   const handleCreateStore = async (e: React.FormEvent) => {
     e.preventDefault();
     const { name, owner_id, slug, description, phone, email, address, city } = createForm;
-    if (!name || !owner_id || !slug || !description || !phone || !email || !address || !city) {
-      return alert('All fields are required');
+    const newErrors: Record<string, string> = {};
+    if (!name) newErrors.name = 'Store name is required';
+    if (!owner_id) newErrors.owner_id = 'Vendor owner is required';
+    if (!slug) newErrors.slug = 'Slug is required';
+    if (!description) newErrors.description = 'Description is required';
+    if (!phone) newErrors.phone = 'Phone is required';
+    if (!email) newErrors.email = 'Email is required';
+    if (!address) newErrors.address = 'Address is required';
+    if (!city) newErrors.city = 'City is required';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      if (newErrors.address || newErrors.city) setActiveTab('contact');
+      else setActiveTab('info');
+      return;
     }
+
     setCreating(true);
     try {
       const payload = {
@@ -217,11 +244,12 @@ export default function AdminStores() {
         city: '',
         status: 1,
       });
+      setErrors({});
       await loadStores();
       await loadVendors();
     } catch (err) {
       console.error('Failed to create store', err);
-      alert('Failed to create store');
+      setErrors({ form: 'Failed to create store' });
     } finally {
       setCreating(false);
     }
@@ -229,10 +257,10 @@ export default function AdminStores() {
 
   return (
     <div className="p-5 space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">All Stores</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">View all vendor stores and their sales performance.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Stores</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">View all vendor stores and their sales performance.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           {/* <Button variant="outline" size="sm" onClick={loadStores}>
@@ -374,18 +402,18 @@ export default function AdminStores() {
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-6xl w-full">
+        <DialogContent className="md:max-w-2xl lg:max-w-4xl xl:max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Create New Store</DialogTitle>
             <DialogDescription>Add a store and assign a vendor owner.</DialogDescription>
           </DialogHeader>
 
-          <div className="mt-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="border-b border-gray-200 dark:border-gray-700 px-2 shrink-0">
             <nav className="flex gap-2" aria-label="Tabs">
               <button
                 type="button"
                 onClick={() => setActiveTab('info')}
-                className={`inline-flex items-center gap-2 px-4 py-3 border-b-2 transition ${activeTab === 'info' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                className={`text-sm sm:text-md inline-flex items-center gap-1 sm:gap-2 sm:px-4 py-2 sm:py-3 border-b-2 transition flex-1 ${activeTab === 'info' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
               >
                 <Store className="h-4 w-4" />
                 Store Information
@@ -393,7 +421,7 @@ export default function AdminStores() {
               <button
                 type="button"
                 onClick={() => setActiveTab('contact')}
-                className={`inline-flex items-center gap-2 px-4 py-3 border-b-2 transition ${activeTab === 'contact' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                className={`text-sm sm:text-md inline-flex items-center gap-1 sm:gap-2 sm:px-4 py-2 sm:py-3 border-b-2 transition flex-1 ${activeTab === 'contact' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
               >
                 <MapPin className="h-4 w-4" />
                 Contact & Address
@@ -401,12 +429,14 @@ export default function AdminStores() {
             </nav>
           </div>
 
-          <form onSubmit={handleCreateStore} className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6 max-h-[72vh] overflow-y-auto pr-1">
+          <div className="flex-1 overflow-y-auto px-4 py-4 hide-scrollbar min-h-0">
+            <form id="create-store-form" onSubmit={handleCreateStore} className="grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-0">
             {activeTab === 'info' ? (
               <>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Store name *</label>
-                  <Input value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} placeholder="Store name" />
+                  <Input value={createForm.name} onChange={(e) => { setCreateForm({ ...createForm, name: e.target.value }); setErrors({ ...errors, name: '' }); }} placeholder="Store name" className={errors.name ? 'border-red-500' : ''} />
+                  {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -416,85 +446,94 @@ export default function AdminStores() {
 
                 <div className="space-y-2 xl:col-span-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Description *</label>
-                  <Textarea value={createForm.description} onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })} placeholder="Write a short description about the store" className="min-h-[120px]" />
+                  <Textarea value={createForm.description} onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })} placeholder="Write a short description about the store" className="min-h-[100px]" />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Vendor owner *</label>
-                  <Select value={createForm.owner_id} onValueChange={(v) => setCreateForm({ ...createForm, owner_id: v })}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select vendor" />
+                  <Select value={createForm.owner_id} onValueChange={(v) => { setCreateForm({ ...createForm, owner_id: v }); setErrors({ ...errors, owner_id: '' }); }}>
+                    <SelectTrigger className={`w-full ${errors.owner_id ? 'border-red-500' : ''}`}>
+                      <SelectValue placeholder={vendors.length ? 'Select vendor' : 'No vendors available'} />
                     </SelectTrigger>
                     <SelectContent>
-                      {vendors.map((v) => (
-                        <SelectItem key={v.id} value={v.id}>{v.full_name || v.email}</SelectItem>
-                      ))}
+                      {vendors.length === 0 ? (
+                        <div className="p-3 text-sm text-gray-500">No vendors found</div>
+                      ) : (
+                        vendors.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
+                  {errors.owner_id && <p className="text-xs text-red-600 mt-1">{errors.owner_id}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Phone *</label>
-                  <Input value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} placeholder="Phone number" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Email *</label>
-                  <Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} placeholder="Store email" />
+                  <Input value={createForm.phone} onChange={(e) => { setCreateForm({ ...createForm, phone: e.target.value }); setErrors({ ...errors, phone: '' }); }} placeholder="Phone number" className={errors.phone ? 'border-red-500' : ''} />
+                  {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
                 </div>
 
                 <div className="space-y-2 xl:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Store logo</label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className="group cursor-pointer rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 p-5 flex flex-col items-center justify-center text-center transition hover:border-blue-500 hover:text-blue-600">
-                      <UploadCloud className="h-5 w-5 mb-2 text-blue-600" />
-                      <span className="text-sm font-medium">Upload logo</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG or SVG</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleLogoFileChange(e.target.files?.[0])}
-                      />
-                    </label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Email *</label>
+                  <Input type="email" value={createForm.email} onChange={(e) => { setCreateForm({ ...createForm, email: e.target.value }); setErrors({ ...errors, email: '' }); }} placeholder="Store email" className={errors.email ? 'border-red-500' : ''} />
+                  {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
+                </div>
 
-                    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 overflow-hidden h-40 flex items-center justify-center">
-                      {logoPreview ? (
-                        <img src={logoPreview} alt="Logo preview" className="max-h-full max-w-full object-contain" />
-                      ) : (
-                        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-                          <ImagePlus className="mx-auto mb-2 h-5 w-5" />
-                          Logo preview
-                        </div>
-                      )}
+                <div className="xl:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Store logo</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="group cursor-pointer rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 p-5 flex flex-col items-center justify-center text-center transition hover:border-blue-500 hover:text-blue-600">
+                        <UploadCloud className="h-5 w-5 mb-2 text-blue-600" />
+                        <span className="text-sm font-medium">Upload logo</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG or SVG</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleLogoFileChange(e.target.files?.[0])}
+                        />
+                      </label>
+
+                      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 overflow-hidden h-40 flex items-center justify-center">
+                        {logoPreview ? (
+                          <img src={logoPreview} alt="Logo preview" className="max-h-full max-w-full object-contain" />
+                        ) : (
+                          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+                            <ImagePlus className="mx-auto mb-2 h-5 w-5" />
+                            Logo preview
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-2 xl:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Store banner</label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className="group cursor-pointer rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 p-5 flex flex-col items-center justify-center text-center transition hover:border-blue-500 hover:text-blue-600">
-                      <UploadCloud className="h-5 w-5 mb-2 text-blue-600" />
-                      <span className="text-sm font-medium">Upload banner</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG or SVG</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleBannerFileChange(e.target.files?.[0])}
-                      />
-                    </label>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Store banner</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="group cursor-pointer rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 p-5 flex flex-col items-center justify-center text-center transition hover:border-blue-500 hover:text-blue-600">
+                        <UploadCloud className="h-5 w-5 mb-2 text-blue-600" />
+                        <span className="text-sm font-medium">Upload banner</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG or SVG</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleBannerFileChange(e.target.files?.[0])}
+                        />
+                      </label>
 
-                    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 overflow-hidden h-40 flex items-center justify-center">
-                      {bannerPreview ? (
-                        <img src={bannerPreview} alt="Banner preview" className="max-h-full max-w-full object-cover" />
-                      ) : (
-                        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-                          <ImagePlus className="mx-auto mb-2 h-5 w-5" />
-                          Banner preview
-                        </div>
-                      )}
+                      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 overflow-hidden h-40 flex items-center justify-center">
+                        {bannerPreview ? (
+                          <img src={bannerPreview} alt="Banner preview" className="max-h-full max-w-full object-cover" />
+                        ) : (
+                          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+                            <ImagePlus className="mx-auto mb-2 h-5 w-5" />
+                            Banner preview
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -503,12 +542,14 @@ export default function AdminStores() {
               <>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Address *</label>
-                  <Input value={createForm.address} onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })} placeholder="Street address" />
+                  <Input value={createForm.address} onChange={(e) => { setCreateForm({ ...createForm, address: e.target.value }); setErrors({ ...errors, address: '' }); }} placeholder="Street address" className={errors.address ? 'border-red-500' : ''} />
+                  {errors.address && <p className="text-xs text-red-600 mt-1">{errors.address}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-200">City *</label>
-                  <Input value={createForm.city} onChange={(e) => setCreateForm({ ...createForm, city: e.target.value })} placeholder="City" />
+                  <Input value={createForm.city} onChange={(e) => { setCreateForm({ ...createForm, city: e.target.value }); setErrors({ ...errors, city: '' }); }} placeholder="City" className={errors.city ? 'border-red-500' : ''} />
+                  {errors.city && <p className="text-xs text-red-600 mt-1">{errors.city}</p>}
                 </div>
 
                 <div className="space-y-2 xl:col-span-2">
@@ -526,11 +567,29 @@ export default function AdminStores() {
               </>
             )}
 
-            <div className="xl:col-span-2 flex justify-end gap-2 pt-2">
+            {/* <div className="xl:col-span-2 flex justify-end gap-2 pt-2">
               <Button variant="secondary" onClick={() => setCreateOpen(false)} type="button">Cancel</Button>
               <Button type="submit" disabled={creating}>{creating ? 'Creating...' : 'Create Store'}</Button>
-            </div>
+            </div> */}
           </form>
+          </div>
+          
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex justify-end gap-2 shrink-0">
+            <Button
+              variant="secondary"
+              onClick={() => setCreateOpen(false)}
+              type="button"
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="submit"
+              disabled={creating}
+            >
+              {creating ? 'Creating...' : 'Create Store'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -123,14 +123,18 @@ export default function VendorDetail() {
             <CardContent>
               <div className="grid grid-cols-2 gap-4 text-sm text-gray-800 dark:text-gray-200">
                 <div>
-                  <div className="text-xs text-gray-500">Phone</div>
-                  <div className="mt-1">{vendor.phone || '—'}</div>
+                  <div className="text-xs text-gray-500">Full Name</div>
+                  <div className="mt-1">{vendor.full_name || '—'}</div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">Email</div>
                   <div className="mt-1">{vendor.email || '—'}</div>
                 </div>
 
+                <div>
+                  <div className="text-xs text-gray-500">Phone</div>
+                  <div className="mt-1">{vendor.phone || '—'}</div>
+                </div>
                 <div>
                   <div className="text-xs text-gray-500">City</div>
                   <div className="mt-1">{vendor.city || '—'}</div>

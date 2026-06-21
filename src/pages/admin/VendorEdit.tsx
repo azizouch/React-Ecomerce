@@ -71,10 +71,13 @@ export default function VendorEdit() {
     }
   };
 
+  const adminApiUrl = import.meta.env.VITE_ADMIN_API_URL as string | undefined;
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!vendor) return;
 
+    const previousVendor = vendor;
     setSaving(true);
     try {
       let authUpdateError: any = null;
@@ -154,7 +157,11 @@ export default function VendorEdit() {
       }
 
       const changed = finalProfile && (
-        finalProfile.phone !== vendor.phone || finalProfile.address !== vendor.address || finalProfile.city !== vendor.city
+        finalProfile.phone !== previousVendor.phone ||
+        finalProfile.address !== previousVendor.address ||
+        finalProfile.city !== previousVendor.city ||
+        finalProfile.email !== previousVendor.email ||
+        finalProfile.full_name !== previousVendor.full_name
       );
 
       if (!changed) {
@@ -168,7 +175,7 @@ export default function VendorEdit() {
 
         if (doAdmin.isConfirmed) {
           try {
-            const resp = await fetch('http://localhost:4002/admin/profile/update', {
+            const resp = await fetch(`${adminApiUrl}/admin/profile/update`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ id: vendor.id, email: formData.email, full_name: formData.full_name, phone: formData.phone, address: formData.address, city: formData.city }),
@@ -181,7 +188,8 @@ export default function VendorEdit() {
             await Swal.fire('Success', 'Vendor updated via admin API.', 'success');
           } catch (err: any) {
             console.error('Admin update failed:', err);
-            await Swal.fire('Error', `Admin update failed: ${String(err?.message ?? JSON.stringify(err))}`, 'error');
+            const message = err?.message || err?.error || JSON.stringify(err);
+            await Swal.fire('Error', `Admin update failed: ${String(message)}. Make sure the admin API is running and VITE_ADMIN_API_URL is correct.`, 'error');
           }
         }
       }
