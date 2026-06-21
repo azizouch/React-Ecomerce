@@ -5,7 +5,7 @@ export default function AdminFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className={`bg-white dark:bg-slate-800 transition-colors ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+    <footer className={`bg-white dark:bg-slate-900 transition-colors ${language === 'ar' ? 'text-right' : 'text-left'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-0">
         {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8"> */}
           {/* About */}
@@ -62,7 +62,7 @@ export default function AdminFooter() {
         {/* </div> */}
 
         {/* Bottom */}
-        <div className={`border-t border-gray-200 dark:border-slate-700 pt-6 flex flex-col sm:flex-row ${language === 'ar' ? 'flex-row-reverse' : ''} justify-between items-center`}>
+        <div className={`border-t border-gray-200 dark:border-white pt-6 flex flex-col sm:flex-row ${language === 'ar' ? 'flex-row-reverse' : ''} justify-between items-center`}>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             © {currentYear} {t('companyName')}. {t('allRightsReserved')}
           </p>

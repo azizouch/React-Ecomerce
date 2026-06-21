@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Edit, Trash2, Save } from 'lucide-react';
 import { supabase, Category } from '../../lib/supabase';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -9,6 +9,7 @@ interface CategoryDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRefresh: () => void;
+  readOnly?: boolean;
 }
 
 export default function CategoryDetailModal({
@@ -16,6 +17,7 @@ export default function CategoryDetailModal({
   isOpen,
   onClose,
   onRefresh,
+  readOnly = false,
 }: CategoryDetailModalProps) {
   const { t, language } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
@@ -24,6 +26,16 @@ export default function CategoryDetailModal({
     name: category?.name || '',
     description: category?.description || '',
   });
+
+  useEffect(() => {
+    if (category) {
+      setFormData({
+        name: category.name,
+        description: category.description || '',
+      });
+      setIsEditing(false);
+    }
+  }, [category]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -202,7 +214,7 @@ export default function CategoryDetailModal({
         </div>
 
         {/* Footer */}
-        {!isEditing && (
+        {!isEditing && !readOnly && (
           <div className="p-6 border-t border-gray-200 dark:border-slate-700 flex gap-3">
             <button
               onClick={() => setIsEditing(true)}

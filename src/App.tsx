@@ -21,7 +21,8 @@ const ProductDetail = lazy(() => import('./pages/customer/ProductDetail'));
 const Cart = lazy(() => import('./pages/customer/Cart'));
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminProducts = lazy(() => import('./pages/admin/Products'));
-const AdminCategories = lazy(() => import('./pages/vendor/Categories'));
+const VendorCategories = lazy(() => import('./pages/vendor/Categories'));
+const AdminCategories = lazy(() => import('./pages/admin/Categories'));
 const AdminOrders = lazy(() => import('./pages/admin/Orders'));
 const AdminUsers = lazy(() => import('./pages/admin/Users'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile'));
@@ -137,7 +138,7 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <AdminLayout>
-                <AdminCategories />
+                <VendorCategories />
               </AdminLayout>
             </ProtectedRoute>
           }

@@ -70,7 +70,7 @@ export function AppSidebar() {
         { titleKey: 'stores', url: '/admin/stores', icon: Store },
         { titleKey: 'orders', url: '/admin/orders', icon: ShoppingBag },
         { titleKey: 'products', url: '/admin/products', icon: Package },
-        { titleKey: 'categories', url: '/', icon: Tag },
+        { titleKey: 'categories', url: '/admin/categories', icon: Tag },
         { titleKey: 'adminUsers', url: '/admin/users', icon: Users }, 
         { titleKey: 'activityLogs', url: '/admin/activity-logs', icon: Activity },
         { titleKey: 'notificationsPage', url: '/admin/notifications', icon: Bell },
@@ -84,9 +84,9 @@ export function AppSidebar() {
     {
       items: [
         { titleKey: 'dashboard', url: '/vendor', icon: LayoutDashboard },
+        { titleKey: 'orders', url: '/vendor/orders', icon: ShoppingCart },
         { titleKey: 'products', url: '/vendor/products', icon: Package },
         { titleKey: 'categoriesManage', url: '/vendor/categories', icon: Tag },
-        { titleKey: 'orders', url: '/vendor/orders', icon: ShoppingCart },
         { titleKey: 'customers', url: '/vendor/customers', icon: Users },
         { titleKey: 'analytics', url: '/vendor/analytics', icon: BarChart2 },
         { titleKey: 'discounts', url: '/admin/discounts', icon: Tag },

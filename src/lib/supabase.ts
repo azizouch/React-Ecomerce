@@ -134,26 +134,26 @@ export async function createUserWithAuthAdmin(userData: {
       console.warn('createUserWithAuthAdmin: RPC failed or not available', rpcErr?.message || rpcErr);
     }
 
-    // 2) Fallback: use admin client with service role key when available.
-    // In the browser we also create a separate anon client with disabled persistence
-    // so the current admin session is not affected.
-    let adminClient = getSupabaseAdminClient();
-    if (!adminClient) {
-      adminClient = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-          storageKey: 'supabase-admin-temp-auth',
-          storage: undefined,
-        },
-      });
+    // 2) Fallback: use admin client with service role key when available (server-side only).
+    // Do not attempt to create auth users from the browser—Supabase requires the service role.
+    if (typeof window !== 'undefined') {
+      throw new Error(
+        'createUserWithAuthAdmin must be called server-side with service role. ' +
+        'Use a backend endpoint that has access to SUPABASE_SERVICE_ROLE_KEY.'
+      );
     }
 
-    const { data: userDataResult, error: createErr } = await adminClient.auth.signUp({
+    const adminClient = getSupabaseAdminClient();
+    if (!adminClient) {
+      throw new Error('Service role client not available on server');
+    }
+
+    const { data: userDataResult, error: createErr } = await adminClient.auth.admin.createUser({
       email,
       password,
-    } as any);
+      email_confirm: true,
+      user_metadata: { full_name }
+    });
 
     if (createErr) {
       const msg = createErr?.message || '';
@@ -164,12 +164,6 @@ export async function createUserWithAuthAdmin(userData: {
       }
       throw createErr;
     }
-
-    if (typeof window !== 'undefined') {
-      await adminClient.auth.signOut().catch(() => {});
-    }
-
-    // No explicit sign-out or restoration is needed: the temporary client does not persist a session.
 
     const createdUserId = (userDataResult as any)?.user?.id;
     if (!createdUserId) throw new Error('Admin create user did not return id');
