@@ -68,12 +68,12 @@ export function AppSidebar() {
         { titleKey: 'dashboard', url: '/admin', icon: LayoutDashboard },
         { titleKey: 'vendors', url: '/admin/vendors', icon: Truck },
         { titleKey: 'stores', url: '/admin/stores', icon: Store },
-        { titleKey: 'products', url: '/admin/products', icon: Package },
         { titleKey: 'orders', url: '/admin/orders', icon: ShoppingBag },
-        { titleKey: 'adminUsers', url: '/admin/users', icon: Users },
+        { titleKey: 'products', url: '/admin/products', icon: Package },
         { titleKey: 'categories', url: '/', icon: Tag },
-        { titleKey: 'notificationsPage', url: '/admin/notifications', icon: Bell },
+        { titleKey: 'adminUsers', url: '/admin/users', icon: Users }, 
         { titleKey: 'activityLogs', url: '/admin/activity-logs', icon: Activity },
+        { titleKey: 'notificationsPage', url: '/admin/notifications', icon: Bell },
         { titleKey: 'storeSettings', url: '/admin/settings', icon: Settings },
       ],
     },
@@ -192,7 +192,7 @@ export function AppSidebar() {
                         <Link to={item.url} onClick={handleLinkClick}>
                           {/** Collapsed: icon-only circle. Expanded: tile/card-like link. */}
                           <div
-                            className={`flex items-center text-sm font-medium transition-colors cursor-pointer ${isCollapsed ? 'w-10 h-10 justify-center rounded-md' : 'w-full justify-start space-x-3 px-3 py-3 rounded-md'} ${isItemActive ? 'bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' : 'border-l-transparent text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'}`}
+                            className={`flex items-center text-sm font-medium transition-colors cursor-pointer ${isCollapsed ? 'w-10 h-10 justify-center rounded-md' : 'w-full justify-start space-x-3 px-3 py-3 rounded-md'} ${isItemActive ? 'bg-blue-100 dark:bg-blue-800/30 text-blue-600 dark:text-blue-400' : 'border-l-transparent text-sidebar-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sidebar-foreground'}`}
                             onMouseEnter={(e) => handleMouseEnter(e, t(item.titleKey))}
                             onMouseLeave={handleMouseLeave}
                           >

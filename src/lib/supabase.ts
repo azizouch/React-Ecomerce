@@ -14,12 +14,24 @@ let supabaseAdminInstance: SupabaseClient | null = null;
 
 function getSupabaseClient(): SupabaseClient {
   if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+    // Ensure session persistence and auto refresh so users stay signed in
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    });
   }
   return supabaseInstance;
 }
 
 function getSupabaseAdminClient(): SupabaseClient | null {
+  // Never create a service-role admin client in browser/runtime that exposes secrets.
+  // This function is intended for server-side usage only.
+  if (typeof window !== 'undefined') {
+    return null;
+  }
+
   if (!supabaseAdminInstance && supabaseServiceRoleKey) {
     supabaseAdminInstance = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
@@ -29,6 +41,7 @@ function getSupabaseAdminClient(): SupabaseClient | null {
       }
     });
   }
+
   return supabaseAdminInstance;
 }
 
@@ -37,12 +50,151 @@ export const supabase = getSupabaseClient();
 // Export as lazy getter to prevent multiple client instances
 export { getSupabaseAdminClient as supabaseAdmin };
 
-// Debug logging
-// console.log('🔧 Supabase Configuration:');
-// console.log('- URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
-// console.log('- Anon Key:', supabaseAnonKey ? '✅ Set' : '❌ Missing');
-// console.log('- Service Role Key:', supabaseServiceRoleKey ? '✅ Set' : '❌ Missing');
-// console.log('- Admin Client:', supabaseAdmin ? '✅ Created' : '❌ Failed to create');
+// Create user + profile using admin privileges when needed.
+// Tries an RPC `create_auth_user_admin` first (if defined), otherwise
+// falls back to the service-role admin client to create the auth user
+// then inserts the profile in `profiles`.
+export async function createUserWithAuthAdmin(userData: {
+  email: string;
+  password: string;
+  full_name?: string;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  role?: string;
+}) {
+  const email = String(userData.email || '').toLowerCase().trim();
+  const password = userData.password;
+  const full_name = userData.full_name || null;
+  const role = userData.role || 'vendor';
+
+  try {
+    // 1) Try RPC approach if available. RPCs are executed using the anon client and must be allowed by RLS/policies.
+    try {
+      if (typeof window === 'undefined') {
+        // Server-side: use supabase RPC
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('create_auth_user_admin', {
+          user_email: email,
+          user_password: password,
+          user_metadata: { full_name }
+        } as any);
+
+        if (!rpcError && rpcResult) {
+          const createdId = (rpcResult as any).id || (Array.isArray(rpcResult) && (rpcResult as any)[0]?.id);
+          if (createdId) {
+            const { data: profileData, error: profileErr } = await supabase
+              .from('profiles')
+              .insert({
+                id: createdId,
+                email,
+                full_name,
+                phone: userData.phone || null,
+                address: userData.address || null,
+                city: userData.city || null,
+                role,
+              })
+              .select()
+              .single();
+
+            if (profileErr) throw profileErr;
+            return { user: { id: createdId }, profile: profileData, authCreated: true };
+          }
+        }
+      } else {
+        // Client-side: attempt RPC may fail due to permissions; call it and let the caller handle fallback.
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('create_auth_user_admin', {
+          user_email: email,
+          user_password: password,
+          user_metadata: { full_name }
+        } as any);
+
+        if (!rpcError && rpcResult) {
+          const createdId = (rpcResult as any).id || (Array.isArray(rpcResult) && (rpcResult as any)[0]?.id);
+          if (createdId) {
+            const { data: profileData, error: profileErr } = await supabase
+              .from('profiles')
+              .insert({
+                id: createdId,
+                email,
+                full_name,
+                phone: userData.phone || null,
+                address: userData.address || null,
+                city: userData.city || null,
+                role,
+              })
+              .select()
+              .single();
+
+            if (profileErr) throw profileErr;
+            return { user: { id: createdId }, profile: profileData, authCreated: true };
+          }
+        }
+      }
+    } catch (rpcErr: any) {
+      console.warn('createUserWithAuthAdmin: RPC failed or not available', rpcErr?.message || rpcErr);
+    }
+
+    // 2) Fallback: use admin client with service role key when available.
+    // In the browser we also create a separate anon client with disabled persistence
+    // so the current admin session is not affected.
+    let adminClient = getSupabaseAdminClient();
+    if (!adminClient) {
+      adminClient = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+          storageKey: 'supabase-admin-temp-auth',
+          storage: undefined,
+        },
+      });
+    }
+
+    const { data: userDataResult, error: createErr } = await adminClient.auth.signUp({
+      email,
+      password,
+    } as any);
+
+    if (createErr) {
+      const msg = createErr?.message || '';
+      if (msg.includes('already') || msg.includes('duplicate')) {
+        const e: any = new Error(`Email already registered: ${email}`);
+        e.code = 'already_registered';
+        throw e;
+      }
+      throw createErr;
+    }
+
+    if (typeof window !== 'undefined') {
+      await adminClient.auth.signOut().catch(() => {});
+    }
+
+    // No explicit sign-out or restoration is needed: the temporary client does not persist a session.
+
+    const createdUserId = (userDataResult as any)?.user?.id;
+    if (!createdUserId) throw new Error('Admin create user did not return id');
+
+    const { data: profileData, error: profileErr } = await supabase
+      .from('profiles')
+      .insert({
+        id: createdUserId,
+        email,
+        full_name,
+        phone: userData.phone || null,
+        address: userData.address || null,
+        city: userData.city || null,
+        role,
+      })
+      .select()
+      .maybeSingle();
+
+    if (profileErr) throw profileErr;
+    return { user: (userDataResult as any).user, profile: profileData, authCreated: true };
+  } catch (err) {
+    // Re-throw so callers can handle messages and codes
+    throw err;
+  }
+}
 
 export type Profile = {
   id: string;
@@ -144,6 +296,7 @@ export type OrderItem = {
 // ============================================================================
 // CUSTOMER HELPERS - for customer pages (Home, Shop, ProductDetail, Cart, etc)
 // ============================================================================
+
 export const customerCatalog = {
   // Get all categories for customer pages
   async getCategories() {
@@ -360,7 +513,7 @@ export const customerCatalog = {
 
     // load colors with images and sizes
     const { data: colorsData, error: colorsError } = await supabase
-      .from<ProductColor>('product_colors')
+      .from('product_colors')
       .select('*')
       .eq('product_id', id);
 
@@ -368,13 +521,13 @@ export const customerCatalog = {
     if (colorsData) {
       for (const c of colorsData) {
         const { data: imagesData } = await supabase
-          .from<ProductColorImage>('product_color_images')
+          .from('product_color_images')
           .select('*')
           .eq('color_id', c.id)
           .order('sort_order');
 
         const { data: sizesData } = await supabase
-          .from<ProductColorSize>('product_color_sizes')
+          .from('product_color_sizes')
           .select('*')
           .eq('color_id', c.id);
 
@@ -602,7 +755,7 @@ export const adminCatalog = {
   async getProductById(id: string | undefined) {
     if (!id) return { data: null, error: null };
     const { data, error } = await supabase
-      .from<Product>('products')
+      .from('products')
       .select('*')
       .eq('id', id)
       .maybeSingle();
@@ -611,7 +764,7 @@ export const adminCatalog = {
 
     // load colors with images and sizes
     const { data: colorsData, error: colorsError } = await supabase
-      .from<ProductColor>('product_colors')
+      .from('product_colors')
       .select('*')
       .eq('product_id', id);
 
@@ -619,13 +772,13 @@ export const adminCatalog = {
     if (colorsData) {
       for (const c of colorsData) {
         const { data: imagesData } = await supabase
-          .from<ProductColorImage>('product_color_images')
+          .from('product_color_images')
           .select('*')
           .eq('color_id', c.id)
           .order('sort_order');
 
         const { data: sizesData } = await supabase
-          .from<ProductColorSize>('product_color_sizes')
+          .from('product_color_sizes')
           .select('*')
           .eq('color_id', c.id);
 

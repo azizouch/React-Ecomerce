@@ -259,14 +259,10 @@ export default function AdminStores() {
     <div className="p-5 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Stores</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">All Stores</h1>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">View all vendor stores and their sales performance.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          {/* <Button variant="outline" size="sm" onClick={loadStores}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button> */}
           <Button onClick={() => setCreateOpen(true)} className="ml-2">
             <Plus className="mr-2 h-4 w-4" />
             Create New Store
@@ -275,40 +271,44 @@ export default function AdminStores() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
+        
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Stores</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stores.length}</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">Total Stores</p>
+              <p className="text-2xl font-bold mt-2">{stores.length}</p>
             </div>
-            <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <Users className="w-8 h-8 text-blue-500 opacity-80" />
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Products</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stores.reduce((sum, item) => sum + item.products_count, 0)}</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">Active Stores</p>
+              <p className="text-2xl font-bold mt-2">{stores.filter((store) => store.status === 'suspended').length}</p>
             </div>
-            <ShoppingCart className="w-8 h-8 text-green-600 dark:text-green-400" />
+            <Users className="w-8 h-8 text-orange-500 opacity-80" />
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Orders</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stores.reduce((sum, item) => sum + item.orders_count, 0)}</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">Total Products</p>
+              <p className="text-2xl font-bold mt-2">{stores.reduce((sum, item) => sum + item.products_count, 0)}</p>
             </div>
-            <Activity className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+            <ShoppingCart className="w-8 h-8 text-green-500 opacity-80" />
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Stores</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stores.filter((store) => store.status === 'active').length}</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">Total Orders</p>
+              <p className="text-2xl font-bold mt-2">{stores.reduce((sum, item) => sum + item.orders_count, 0)}</p>
             </div>
-            <Users className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+            <Activity className="w-8 h-8 text-purple-500 opacity-80" />
           </div>
         </div>
       </div>
@@ -337,7 +337,7 @@ export default function AdminStores() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-md shadow overflow-x-auto">
+      <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto">
         <Table className="min-w-full">
           <TableHeader>
             <TableRow className="bg-gray-200 dark:bg-gray-800">
@@ -389,7 +389,9 @@ export default function AdminStores() {
             )}
           </TableBody>
         </Table>
-        {totalPages > 1 && (
+      </div>
+
+      {totalPages > 1 && (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -399,7 +401,6 @@ export default function AdminStores() {
             onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
           />
         )}
-      </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="md:max-w-2xl lg:max-w-4xl xl:max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">

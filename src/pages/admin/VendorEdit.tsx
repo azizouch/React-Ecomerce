@@ -25,9 +25,13 @@ const initialForm = {
   city: '',
 };
 
+import { useQueryClient } from '@tanstack/react-query';
+import { useProfile } from '../../hooks/useProfile';
+
 export default function VendorEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [vendor, setVendor] = useState<VendorProfile | null>(null);
   const [formData, setFormData] = useState(initialForm);
   const [loading, setLoading] = useState(true);

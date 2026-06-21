@@ -5,7 +5,7 @@ import SoftCard from '../../components/ui/SoftCard';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { Input } from '../../components/ui/input';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../../components/ui/select';
-import { Search, RefreshCw, Package } from 'lucide-react';
+import { Search, RefreshCw, Package, Users, Clock, AlertTriangle, CheckCircle, Trophy, Filter } from 'lucide-react';
 import Pagination from '../../components/ui/Pagination';
 
 type AdminProduct = {
@@ -80,42 +80,82 @@ export default function AdminProducts() {
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
   return (
-    <div className="space-y-6 p-5">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="space-y-5 p-5">
+      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <Package className="h-6 w-6 text-blue-600" />
             <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white">Admin Products</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Manage products with search, filters, and pagination.</p>
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Products Overview</h1>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Manage products with search, filters, and pagination.</p>
             </div>
           </div>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center w-full md:w-auto">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input
-              value={searchQuery}
-              onChange={(event) => {
-                setSearchQuery(event.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder="Search products"
-              className="pl-10"
-            />
-          </div>
-          <Button variant="outline" size="sm" onClick={loadProducts} className="w-full sm:w-auto">
+          <Button onClick={loadProducts} className="w-full sm:w-auto">
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
         </div>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">Total Products</p>
+              <p className="text-2xl font-bold mt-2">0</p>
+            </div>
+            <Package className="w-8 h-8 text-blue-500 opacity-80" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">Active Products</p>
+              <p className="text-2xl font-bold mt-2">0</p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-green-500 opacity-80" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">Top Selling Product</p>
+              <p className="text-2xl font-bold mt-2">0</p>
+            </div>
+            <Trophy className="w-8 h-8 text-purple-500 opacity-80" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">Out of Stock Products</p>
+              <p className="text-2xl font-bold mt-2">0</p>
+            </div>
+            <AlertTriangle className="w-8 h-8 text-orange-500 opacity-80" />
+          </div>
+        </div>
+      </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
-        <div className="rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Category</label>
-          <Select value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setCurrentPage(1); }}>
+        <div className="relative w-full sm:w-96">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+          <Input
+            value={searchQuery}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder="Search products"
+            className="pl-10"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+            <Select value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value); setCurrentPage(1); }}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="All categories" />
             </SelectTrigger>
@@ -126,10 +166,8 @@ export default function AdminProducts() {
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Status</label>
+          </div>
+        <div className="flex items-center gap-2">
           <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value as 'all' | 'active' | 'disabled'); setCurrentPage(1); }}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="All statuses" />
@@ -141,12 +179,14 @@ export default function AdminProducts() {
             </SelectContent>
           </Select>
         </div>
+      </div>
 
+      {/* <div className="grid gap-3 lg:grid-cols-3">
         <div className="rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
           <p className="text-sm text-gray-500 dark:text-gray-400">Showing {products.length} products on page {currentPage}</p>
           <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">Total results: {totalItems}</p>
         </div>
-      </div>
+      </div> */}
 
       {loading ? (
         <SoftCard className="p-6">
@@ -157,7 +197,8 @@ export default function AdminProducts() {
           <div className="text-center text-gray-500">No products found.</div>
         </SoftCard>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+        <div className="space-y-5">
+        <div className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
           <div className="overflow-x-auto">
             <Table className="min-w-full">
               <TableHeader>
@@ -184,8 +225,8 @@ export default function AdminProducts() {
               </TableBody>
             </Table>
           </div>
-
-          <Pagination
+        </div>
+        <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalItems}

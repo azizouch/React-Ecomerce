@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useProfile } from '../../hooks/useProfile';
 import { Button } from '../../components/ui/button';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
@@ -12,6 +13,7 @@ export default function VendorDetail() {
 
   const [vendor, setVendor] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const { data: cachedVendor, isLoading: isProfileLoading } = useProfile(id);
   const [stores, setStores] = useState<any[]>([]);
   const [stats, setStats] = useState({ products: 0, orders: 0, categories: 0 });
 
@@ -20,8 +22,13 @@ export default function VendorDetail() {
       navigate('/admin/vendors');
       return;
     }
-    loadVendor();
-  }, [id]);
+    if (cachedVendor) {
+      setVendor(cachedVendor);
+      setLoading(false);
+    } else {
+      loadVendor();
+    }
+  }, [id, cachedVendor]);
 
   const loadVendor = async () => {
     try {

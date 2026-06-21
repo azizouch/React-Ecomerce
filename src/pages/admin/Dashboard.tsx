@@ -11,6 +11,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Package, ShoppingCart, DollarSign, Users, TrendingUp, ArrowRight, Filter } from 'lucide-react';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../../components/ui/select';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useDashboard } from '../../hooks/useDashboard';
 
 interface Stats {
   totalProducts: number | null;
@@ -48,19 +49,7 @@ export default function AdminDashboard() {
     { label: t('highestAmount'), value: 'highest' },
     { label: t('lowestAmount'), value: 'lowest' },
   ];
-  const [stats, setStats] = useState<Stats>({
-    totalProducts: null,
-    totalOrders: null,
-    totalRevenue: null,
-    totalCustomers: null,
-    totalCategories: null,
-    lowStockProducts: null,
-    pendingOrders: null,
-    totalVendors: null,
-    activeVendors: null,
-    trialVendors: null,
-    expiredVendors: null,
-  });
+  const [stats, setStats] = useState<Stats | null>(null);
   const [vendorGrowthData, setVendorGrowthData] = useState<Array<{ month: string; vendors: number }>>([]);
   const [ordersVsProductsData, setOrdersVsProductsData] = useState<Array<{ month: string; orders: number; products: number }>>([]);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
@@ -70,202 +59,33 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
   const [loading, setLoading] = useState(true);
   const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; text: string } | null>(null);
 
+  const dashboardQuery = useDashboard();
+
   useEffect(() => {
-    // Data is pre-loaded with examples, no database queries needed
-    fetchVendorStats();
-    fetchDashboardData();
-  }, []);
-
-  const fetchVendorStats = async () => {
-    try {
-      const { data: vendors } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'vendor');
-
-      setStats(prev => ({
-        ...prev,
-        totalVendors: vendors?.length || 0,
-        activeVendors: vendors?.length || 0,
-        trialVendors: 0,
-        expiredVendors: 0,
-      }));
-    } catch (error) {
-      console.error('Error fetching vendor stats:', error);
+    if (dashboardQuery.isLoading) {
+      setLoading(true);
+      return;
     }
-  };
-
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      // Counts (use head:true to only fetch counts)
-      const { count: totalProductsCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
-      const { count: totalOrdersCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
-      const { count: totalCustomersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'customer');
-      const { count: totalCategoriesCount } = await supabase.from('categories').select('*', { count: 'exact', head: true });
-      const { count: lowStockCount } = await supabase.from('products').select('*', { count: 'exact', head: true }).lte('stock', 5);
-      const { count: pendingOrdersCount } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-
-      // Recent orders with profile relation
-      const { data: recentOrdersData } = await supabase
-        .from<RecentOrder>('orders')
-        .select(`
-          *,
-          profiles!orders_user_id_fkey(id, email, full_name)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      // Revenue and monthly revenue (last 12 months)
-      const now = new Date();
-      const pastYear = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-      const { data: completedOrders } = await supabase
-        .from<Order>('orders')
-        .select('total_amount, created_at')
-        .eq('status', 'completed')
-        .gte('created_at', pastYear.toISOString());
-
-      let totalRevenue = 0;
-      const monthlyMap: Record<string, number> = {};
-      const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
-
-      if (completedOrders && completedOrders.length > 0) {
-        completedOrders.forEach(o => {
-          totalRevenue += Number(o.total_amount) || 0;
-          const d = new Date(o.created_at);
-          const key = `${d.getFullYear()}-${d.getMonth()}`;
-          monthlyMap[key] = (monthlyMap[key] || 0) + Number(o.total_amount || 0);
-        });
-      }
-
-      // Build last 12 months array
-      const months: Array<{ date: string; amount: number }> = [];
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const key = `${d.getFullYear()}-${d.getMonth()}`;
-        months.push({ date: monthNames[d.getMonth()], amount: Math.round((monthlyMap[key] || 0) / 1) });
-      }
-
-      // Vendor growth: fetch vendor profiles in last 12 months
-      const { data: vendorsData } = await supabase
-        .from<Profile>('profiles')
-        .select('id, created_at')
-        .eq('role', 'vendor')
-        .gte('created_at', pastYear.toISOString());
-
-      const vendorMap: Record<string, number> = {};
-      if (vendorsData) {
-        vendorsData.forEach(v => {
-          const d = new Date(v.created_at);
-          const key = `${d.getFullYear()}-${d.getMonth()}`;
-          vendorMap[key] = (vendorMap[key] || 0) + 1;
-        });
-      }
-
-      const vendorSeries: Array<{ month: string; vendors: number }> = [];
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const key = `${d.getFullYear()}-${d.getMonth()}`;
-        vendorSeries.push({ month: monthNames[d.getMonth()], vendors: vendorMap[key] || 0 });
-      }
-
-      // Orders vs Products: aggregate orders and products created per month
-      const { data: ordersAll } = await supabase
-        .from('orders')
-        .select('id, created_at')
-        .gte('created_at', pastYear.toISOString());
-
-      const { data: productsAll } = await supabase
-        .from('products')
-        .select('id, created_at')
-        .gte('created_at', pastYear.toISOString());
-
-      const ordersMap: Record<string, number> = {};
-      const productsMap: Record<string, number> = {};
-
-      (ordersAll || []).forEach((o: any) => {
-        const d = new Date(o.created_at);
-        const key = `${d.getFullYear()}-${d.getMonth()}`;
-        ordersMap[key] = (ordersMap[key] || 0) + 1;
-      });
-      (productsAll || []).forEach((p: any) => {
-        const d = new Date(p.created_at);
-        const key = `${d.getFullYear()}-${d.getMonth()}`;
-        productsMap[key] = (productsMap[key] || 0) + 1;
-      });
-
-      const ordersProductsSeries: Array<{ month: string; orders: number; products: number }> = [];
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const key = `${d.getFullYear()}-${d.getMonth()}`;
-        ordersProductsSeries.push({ month: monthNames[d.getMonth()], orders: ordersMap[key] || 0, products: productsMap[key] || 0 });
-      }
-
-      setVendorGrowthData(vendorSeries);
-      setOrdersVsProductsData(ordersProductsSeries);
-
-      // Product sales - aggregate order_items for completed orders
-      const { data: orderItems } = await supabase
-        .from('order_items')
-        .select('product_id, quantity, products(id, name)')
-        .order('quantity', { ascending: false });
-
-      const productMap: Record<string, { name: string; qty: number }> = {};
-      if (orderItems) {
-        orderItems.forEach((it: any) => {
-          const pid = it.product_id;
-          const name = it.products?.name || 'Unknown';
-          const qty = Number(it.quantity) || 0;
-          if (!productMap[pid]) productMap[pid] = { name, qty };
-          else productMap[pid].qty += qty;
-        });
-      }
-
-      const productSalesArr: ProductSale[] = Object.values(productMap)
-        .sort((a, b) => b.qty - a.qty)
-        .slice(0, 5)
-        .map(p => ({ name: p.name, percentage: 0 }));
-
-      // Convert to percentages relative to top product
-      const topQty = productSalesArr.length > 0 ? Math.max(...Object.values(productMap).map(p => p.qty)) : 0;
-      productSalesArr.forEach((p, idx) => {
-        const qty = Object.values(productMap)[idx]?.qty || 0;
-        p.percentage = topQty > 0 ? Math.round((qty / topQty) * 100) : 0;
-      });
-
-      // Shipment/status counts
-      const delivered = (await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'delivered')).count || 0;
-      const returned = (await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'returned')).count || 0;
-      const onDelivery = (await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'on_delivery')).count || 0;
-      const cancelled = (await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'cancelled')).count || 0;
-
-      setStats(prev => ({
-        ...prev,
-        totalProducts: totalProductsCount || 0,
-        totalOrders: totalOrdersCount || 0,
-        totalRevenue: totalRevenue,
-        totalCustomers: totalCustomersCount || 0,
-        totalCategories: totalCategoriesCount || 0,
-        lowStockProducts: lowStockCount || 0,
-        pendingOrders: pendingOrdersCount || 0,
-      }));
-
-      setRecentOrders(recentOrdersData || []);
-      setMonthlyRevenue(months);
-      setProductSales(productSalesArr);
-      setShipmentStatus([
-        { status: 'Delivered', count: Number(delivered), color: '#10b981' },
-        { status: 'Returned', count: Number(returned), color: '#ef4444' },
-        { status: 'On Delivery', count: Number(onDelivery), color: '#3b82f6' },
-        { status: 'Cancelled', count: Number(cancelled), color: '#f59e0b' }
-      ]);
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
+    if (dashboardQuery.data) {
+      setStats(dashboardQuery.data.stats as any);
+      setVendorGrowthData(dashboardQuery.data.vendorGrowthData || []);
+      setOrdersVsProductsData(dashboardQuery.data.ordersVsProductsData || []);
+      setRecentOrders(dashboardQuery.data.recentOrders || []);
+      setMonthlyRevenue(dashboardQuery.data.monthlyRevenue || []);
+      setProductSales(dashboardQuery.data.productSales || []);
+      setShipmentStatus(dashboardQuery.data.shipmentStatus || []);
     }
-  };
+    // Debug log to help trace missing chart data
+    console.debug('useDashboard query:', {
+      status: dashboardQuery.status,
+      isLoading: dashboardQuery.isLoading,
+      isError: dashboardQuery.isError,
+      error: dashboardQuery.error,
+      dataKeys: dashboardQuery.data ? Object.keys(dashboardQuery.data) : null,
+    });
+    setLoading(false);
+  }, [dashboardQuery.data, dashboardQuery.isLoading]);
+  // fetch logic moved to useDashboard hook
 
   // (Select component handles its own open/close behavior)
 
@@ -284,7 +104,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Vendors</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats.totalVendors == null ? '...' : stats.totalVendors}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats?.totalVendors == null ? '...' : stats.totalVendors}</p>
                 </div>
                 <div className="bg-orange-100 dark:bg-orange-900/30 p-4 rounded-2xl">
                   <Users className="w-7 h-7 text-orange-600 dark:text-orange-400" />
@@ -297,7 +117,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Active Vendors</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats.activeVendors == null ? '...' : stats.activeVendors}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats?.activeVendors == null ? '...' : stats.activeVendors}</p>
                 </div>
                 <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-2xl">
                   <Users className="w-7 h-7 text-green-600 dark:text-green-400" />
@@ -310,7 +130,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Trial Vendors</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats.trialVendors == null ? '...' : stats.trialVendors}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats?.trialVendors == null ? '...' : stats.trialVendors}</p>
                 </div>
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-2xl">
                   <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
@@ -323,7 +143,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Expired Vendors</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats.expiredVendors == null ? '...' : stats.expiredVendors}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats?.expiredVendors == null ? '...' : stats.expiredVendors}</p>
                 </div>
                 <div className="bg-red-100 dark:bg-red-900/30 p-4 rounded-2xl">
                   <Users className="w-7 h-7 text-red-600 dark:text-red-400" />
@@ -336,7 +156,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Products</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats.totalProducts == null ? '...' : stats.totalProducts}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats?.totalProducts == null ? '...' : stats.totalProducts}</p>
                 </div>
                 <div className="bg-purple-100 dark:bg-purple-900/30 p-4 rounded-2xl">
                   <Package className="w-7 h-7 text-purple-600 dark:text-purple-400" />
@@ -349,7 +169,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Orders</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats.totalOrders == null ? '...' : stats.totalOrders}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats?.totalOrders == null ? '...' : stats.totalOrders}</p>
                 </div>
                 <div className="bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-2xl">
                   <ShoppingCart className="w-7 h-7 text-yellow-600 dark:text-yellow-400" />
@@ -362,7 +182,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Customers</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats.totalCustomers == null ? '...' : stats.totalCustomers}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats?.totalCustomers == null ? '...' : stats.totalCustomers}</p>
                 </div>
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-2xl">
                   <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
@@ -375,7 +195,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats.totalRevenue == null ? '...' : `MAD ${stats.totalRevenue}`}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{loading || stats?.totalRevenue == null ? '...' : `MAD ${stats.totalRevenue}`}</p>
                 </div>
                 <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-2xl">
                   <DollarSign className="w-7 h-7 text-green-600 dark:text-green-400" />
@@ -459,28 +279,28 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
               {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <StatCard
                   title={t('totalSales')}
-                  value={`$${(stats.totalRevenue / 1000).toFixed(1)}K`}
+                  value={`$${((stats?.totalRevenue ?? 0) / 1000).toFixed(1)}K`}
                   icon={<TrendingUp className="w-5 h-5" />}
                   iconColor="purple"
                   subtext=""
                 />
                 <StatCard
                   title={t('totalCustomers')}
-                  value={(stats.totalCustomers / 1000).toFixed(1) + 'K'}
+                  value={((stats?.totalCustomers ?? 0) / 1000).toFixed(1) + 'K'}
                   icon={<Users className="w-5 h-5" />}
                   iconColor="blue"
                   subtext=""
                 />
                 <StatCard
                   title={t('totalProducts')}
-                  value={(stats.totalProducts / 1000).toFixed(1) + 'K'}
+                  value={((stats?.totalProducts ?? 0) / 1000).toFixed(1) + 'K'}
                   icon={<Package className="w-5 h-5" />}
                   iconColor="orange"
                   subtext=""
                 />
                 <StatCard
                   title={t('totalOrders')}
-                  value={(stats.totalOrders / 1000).toFixed(1) + 'K'}
+                  value={((stats?.totalOrders ?? 0) / 1000).toFixed(1) + 'K'}
                   icon={<ShoppingCart className="w-5 h-5" />}
                   iconColor="green"
                   subtext=""
@@ -790,7 +610,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('totalSalesCount')}</span>
                         <span className="text-xs text-green-600 dark:text-green-400 font-medium">4.9% ↑</span>
                       </div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{loading || stats.totalRevenue == null ? '...' : stats.totalRevenue}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{loading || stats?.totalRevenue == null ? '...' : stats.totalRevenue}</p>
                     </div>
 
                     {/* Product breakdown bars */}

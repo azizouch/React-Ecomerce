@@ -28,7 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Subscribe to auth events and log them for debugging unexpected sign-outs
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.debug('🔐 Auth event:', event, { hasSession: !!session });
       (async () => {
         setUser(session?.user ?? null);
         if (session?.user) {

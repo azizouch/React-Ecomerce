@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../lib/translations';
-import { supabase } from '../../lib/supabase';
+import { createUserWithAuthAdmin } from '../../lib/supabase';
 import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useQueryClient } from '@tanstack/react-query';
+import { useVendors, useVendorCounts } from '../../hooks/useVendors';
 import { Button } from '../../components/ui/button';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
@@ -12,7 +15,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../../components/ui/select';
-import { Plus, Eye, Edit, Phone, MapPin, UserCheck, Users, AlertTriangle, Search, Filter } from 'lucide-react';
+import { Plus, Eye, Edit, Phone, MapPin, UserCheck, Users, AlertTriangle, Search, Filter, Truck } from 'lucide-react';
 
 interface VendorProfile {
   id: string;
@@ -38,6 +41,8 @@ const emptyForm = {
 export default function AdminVendors() {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { profile: currentProfile } = useAuth();
   const [vendors, setVendors] = useState<VendorProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -52,84 +57,19 @@ export default function AdminVendors() {
   const [filteredCount, setFilteredCount] = useState(0);
   const [vendorCounts, setVendorCounts] = useState({ total: 0, active: 0, pendingApproval: 0, suspended: 0 });
 
+  const vendorsQuery = useVendors({ page: currentPage, itemsPerPage, search: debouncedSearchQuery, status: statusFilter });
   useEffect(() => {
-    fetchVendors();
-  }, [currentPage, itemsPerPage, debouncedSearchQuery, statusFilter]);
+    setLoading(vendorsQuery.isLoading);
+    if (vendorsQuery.data) {
+      setVendors(vendorsQuery.data.data);
+      setFilteredCount(vendorsQuery.data.count);
+    }
+  }, [vendorsQuery.data, vendorsQuery.isLoading]);
 
+  const countsQuery = useVendorCounts();
   useEffect(() => {
-    fetchVendorStats();
-  }, []);
-
-  const fetchVendorStats = async () => {
-    try {
-      const totalRes = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('role', 'vendor');
-
-      const activeRes = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('role', 'vendor')
-        .or('phone.not.is.null,address.not.is.null,city.not.is.null');
-
-      const pendingRes = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('role', 'vendor')
-        .is('full_name', null);
-
-      if (totalRes.error) throw totalRes.error;
-      if (activeRes.error) throw activeRes.error;
-      if (pendingRes.error) throw pendingRes.error;
-
-      setVendorCounts({
-        total: totalRes.count || 0,
-        active: activeRes.count || 0,
-        pendingApproval: pendingRes.count || 0,
-        suspended: 0,
-      });
-    } catch (error) {
-      console.error('Error fetching vendor stats:', error);
-    }
-  };
-
-  const fetchVendors = async () => {
-    setLoading(true);
-    try {
-      const { offset, limit } = getPaginationParams(currentPage, itemsPerPage);
-      let query = supabase
-        .from('profiles')
-        .select('id, email, full_name, phone, address, city, role, created_at', { count: 'exact' })
-        .eq('role', 'vendor');
-
-      if (debouncedSearchQuery.trim()) {
-        query = query.or(`email.ilike.%${debouncedSearchQuery}%,full_name.ilike.%${debouncedSearchQuery}%`);
-      }
-
-      if (statusFilter === 'active') {
-        query = query.or('phone.not.is.null,address.not.is.null,city.not.is.null');
-      } else if (statusFilter === 'incomplete') {
-        query = query.is('phone', null).is('address', null).is('city', null);
-      } else if (statusFilter === 'pendingApproval') {
-        query = query.is('full_name', null);
-      }
-
-      const { data, error, count } = await query
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
-      if (error) throw error;
-      setVendors(data || []);
-      setFilteredCount(count || 0);
-    } catch (error) {
-      console.error('Error fetching vendors:', error);
-      setVendors([]);
-      setFilteredCount(0);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (countsQuery.data) setVendorCounts(countsQuery.data);
+  }, [countsQuery.data]);
 
   const handleCreateVendor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -145,38 +85,64 @@ export default function AdminVendors() {
       return;
     }
 
+    if (saving) return;
     setSaving(true);
+
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
+      const normalizedEmail = (formData.email || '').trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      console.debug('Vendor email debug', {
+        raw: formData.email,
+        normalized: normalizedEmail,
+        length: normalizedEmail.length,
+        charCodes: Array.from(normalizedEmail).map((c) => c.charCodeAt(0)),
       });
 
-      if (error) throw error;
-
-      if (!data.user) {
-        throw new Error('Unable to create vendor account.');
+      if (!emailRegex.test(normalizedEmail)) {
+        setErrorMessage('Please enter a valid email address.');
+        setSaving(false);
+        return;
       }
 
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        email: formData.email,
-        full_name: formData.full_name,
-        phone: formData.phone || null,
-        address: formData.address || null,
-        city: formData.city || null,
-        role: 'vendor',
-      });
+      if (formData.password.length < 6) {
+        setErrorMessage('Password must be at least 6 characters long.');
+        setSaving(false);
+        return;
+      }
 
-      if (profileError) throw profileError;
+      if (!currentProfile) {
+        setErrorMessage('Admin profile is still loading. Please wait and try again.');
+        setSaving(false);
+        return;
+      }
+
+      if (currentProfile.role !== 'admin') {
+        setErrorMessage('Only admin users can create vendor accounts.');
+        setSaving(false);
+        return;
+      }
+
+      if (currentProfile?.role === 'admin') {
+        await createUserWithAuthAdmin({
+          email: normalizedEmail,
+          password: formData.password,
+          full_name: formData.full_name,
+          phone: formData.phone || null,
+          address: formData.address || null,
+          city: formData.city || null,
+          role: 'vendor',
+        });
+      }
 
       setCreateOpen(false);
       setFormData({ ...emptyForm });
-      await fetchVendors();
-      fetchVendorStats();
+      qc.invalidateQueries({ queryKey: ['vendors'] });
+      qc.invalidateQueries({ queryKey: ['vendorCounts'] });
     } catch (error: any) {
-      console.error('Error creating vendor:', error);
-      setErrorMessage(error?.message || 'Failed to create vendor.');
+      console.error('Error creating vendor:', error, { stack: error?.stack });
+      const friendly = error?.message || (error?.status ? `Server error ${error.status}` : 'Failed to create vendor.');
+      setErrorMessage(friendly + (error?.details ? ` — ${error.details}` : ''));
     } finally {
       setSaving(false);
     }
@@ -188,10 +154,42 @@ export default function AdminVendors() {
 
   return (
     <div className="p-5 space-y-5">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-lg sm:text-xl font-bold">Vendors Management</h1>
-          <p className="text-xs sm:text-sm text-gray-600">Manage vendor accounts and keep the vendor directory up to date.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            {/* <div className='text-muted-foreground'>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                >
+                <path d="M4 8h16" />
+                <path d="M5 8l1-4h12l1 4" />
+                <path d="M6 8v5" />
+                <path d="M18 8v5" />
+
+                <circle cx="12" cy="13" r="2" />
+                <path d="M10 18c0-1.5 1-3 2-3s2 1.5 2 3" />
+
+                <circle cx="6" cy="14" r="1.5" />
+                <path d="M4.5 18c0-1 0.8-2 1.5-2s1.5 1 1.5 2" />
+
+                <circle cx="18" cy="14" r="1.5" />
+                <path d="M16.5 18c0-1 0.8-2 1.5-2s1.5 1 1.5 2" />
+              </svg>
+            </div> */}
+            <Truck className="h-6 w-6 text-blue-600" />
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold">Vendors Management</h1>
+              <p className="text-xs sm:text-sm text-gray-600">Manage vendor accounts and keep the vendor directory up to date.</p>
+            </div>
+          </div>
         </div>
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="h-4 w-4" />
@@ -240,7 +238,7 @@ export default function AdminVendors() {
           </div>
         </div>
       </div>
-   
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
@@ -256,7 +254,6 @@ export default function AdminVendors() {
         </div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             <Select
               value={statusFilter}
               onValueChange={(value) => {
@@ -278,7 +275,7 @@ export default function AdminVendors() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-md shadow overflow-x-auto">
+      <div className="bg-white dark:bg-gray-800 shadow overflow-x-auto">
         <div className="overflow-x-auto">
           <Table className="min-w-full">
             <TableHeader>
@@ -298,22 +295,25 @@ export default function AdminVendors() {
                   <TableRow key={vendor.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <TableCell>
                       <div className="font-medium">{vendor.full_name}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{vendor.role}</div>
                     </TableCell>
                     <TableCell>{vendor.email}</TableCell>
                     <TableCell className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                      {vendor.phone && <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> {vendor.phone}</div>}
+                      {vendor.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3.5 h-3.5" /> {vendor.phone}
+                        </div>
+                      )}
                       {(vendor.address || vendor.city) && (
-                        <div className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5" /> {vendor.city ? `${vendor.city}${vendor.address ? ` · ${vendor.address}` : ''}` : vendor.address}</div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5" />
+                          {vendor.city ? `${vendor.city}${vendor.address ? ` · ${vendor.address}` : ''}` : vendor.address}
+                        </div>
                       )}
                       {!hasProfile && <div>No contact details</div>}
                     </TableCell>
                     <TableCell>{new Date(vendor.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      <StatusBadge
-                        status={hasProfile ? 'active' : 'inactive'}
-                        label={hasProfile ? 'Active' : 'Incomplete'}
-                      />
+                      <StatusBadge status={hasProfile ? 'active' : 'inactive'} label={hasProfile ? 'Active' : 'Incomplete'} />
                     </TableCell>
                     <TableCell className="space-x-2">
                       <Button
@@ -345,109 +345,71 @@ export default function AdminVendors() {
             </TableBody>
           </Table>
 
-          {vendors.length === 0 && (
-            <div className="p-8 text-center text-gray-500">No vendors found</div>
-          )}
+          {vendors.length === 0 && <div className="p-8 text-center text-gray-500">No vendors found</div>}
         </div>
-
-        {calculateTotalPages(filteredCount, itemsPerPage) > 1 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={calculateTotalPages(filteredCount, itemsPerPage)}
-            totalItems={filteredCount}
-            itemsPerPage={itemsPerPage}
-            onPageChange={(page) => setCurrentPage(page)}
-            onItemsPerPageChange={(items) => {
-              setItemsPerPage(items);
-              setCurrentPage(1);
-            }}
-          />
-        )}
       </div>
 
+      {calculateTotalPages(filteredCount, itemsPerPage) > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={calculateTotalPages(filteredCount, itemsPerPage)}
+          totalItems={filteredCount}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(page) => setCurrentPage(page)}
+          onItemsPerPageChange={(items) => {
+            setItemsPerPage(items);
+            setCurrentPage(1);
+          }}
+        />
+      )}
+
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create New Vendor</DialogTitle>
-            <DialogDescription>
-              Add a new vendor account and store its profile details.
-            </DialogDescription>
+            <DialogDescription>Add a new vendor account and store its profile details.</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateVendor} className="space-y-4 mt-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
-              <Input
-                type="text"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                required
-              />
+              <Input type="text" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} required />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone</label>
-                <Input
-                  type="text"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
+                <Input type="text" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">City</label>
-                <Input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                />
+                <Input type="text" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address</label>
-              <Input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
+              <Input type="text" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
-              <Input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
+              <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
-                <Input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                />
+                <Input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password</label>
-                <Input
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  required
-                />
+                <Input type="password" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} required />
               </div>
             </div>
 
             {errorMessage && (
-              <div className="rounded-lg bg-red-50 dark:bg-red-900/40 p-3 text-sm text-red-700 dark:text-red-200">
-                {errorMessage}
-              </div>
+              <div className="rounded-lg bg-red-50 dark:bg-red-900/40 p-3 text-sm text-red-700 dark:text-red-200">{errorMessage}</div>
             )}
 
             <DialogFooter className="gap-2">
-              <Button variant="outline" type="button" onClick={() => setCreateOpen(false)}>
+              <Button variant="outline" type="button" onClick={() => setCreateOpen(false)} disabled={saving}>
                 Cancel
               </Button>
               <Button type="submit" disabled={saving}>

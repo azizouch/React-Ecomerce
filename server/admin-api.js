@@ -50,4 +50,43 @@ app.post('/admin/profile/update', async (req, res) => {
   }
 });
 
+// Admin route to create a user and profile using the Service Role key
+app.post('/admin/create-user', async (req, res) => {
+  try {
+    const { email, password, full_name, phone, address, city, role } = req.body;
+    if (!email || !password) return res.status(400).send({ error: 'email and password are required' });
+
+    // Create user as admin (no confirmation email required)
+    const { data: userData, error: createErr } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name }
+    });
+
+    if (createErr) return res.status(400).send({ error: 'createUser failed', details: createErr });
+
+    // Insert profile record
+    const { data: profileData, error: profileErr } = await supabase.from('profiles')
+      .insert({
+        id: userData.user.id,
+        email,
+        full_name: full_name || null,
+        phone: phone || null,
+        address: address || null,
+        city: city || null,
+        role: role || 'vendor',
+      })
+      .select()
+      .maybeSingle();
+
+    if (profileErr) return res.status(500).send({ error: 'profile insert failed', details: profileErr });
+
+    return res.send({ ok: true, user: userData.user, profile: profileData });
+  } catch (err) {
+    console.error('Admin create-user error', err);
+    return res.status(500).send({ error: 'server error', details: err });
+  }
+});
+
 app.listen(PORT, () => console.log(`Admin API listening on http://localhost:${PORT}`));

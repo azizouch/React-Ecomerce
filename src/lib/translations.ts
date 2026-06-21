@@ -20,7 +20,7 @@ export const translations = {
     products: 'Products',
     orders: 'Orders',
     users: 'Users',
-    welcomeBack: 'Welcome back! Here\'s your store overview.',
+    welcomeBack: 'Login to your account',
     totalSales: 'Total Sales',
     totalCustomers: 'Total Customers',
     totalProducts: 'Total Products',
@@ -114,7 +114,7 @@ export const translations = {
     deleteUser: 'Delete User',
     password: 'Password',
     confirmPassword: 'Confirm Password',
-    emailAddress: 'Email Address',
+    emailAddress: 'Email',
     
     // Profile Page
     profileAdmin: 'Admin Profile',

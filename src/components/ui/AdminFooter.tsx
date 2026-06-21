@@ -5,19 +5,19 @@ export default function AdminFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className={`border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors ${language === 'ar' ? 'text-right' : 'text-left'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+    <footer className={`bg-white dark:bg-slate-800 transition-colors ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-0">
+        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8"> */}
           {/* About */}
-          <div>
+          {/* <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{t('about')}</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {t('adminDescription')}
             </p>
-          </div>
+          </div> */}
 
           {/* Quick Links */}
-          <div>
+          {/* <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{t('quickLinks')}</h3>
             <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
               <li>
@@ -36,10 +36,10 @@ export default function AdminFooter() {
                 </a>
               </li>
             </ul>
-          </div>
+          </div> */}
 
           {/* Support */}
-          <div>
+          {/* <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{t('support')}</h3>
             <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
               <li>
@@ -58,8 +58,8 @@ export default function AdminFooter() {
                 </a>
               </li>
             </ul>
-          </div>
-        </div>
+          </div> */}
+        {/* </div> */}
 
         {/* Bottom */}
         <div className={`border-t border-gray-200 dark:border-slate-700 pt-6 flex flex-col sm:flex-row ${language === 'ar' ? 'flex-row-reverse' : ''} justify-between items-center`}>
