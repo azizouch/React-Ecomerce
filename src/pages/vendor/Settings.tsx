@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Settings } from 'lucide-react';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 
@@ -24,7 +24,7 @@ export default function VendorSettings() {
         </div>
       </div>
 
-      <SoftCard className="p-6 max-w-2xl">
+      <Card className="p-6 max-w-2xl">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Store Name</label>
@@ -36,7 +36,7 @@ export default function VendorSettings() {
           </div>
           <Button onClick={() => {}} className="mt-4">Save Settings</Button>
         </div>
-      </SoftCard>
+      </Card>
     </div>
   );
 }

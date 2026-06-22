@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Input } from '../../components/ui/input';

@@ -4,7 +4,7 @@ import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../lib/translations';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
@@ -427,7 +427,7 @@ export default function AdminUsers() {
               </div>
             </div>
 
-            <SoftCard className="p-0 bg-transparent dark:bg-transparent border-0">
+            <Card className="p-0 border-0">
             <div className="overflow-x-auto">
               <Table className="bg-transparent min-w-full">
                 <TableHeader>

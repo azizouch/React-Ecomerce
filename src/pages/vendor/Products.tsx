@@ -5,7 +5,7 @@ import { calculateTotalPages } from '../../lib/pagination';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import StatusBadge from '../../components/ui/StatusBadge';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import Pagination from '../../components/ui/Pagination';
 import { Plus, Edit, Trash2, X, Search, Filter, RefreshCw, Package } from 'lucide-react';
 import { Button } from '../../components/ui/button';

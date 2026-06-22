@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -12,7 +12,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 
 const EMPTY_COUPON = { id: null, code: '', discount_type: 'percentage', discount_value: '', usage_limit: 0, expires_at: '', active: true };
 
-export default function AdminDiscounts() {
+export default function VendorDiscounts() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [coupons, setCoupons] = useState<any[]>([]);

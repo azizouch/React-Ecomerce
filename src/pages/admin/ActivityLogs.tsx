@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../../components/ui/button';
@@ -66,7 +66,7 @@ export default function AdminActivityLogs() {
             </TableBody>
           </Table>
         </div>
-      </SoftCard>
+      </Card>
     </div>
   );
 }

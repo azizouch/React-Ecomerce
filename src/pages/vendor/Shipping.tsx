@@ -22,7 +22,7 @@ const mockZones = [
   { id: 'zone_1', name: 'Europe', methods: ['Standard', 'Express'], price: '5.00 - 20.00', eta: '2-7 days', enabled: true },
 ];
 
-export default function AdminShipping() {
+export default function VendorShipping() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [zones, setZones] = useState<any[]>(mockZones);

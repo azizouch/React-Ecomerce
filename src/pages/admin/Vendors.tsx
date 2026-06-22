@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../lib/translations';
-import { createUserWithAuthAdmin } from '../../lib/supabase';
-import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
+import { calculateTotalPages } from '../../lib/pagination';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useQueryClient } from '@tanstack/react-query';
 import { useVendors, useVendorCounts } from '../../hooks/useVendors';
 import { Button } from '../../components/ui/button';
+import { createUserWithAuthAdmin } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../components/ui/dialog';
@@ -15,7 +15,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../../components/ui/select';
-import { Plus, Eye, Edit, Phone, MapPin, UserCheck, Users, AlertTriangle, Search, Filter, Truck } from 'lucide-react';
+import { Plus, Eye, Edit, Phone, MapPin, UserCheck, Users, AlertTriangle, Search, Truck } from 'lucide-react';
 
 interface VendorProfile {
   id: string;
@@ -68,8 +68,20 @@ export default function AdminVendors() {
 
   const countsQuery = useVendorCounts();
   useEffect(() => {
-    if (countsQuery.data) setVendorCounts(countsQuery.data);
+    if (countsQuery.data) setVendorCounts(countsQuery.data as { total: number; active: number; pendingApproval: number; suspended: number });
   }, [countsQuery.data]);
+
+  const createVendor = async (vendor: {
+    email: string;
+    password: string;
+    full_name: string;
+    phone?: string | null;
+    address?: string | null;
+    city?: string | null;
+    role?: string;
+  }) => {
+    return await createUserWithAuthAdmin(vendor);
+  };
 
   const handleCreateVendor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -141,7 +153,11 @@ export default function AdminVendors() {
       qc.invalidateQueries({ queryKey: ['vendorCounts'] });
     } catch (error: any) {
       console.error('Error creating vendor:', error, { stack: error?.stack });
-      const friendly = error?.message || (error?.status ? `Server error ${error.status}` : 'Failed to create vendor.');
+      const rawMessage = error?.message || (error?.status ? `Server error ${error.status}` : 'Failed to create vendor.');
+      const friendly = /A user with this email already exists/i.test(rawMessage)
+        ? 'A user with this email already exists.'
+        : rawMessage;
+
       setErrorMessage(friendly + (error?.details ? ` — ${error.details}` : ''));
     } finally {
       setSaving(false);
@@ -157,33 +173,6 @@ export default function AdminVendors() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            {/* <div className='text-muted-foreground'>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                >
-                <path d="M4 8h16" />
-                <path d="M5 8l1-4h12l1 4" />
-                <path d="M6 8v5" />
-                <path d="M18 8v5" />
-
-                <circle cx="12" cy="13" r="2" />
-                <path d="M10 18c0-1.5 1-3 2-3s2 1.5 2 3" />
-
-                <circle cx="6" cy="14" r="1.5" />
-                <path d="M4.5 18c0-1 0.8-2 1.5-2s1.5 1 1.5 2" />
-
-                <circle cx="18" cy="14" r="1.5" />
-                <path d="M16.5 18c0-1 0.8-2 1.5-2s1.5 1 1.5 2" />
-              </svg>
-            </div> */}
             <Truck className="h-6 w-6 text-blue-600" />
             <div>
               <h1 className="text-lg sm:text-xl font-bold">Vendors Management</h1>

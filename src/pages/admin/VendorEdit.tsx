@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { supabase } from '../../lib/supabase';
+import { supabase, updateUserWithAuthAdmin } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
@@ -23,15 +23,13 @@ const initialForm = {
   phone: '',
   address: '',
   city: '',
+  password: '',
+  confirmPassword: '',
 };
-
-import { useQueryClient } from '@tanstack/react-query';
-import { useProfile } from '../../hooks/useProfile';
 
 export default function VendorEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const qc = useQueryClient();
   const [vendor, setVendor] = useState<VendorProfile | null>(null);
   const [formData, setFormData] = useState(initialForm);
   const [loading, setLoading] = useState(true);
@@ -66,6 +64,8 @@ export default function VendorEdit() {
         phone: data.phone || '',
         address: data.address || '',
         city: data.city || '',
+        password: '',
+        confirmPassword: '',
       });
     } catch (error) {
       console.error('Failed to load vendor:', error);
@@ -75,129 +75,45 @@ export default function VendorEdit() {
     }
   };
 
-  const adminApiUrl = import.meta.env.VITE_ADMIN_API_URL as string | undefined;
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!vendor) return;
 
-    const previousVendor = vendor;
     setSaving(true);
     try {
-      let authUpdateError: any = null;
-
-      if (formData.email !== vendor.email) {
-        try {
-          const { error: authError } = await supabase.auth.admin.updateUserById(vendor.id, {
-            email: formData.email,
-          });
-          if (authError) throw authError;
-          console.log('Auth email update succeeded for', vendor.id);
-        } catch (err) {
-          console.error('Auth update failed:', err);
-          authUpdateError = err;
-        }
+      if (formData.password && formData.password !== formData.confirmPassword) {
+        throw new Error('Passwords do not match.');
       }
 
-      // Avoid requesting the updated row in the same PATCH request. Some PostgREST setups
-      // (RLS or RETURNING disabled) will return 406 Not Acceptable if the server cannot
-      // satisfy the requested representation even though the update succeeds. Perform
-      // the update without `.select()` and then refetch the row separately.
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.full_name || null,
-          phone: formData.phone || null,
-          address: formData.address || null,
-          city: formData.city || null,
-        })
-        .eq('id', vendor.id);
-
-      if (profileError) throw profileError;
-
-      console.log('Profile update executed (no returned row). Refetching...');
-
-      const { data: refetched, error: refetchError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, phone, address, city, role, created_at')
-        .eq('id', vendor.id)
-        .maybeSingle();
-
-      if (refetchError) {
-        console.error('Refetch after update failed:', refetchError);
-        if (authUpdateError) {
-          await Swal.fire('Warning', `Auth update may have failed and profile refetch failed: ${refetchError?.message || refetchError}`,'warning');
-        } else {
-          await Swal.fire('Warning', `Profile updated but could not retrieve the updated row: ${refetchError?.message || refetchError}`,'warning');
-        }
-      } else {
-        console.log('Refetched profile:', refetched);
-        setVendor(refetched as any);
-        if (authUpdateError) {
-          await Swal.fire('Warning', `Profile updated but auth/email update failed: ${authUpdateError?.message || authUpdateError}`,'warning');
-        } else {
-          await Swal.fire('Success', 'Vendor updated successfully.', 'success');
-        }
+      if (formData.password && formData.password.length < 6) {
+        throw new Error('Password must be at least 6 characters long.');
       }
 
-      // If the refetched profile still doesn't reflect the intended changes,
-      // it's likely the update was blocked by RLS/row-level policies (client
-      // anon key doesn't have permission to update other users). Offer to
-      // perform an admin-backed update via the local admin API if available.
-      let finalProfile: any = null;
-      try {
-        const { data: fp, error: fpErr } = await supabase
-          .from('profiles')
-          .select('id, email, full_name, phone, address, city, role, created_at')
-          .eq('id', vendor.id)
-          .maybeSingle();
-        if (fpErr) {
-          console.error('Final profile refetch error', fpErr);
-        } else {
-          finalProfile = fp;
-        }
-      } catch (e) {
-        console.error('Unexpected error fetching final profile', e);
+      const payload = {
+        id: vendor.id,
+        email: formData.email || undefined,
+        password: formData.password || undefined,
+        full_name: formData.full_name || null,
+        phone: formData.phone || null,
+        address: formData.address || null,
+        city: formData.city || null,
+      };
+
+      const result = await updateUserWithAuthAdmin({
+        id: String(payload.id),
+        email: payload.email ?? null,
+        password: payload.password ?? null,
+        full_name: payload.full_name ?? null,
+        phone: payload.phone ?? null,
+        address: payload.address ?? null,
+        city: payload.city ?? null,
+      });
+
+      if (result?.profile) {
+        setVendor({ ...vendor, ...result.profile });
       }
 
-      const changed = finalProfile && (
-        finalProfile.phone !== previousVendor.phone ||
-        finalProfile.address !== previousVendor.address ||
-        finalProfile.city !== previousVendor.city ||
-        finalProfile.email !== previousVendor.email ||
-        finalProfile.full_name !== previousVendor.full_name
-      );
-
-      if (!changed) {
-        const doAdmin = await Swal.fire({
-          title: 'Client update blocked?',
-          text: 'Client-side update may be blocked by DB policies. Try server-admin update?',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Try admin update',
-        });
-
-        if (doAdmin.isConfirmed) {
-          try {
-            const resp = await fetch(`${adminApiUrl}/admin/profile/update`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: vendor.id, email: formData.email, full_name: formData.full_name, phone: formData.phone, address: formData.address, city: formData.city }),
-            });
-
-            const json = await resp.json();
-            if (!resp.ok) throw json;
-            console.log('Admin update result:', json);
-            setVendor(json.profile || finalProfile || vendor);
-            await Swal.fire('Success', 'Vendor updated via admin API.', 'success');
-          } catch (err: any) {
-            console.error('Admin update failed:', err);
-            const message = err?.message || err?.error || JSON.stringify(err);
-            await Swal.fire('Error', `Admin update failed: ${String(message)}. Make sure the admin API is running and VITE_ADMIN_API_URL is correct.`, 'error');
-          }
-        }
-      }
-
+      await Swal.fire('Success', 'Vendor updated successfully.', 'success');
       navigate(`/admin/vendors/${vendor.id}`);
     } catch (error: any) {
       console.error('Failed to update vendor:', error);
@@ -273,23 +189,35 @@ export default function VendorEdit() {
               </div>
             </div>
 
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Address</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">New password</label>
               <Input
-                value={formData.address}
-                onChange={(event) => setFormData({ ...formData, address: event.target.value })}
-                placeholder="Street address or suite"
+                type="password"
+                value={formData.password}
+                onChange={(event) => setFormData({ ...formData, password: event.target.value })}
+                placeholder="Leave blank to keep current password"
               />
             </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <Button variant="secondary" onClick={() => navigate(`/admin/vendors/${vendor.id}`)} type="button">
-                Cancel
-              </Button>
-              <Button type="submit" disabled={saving}>
-                {saving ? 'Saving...' : 'Save changes'}
-              </Button>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Confirm password</label>
+              <Input
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(event) => setFormData({ ...formData, confirmPassword: event.target.value })}
+                placeholder="Confirm new password"
+              />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button variant="secondary" onClick={() => navigate(`/admin/vendors/${vendor.id}`)} type="button">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Saving...' : 'Save changes'}
+            </Button>
+          </div>
           </form>
         </CardContent>
       </Card>

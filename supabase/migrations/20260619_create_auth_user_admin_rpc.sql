@@ -1,38 +1,129 @@
 BEGIN;
 
 -- Function: create_auth_user_admin(email text, password text, metadata json)
--- Purpose: Create a new auth user using the service_role and return the new user's id
--- Behavior: Uses Postgres "auth" schema helper via inserting into auth.users is not permitted
--- Instead this RPC uses Supabase provided function "auth.admin_create_user" style via plpgsql and pg_net or uses "auth.users" management via service_role.
-
--- Note: Supabase recommends creating auth users via the Admin API. This RPC attempts to call the internal function if available, otherwise falls back to using the
--- "auth" schema helper available in self-hosted setups. If your managed Supabase doesn't allow direct auth user creation from SQL, rely on the server-side admin client.
+-- Purpose: Create a new auth user by inserting directly into auth.users and auth.identities
+-- Note: This works only on self-hosted or environments that allow SQL-level auth management.
 
 CREATE OR REPLACE FUNCTION public.create_auth_user_admin(
   user_email text,
   user_password text,
-  user_metadata json DEFAULT '{}'::json
+  user_metadata json DEFAULT '{}'::json,
+  profile_full_name text DEFAULT NULL,
+  profile_phone text DEFAULT NULL,
+  profile_address text DEFAULT NULL,
+  profile_city text DEFAULT NULL,
+  profile_role user_role DEFAULT 'vendor'::user_role
 )
-RETURNS TABLE(id uuid) LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
-  created RECORD;
-  u_id uuid;
+  new_user_id uuid;
+  result json;
+  instance_uuid uuid;
+  profile_data json;
 BEGIN
-  -- Try to use the "auth" extension's helper if present (self-hosted or enterprise)
-  BEGIN
-    PERFORM 1 FROM pg_proc WHERE proname = 'auth_create_user';
-    IF FOUND THEN
-      -- Hypothetical helper: auth_create_user(email, password, metadata json) RETURNS uuid
-      SELECT auth_create_user(user_email, user_password, user_metadata) INTO u_id;
-      RETURN QUERY SELECT u_id::uuid;
-      RETURN;
-    END IF;
-  EXCEPTION WHEN OTHERS THEN
-    -- ignore and fallback
-  END;
+  -- Get the instance ID from existing users
+  SELECT COALESCE(
+    (SELECT DISTINCT instance_id FROM auth.users LIMIT 1),
+    '00000000-0000-0000-0000-000000000000'::uuid
+  ) INTO instance_uuid;
+  
+  -- Ensure this email is not already registered in auth.users
+  IF EXISTS (SELECT 1 FROM auth.users WHERE email = user_email) THEN
+    RETURN json_build_object(
+      'error', 'Email already exists',
+      'code', '23505'
+    );
+  END IF;
 
-  -- Fallback: if running on Supabase managed (no SQL-level creation), raise so client falls back to admin client
-  RAISE EXCEPTION 'create_auth_user_admin: SQL-level auth user creation not available in this environment';
+  -- Generate a new UUID for the user
+  new_user_id := gen_random_uuid();
+  
+  -- Insert into auth.users with minimal required fields
+  INSERT INTO auth.users (
+    id,
+    instance_id,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    created_at,
+    updated_at,
+    raw_user_meta_data,
+    is_super_admin,
+    role,
+    aud
+  ) VALUES (
+    new_user_id,
+    instance_uuid,
+    user_email,
+    crypt(user_password, gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    user_metadata,
+    false,
+    'authenticated',
+    'authenticated'
+  );
+  
+  -- Insert into auth.identities (required for login)
+  INSERT INTO auth.identities (
+    id,
+    user_id,
+    provider,
+    provider_id,
+    identity_data,
+    last_sign_in_at,
+    created_at,
+    updated_at
+  ) VALUES (
+    gen_random_uuid(),
+    new_user_id,
+    'email',
+    user_email,
+    json_build_object('sub', new_user_id::text, 'email', user_email),
+    now(),
+    now(),
+    now()
+  );
+  
+  -- Insert into profiles using the same generated auth user id
+  INSERT INTO public.profiles AS p (
+    id,
+    email,
+    full_name,
+    first_name,
+    last_name,
+    phone,
+    address,
+    city,
+    role
+  ) VALUES (
+    new_user_id,
+    user_email,
+    profile_full_name,
+    split_part(profile_full_name, ' ', 1),
+    split_part(profile_full_name, ' ', 2),
+    profile_phone,
+    profile_address,
+    profile_city,
+    profile_role
+  ) RETURNING row_to_json(p.*) INTO profile_data;
+  
+  -- Return the created user info with profile details
+  result := json_build_object(
+    'id', new_user_id,
+    'email', user_email,
+    'created_at', now(),
+    'profile', profile_data
+  );
+  
+  RETURN result;
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN json_build_object(
+      'error', SQLERRM,
+      'code', SQLSTATE
+    );
 END;
 $$;
 

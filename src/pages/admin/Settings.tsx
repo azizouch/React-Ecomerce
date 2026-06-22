@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';

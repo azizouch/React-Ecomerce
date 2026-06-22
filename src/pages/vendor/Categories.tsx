@@ -3,7 +3,7 @@ import { adminCatalog, Category } from '../../lib/supabase';
 import { calculateTotalPages } from '../../lib/pagination';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import Pagination from '../../components/ui/Pagination';
 import CategoryDetailModal from '../../components/modals/CategoryDetailModal';
 import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
@@ -214,7 +214,7 @@ export default function AdminCategories() {
                     setShowDetailModal(true);
                   }}
                 >
-                  <SoftCard hoverable className="p-6 h-full shadow-md"
+                  <Card className="p-6 h-full shadow-md cursor-pointer hover:shadow-lg transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3 flex-1">
@@ -251,7 +251,7 @@ export default function AdminCategories() {
                   {category.description && (
                     <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">{category.description}</p>
                   )}
-                  </SoftCard>
+                  </Card>
                 </div>
               ))}
             </div>

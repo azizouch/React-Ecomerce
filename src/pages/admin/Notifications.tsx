@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Bell, Trash2, Check, RefreshCw } from 'lucide-react';
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ShoppingCart } from 'lucide-react';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 
 export default function VendorOrders() {
@@ -22,7 +22,7 @@ export default function VendorOrders() {
         </div>
       </div>
 
-      <SoftCard className="p-4 overflow-x-auto">
+      <Card className="p-4 overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -43,7 +43,7 @@ export default function VendorOrders() {
             ))}
           </TableBody>
         </Table>
-      </SoftCard>
+      </Card>
     </div>
   );
 }

@@ -30,8 +30,8 @@ const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
 const AdminProductDetail = lazy(() => import('./pages/admin/ProductDetail'));
 const AdminProductNew = lazy(() => import('./pages/admin/ProductNew'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments'));
-const AdminShipping = lazy(() => import('./pages/admin/Shipping'));
-const AdminDiscounts = lazy(() => import('./pages/admin/Discounts'));
+const VendorShipping = lazy(() => import('./pages/vendor/Shipping'));
+const VendorDiscounts = lazy(() => import('./pages/vendor/Discounts'));
 const AdminInventory = lazy(() => import('./pages/admin/Inventory'));
 const AdminReviews = lazy(() => import('./pages/admin/Reviews'));
 const AdminPages = lazy(() => import('./pages/admin/Pages'));
@@ -144,6 +144,26 @@ function AppContent() {
           }
         />
         <Route
+          path="/vendor/shipping"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <VendorShipping />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/discounts"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <VendorDiscounts />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/products"
           element={
             <ProtectedRoute>
@@ -247,26 +267,6 @@ function AppContent() {
             <ProtectedRoute>
               <AdminLayout>
                 <AdminPayments />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/shipping"
-          element={
-            <ProtectedRoute>
-              <AdminLayout>
-                <AdminShipping />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/discounts"
-          element={
-            <ProtectedRoute>
-              <AdminLayout>
-                <AdminDiscounts />
               </AdminLayout>
             </ProtectedRoute>
           }

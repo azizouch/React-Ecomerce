@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminCatalog } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { Input } from '../../components/ui/input';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../../components/ui/select';

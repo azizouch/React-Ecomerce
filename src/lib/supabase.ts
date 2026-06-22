@@ -2,7 +2,6 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
@@ -10,7 +9,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // Singleton pattern to prevent multiple client instances
 let supabaseInstance: SupabaseClient | null = null;
-let supabaseAdminInstance: SupabaseClient | null = null;
 
 function getSupabaseClient(): SupabaseClient {
   if (!supabaseInstance) {
@@ -25,35 +23,9 @@ function getSupabaseClient(): SupabaseClient {
   return supabaseInstance;
 }
 
-function getSupabaseAdminClient(): SupabaseClient | null {
-  // Never create a service-role admin client in browser/runtime that exposes secrets.
-  // This function is intended for server-side usage only.
-  if (typeof window !== 'undefined') {
-    return null;
-  }
-
-  if (!supabaseAdminInstance && supabaseServiceRoleKey) {
-    supabaseAdminInstance = createClient(supabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        storageKey: 'supabase-admin-auth'
-      }
-    });
-  }
-
-  return supabaseAdminInstance;
-}
-
 export const supabase = getSupabaseClient();
 
-// Export as lazy getter to prevent multiple client instances
-export { getSupabaseAdminClient as supabaseAdmin };
-
-// Create user + profile using admin privileges when needed.
-// Tries an RPC `create_auth_user_admin` first (if defined), otherwise
-// falls back to the service-role admin client to create the auth user
-// then inserts the profile in `profiles`.
+// Create auth user + profile using RPC-only vendor creation.
 export async function createUserWithAuthAdmin(userData: {
   email: string;
   password: string;
@@ -69,123 +41,82 @@ export async function createUserWithAuthAdmin(userData: {
   const role = userData.role || 'vendor';
 
   try {
-    // 1) Try RPC approach if available. RPCs are executed using the anon client and must be allowed by RLS/policies.
-    try {
-      if (typeof window === 'undefined') {
-        // Server-side: use supabase RPC
-        const { data: rpcResult, error: rpcError } = await supabase.rpc('create_auth_user_admin', {
-          user_email: email,
-          user_password: password,
-          user_metadata: { full_name }
-        } as any);
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('create_auth_user_admin', {
+      user_email: email,
+      user_password: password,
+      user_metadata: { full_name },
+      profile_full_name: full_name,
+      profile_phone: userData.phone || null,
+      profile_address: userData.address || null,
+      profile_city: userData.city || null,
+      profile_role: role,
+    } as any);
 
-        if (!rpcError && rpcResult) {
-          const createdId = (rpcResult as any).id || (Array.isArray(rpcResult) && (rpcResult as any)[0]?.id);
-          if (createdId) {
-            const { data: profileData, error: profileErr } = await supabase
-              .from('profiles')
-              .insert({
-                id: createdId,
-                email,
-                full_name,
-                phone: userData.phone || null,
-                address: userData.address || null,
-                city: userData.city || null,
-                role,
-              })
-              .select()
-              .single();
-
-            if (profileErr) throw profileErr;
-            return { user: { id: createdId }, profile: profileData, authCreated: true };
-          }
-        }
-      } else {
-        // Client-side: attempt RPC may fail due to permissions; call it and let the caller handle fallback.
-        const { data: rpcResult, error: rpcError } = await supabase.rpc('create_auth_user_admin', {
-          user_email: email,
-          user_password: password,
-          user_metadata: { full_name }
-        } as any);
-
-        if (!rpcError && rpcResult) {
-          const createdId = (rpcResult as any).id || (Array.isArray(rpcResult) && (rpcResult as any)[0]?.id);
-          if (createdId) {
-            const { data: profileData, error: profileErr } = await supabase
-              .from('profiles')
-              .insert({
-                id: createdId,
-                email,
-                full_name,
-                phone: userData.phone || null,
-                address: userData.address || null,
-                city: userData.city || null,
-                role,
-              })
-              .select()
-              .single();
-
-            if (profileErr) throw profileErr;
-            return { user: { id: createdId }, profile: profileData, authCreated: true };
-          }
-        }
-      }
-    } catch (rpcErr: any) {
-      console.warn('createUserWithAuthAdmin: RPC failed or not available', rpcErr?.message || rpcErr);
+    if (rpcError) {
+      throw rpcError;
     }
 
-    // 2) Fallback: use admin client with service role key when available (server-side only).
-    // Do not attempt to create auth users from the browser—Supabase requires the service role.
-    if (typeof window !== 'undefined') {
-      throw new Error(
-        'createUserWithAuthAdmin must be called server-side with service role. ' +
-        'Use a backend endpoint that has access to SUPABASE_SERVICE_ROLE_KEY.'
-      );
+    const parsedResult = typeof rpcResult === 'string' ? JSON.parse(rpcResult) : rpcResult;
+    if (parsedResult && typeof parsedResult === 'object' && 'error' in parsedResult) {
+      const rawMessage = (parsedResult as any).error || 'Unknown RPC error';
+      const code = (parsedResult as any).code || '';
+      const message = code === '23505' || /duplicate key/i.test(rawMessage)
+        ? 'A user with this email already exists.'
+        : rawMessage;
+      throw new Error(`RPC create_auth_user_admin failed: ${message}${code ? ` (${code})` : ''}`);
     }
 
-    const adminClient = getSupabaseAdminClient();
-    if (!adminClient) {
-      throw new Error('Service role client not available on server');
+    const createdId =
+      (parsedResult as any)?.id ||
+      (Array.isArray(parsedResult) && (parsedResult as any)[0]?.id) ||
+      (Array.isArray(parsedResult) && (parsedResult as any)[0]?.result?.id);
+
+    if (!createdId) {
+      throw new Error(`RPC did not return a user id. Response: ${JSON.stringify(parsedResult)}`);
     }
 
-    const { data: userDataResult, error: createErr } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name }
-    });
-
-    if (createErr) {
-      const msg = createErr?.message || '';
-      if (msg.includes('already') || msg.includes('duplicate')) {
-        const e: any = new Error(`Email already registered: ${email}`);
-        e.code = 'already_registered';
-        throw e;
-      }
-      throw createErr;
-    }
-
-    const createdUserId = (userDataResult as any)?.user?.id;
-    if (!createdUserId) throw new Error('Admin create user did not return id');
-
-    const { data: profileData, error: profileErr } = await supabase
-      .from('profiles')
-      .insert({
-        id: createdUserId,
-        email,
-        full_name,
-        phone: userData.phone || null,
-        address: userData.address || null,
-        city: userData.city || null,
-        role,
-      })
-      .select()
-      .maybeSingle();
-
-    if (profileErr) throw profileErr;
-    return { user: (userDataResult as any).user, profile: profileData, authCreated: true };
+    return { user: { id: createdId }, profile: (parsedResult as any)?.profile ?? null, authCreated: true };
   } catch (err) {
-    // Re-throw so callers can handle messages and codes
+    throw err;
+  }
+}
+
+// Update auth user + profile using RPC-only flow
+export async function updateUserWithAuthAdmin(userData: {
+  id: string;
+  email?: string | null;
+  password?: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  role?: string | null;
+}) {
+  const payload: any = {
+    p_user_id: userData.id,
+    p_new_email: userData.email ?? null,
+    p_new_password: userData.password ?? null,
+    p_user_metadata: userData.full_name ? { full_name: userData.full_name } : {},
+    p_profile_full_name: userData.full_name ?? null,
+    p_profile_phone: userData.phone ?? null,
+    p_profile_address: userData.address ?? null,
+    p_profile_city: userData.city ?? null,
+    p_profile_role: userData.role ?? null,
+  };
+
+  try {
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('update_auth_user_admin', payload as any);
+    if (rpcError) throw rpcError;
+
+    const parsed = typeof rpcResult === 'string' ? JSON.parse(rpcResult) : rpcResult;
+    if (parsed && parsed.error) {
+      const code = (parsed as any).code || '';
+      const message = (parsed as any).error || 'Unknown RPC error';
+      throw new Error(`${message}${code ? ` (${code})` : ''}`);
+    }
+
+    return { profile: (parsed as any)?.profile ?? null };
+  } catch (err) {
     throw err;
   }
 }

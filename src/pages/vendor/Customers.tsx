@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Users } from 'lucide-react';
-import SoftCard from '../../components/ui/SoftCard';
+import { Card } from '../../components/ui/card';
 
 export default function VendorCustomers() {
   const { t } = useLanguage();
@@ -23,14 +23,14 @@ export default function VendorCustomers() {
 
       <div className="grid gap-4">
         {customers.map((customer) => (
-          <SoftCard key={customer.id} className="p-4">
+          <Card key={customer.id} className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{customer.name}</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{customer.email}</p>
               </div>
             </div>
-          </SoftCard>
+          </Card>
         ))}
       </div>
     </div>

@@ -5,7 +5,6 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { ShoppingCart, Package, DollarSign, Users, BarChart2, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
-import SoftCard from '../../components/ui/SoftCard';
 
 export default function VendorDashboard() {
   const { t } = useLanguage();
@@ -35,7 +34,7 @@ export default function VendorDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        <SoftCard className="p-6">
+        <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Orders</p>
@@ -43,8 +42,8 @@ export default function VendorDashboard() {
             </div>
             <ShoppingCart className="h-7 w-7 text-blue-600" />
           </div>
-        </SoftCard>
-        <SoftCard className="p-6">
+        </Card>
+        <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Products</p>
@@ -52,8 +51,8 @@ export default function VendorDashboard() {
             </div>
             <Package className="h-7 w-7 text-emerald-600" />
           </div>
-        </SoftCard>
-        <SoftCard className="p-6">
+        </Card>
+        <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
@@ -61,8 +60,8 @@ export default function VendorDashboard() {
             </div>
             <DollarSign className="h-7 w-7 text-yellow-500" />
           </div>
-        </SoftCard>
-        <SoftCard className="p-6">
+        </Card>
+        <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Orders</p>
@@ -70,7 +69,7 @@ export default function VendorDashboard() {
             </div>
             <CheckCircle2 className="h-7 w-7 text-indigo-600" />
           </div>
-        </SoftCard>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -105,7 +104,7 @@ export default function VendorDashboard() {
             </div>
           </CardContent>
         </Card>
-        <SoftCard className="p-6">
+        <Card className="p-6">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Store Overview</h2>
             <div className="space-y-4 text-sm text-gray-600 dark:text-gray-300">
@@ -127,7 +126,7 @@ export default function VendorDashboard() {
               </div>
             </div>
           </div>
-        </SoftCard>
+        </Card>
       </div>
     </div>
   );
