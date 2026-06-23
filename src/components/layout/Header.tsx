@@ -1,4 +1,4 @@
-import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2, Menu, Moon, Sun } from 'lucide-react';
+import { Search, User, X, LogOut, Bell, Globe, CheckCheck, Trash2, Menu, Moon, Sun, Monitor } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,7 @@ import { GlobalSearch } from '../ui/global-search';
 import { ConfirmationDialog } from '../ui/confirmation-dialog';
 
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useIsMobile } from '../../hooks/use-mobile';
 import React, { useState, useEffect } from 'react';
@@ -41,28 +42,13 @@ export function Header() {
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { isDark, themeMode, setThemeMode, toggleTheme } = useTheme();
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDesktopNotifications, setShowDesktopNotifications] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-      const updateTheme = () => {
-        const savedTheme = localStorage.getItem('theme');
-        const isDark = savedTheme === 'dark' || (!savedTheme && document.documentElement.classList.contains('dark'));
-        setIsDarkMode(isDark);
-        if (isDark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
-      };
-  
-      updateTheme();
-      const handleStorageChange = (e: StorageEvent) => { if (e.key === 'theme') updateTheme(); };
-      window.addEventListener('storage', handleStorageChange);
-      const interval = setInterval(updateTheme, 100);
-      return () => { window.removeEventListener('storage', handleStorageChange); clearInterval(interval); };
-    }, []);
 
   // Fetch user email from auth session if not available in profile
   useEffect(() => {
@@ -120,9 +106,12 @@ export function Header() {
     loadNotifications();
   }, []);
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDarkMode; setIsDarkMode(newDarkMode);
-    if (newDarkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('theme','dark'); } else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme','light'); }
+  const handleThemeToggle = () => {
+    toggleTheme();
+  };
+
+  const applyThemeMode = (mode: 'light' | 'dark' | 'system') => {
+    setThemeMode(mode);
   };
 
   const markAllAsRead = () => {
@@ -278,7 +267,7 @@ export function Header() {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 p-0">
+            <DropdownMenuContent align="end" className="mobile-centered-dropdown w-80 p-0">
               <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between bg-white dark:bg-slate-800">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('notifications')}</p>
                 {unreadCount > 0 && (
@@ -406,7 +395,6 @@ export function Header() {
                 <User className="mr-2 h-4 w-4" />
                 {t('myProfile')}
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
               <DropdownMenuItem
                 className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                 onClick={handleLogoutClick}
@@ -414,6 +402,35 @@ export function Header() {
                 <LogOut className="mr-2 h-4 w-4" />
                 {t('logout')}
               </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+              <div className="px-1 py-1">
+                <div className="flex items-center justify-between gap-1 rounded-md border border-gray-200 bg-gray-100 p-0.5 dark:border-gray-700 dark:bg-gray-900">
+                  <button
+                    type="button"
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-md flex-1 transition ${themeMode === 'light' ? 'bg-white text-slate-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                    onClick={() => applyThemeMode('light')}
+                    aria-label="Mode clair"
+                  >
+                    <Sun className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-md flex-1 transition ${themeMode === 'dark' ? 'bg-white text-slate-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                    onClick={() => applyThemeMode('dark')}
+                    aria-label="Mode sombre"
+                  >
+                    <Moon className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-md flex-1 transition ${themeMode === 'system' ? 'bg-white text-slate-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                    onClick={() => applyThemeMode('system')}
+                    aria-label="Mode système"
+                  >
+                    <Monitor className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -443,7 +460,7 @@ export function Header() {
           <GlobalSearch className="w-80 sm:w-96" />
         </div>
 
-        <div className={`flex items-center gap-4 ${edgeMarginClass}`}>
+        <div className={`flex items-center gap-3 ${edgeMarginClass}`}>
           {/* Notifications */}
           <Popover open={showDesktopNotifications} onOpenChange={setShowDesktopNotifications}>
             <PopoverTrigger asChild>
@@ -575,7 +592,7 @@ export function Header() {
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
-                <Globe className="h-5 w-5" />
+                <Globe className="h-5 w-5 transition-colors text-sidebar-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
@@ -602,10 +619,6 @@ export function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Theme toggler */}
-          <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md" onClick={toggleDarkMode}>
-            {isDarkMode ? <Sun className="h-5 w-5 transition-colors text-white" /> : <Moon className="h-5 w-5 transition-colors text-sidebar-foreground" />}
-          </Button>
 
           {/* User Menu */}
           <DropdownMenu modal={false}>
@@ -637,7 +650,6 @@ export function Header() {
                 <User className="mr-2 h-4 w-4" />
                 {t('myProfile')}
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
               <DropdownMenuItem
                 className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                 onClick={handleLogoutClick}
@@ -645,6 +657,35 @@ export function Header() {
                 <LogOut className="mr-2 h-4 w-4" />
                 {t('logout')}
               </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+              <div className="px-1 py-1">
+                <div className="flex items-center justify-between gap-1 rounded-md border border-gray-200 bg-gray-100 p-0.5 dark:border-gray-700 dark:bg-gray-900">
+                  <button
+                    type="button"
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-md flex-1 transition ${themeMode === 'light' ? 'bg-white text-slate-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                    onClick={() => applyThemeMode('light')}
+                    aria-label="Mode clair"
+                  >
+                    <Sun className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-md flex-1 transition ${themeMode === 'dark' ? 'bg-white text-slate-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                    onClick={() => applyThemeMode('dark')}
+                    aria-label="Mode sombre"
+                  >
+                    <Moon className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-md flex-1 transition ${themeMode === 'system' ? 'bg-white text-slate-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                    onClick={() => applyThemeMode('system')}
+                    aria-label="Mode système"
+                  >
+                    <Monitor className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

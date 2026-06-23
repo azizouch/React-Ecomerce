@@ -52,7 +52,7 @@ body[style*="margin-right"] {
 
 /* Center notification dropdown for all small screens */
 @media (max-width: 639px) {
-  [data-radix-popper-content-wrapper] {
+  [data-radix-popper-content-wrapper]:has(.mobile-centered-dropdown) {
     left: 50% !important;
     transform: translate(-50%, 49.5px) !important;
   }
@@ -230,6 +230,26 @@ body[style*="margin-right"] {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
+
+/* Hide scrollbar in sidebar while keeping scroll functionality */
+[data-sidebar="sidebar"] {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+[data-sidebar="sidebar"]::-webkit-scrollbar {
+  display: none; /* WebKit browsers (Chrome, Safari, Edge) */
+}
+
+[data-sidebar="content"] {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+[data-sidebar="content"]::-webkit-scrollbar {
+  display: none; /* WebKit browsers (Chrome, Safari, Edge) */
+}
+
 
 @layer base {
   * {

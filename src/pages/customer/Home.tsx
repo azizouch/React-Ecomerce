@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Product, Category, customerCatalog } from '../../lib/supabase';
-import { useCart } from '../../hooks/useCart';
 import AddToCartModal from '../../components/ui/AddToCartModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Navbar from '../../components/layout/Navbar';
 import Carousel from '../../components/ui/Carousel';
 import Footer from '../../components/ui/Footer';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { t } from '../../lib/translations';
 
 export default function Home() {
@@ -30,9 +29,9 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState(true);
-  const { addToCart } = useCart();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const categoriesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     loadData();
@@ -58,7 +57,14 @@ export default function Home() {
     setModalOpen(true);
   };
 
-
+  const scrollCategories = (direction: 'left' | 'right') => {
+    if (!categoriesRef.current) return;
+    const scrollAmount = categoriesRef.current.offsetWidth * 0.7;
+    categoriesRef.current.scrollBy({
+      left: direction === 'right' ? scrollAmount : -scrollAmount,
+      behavior: 'smooth',
+    });
+  };
 
   // Show loading while auth is loading
   if (authLoading) {
@@ -85,13 +91,25 @@ export default function Home() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">{t(language, 'discoverProducts')}</h1>
+        <div className="mb-8 relative">
+          <div className="absolute inset-y-0 left-0 z-10 flex items-center">
+            <button
+              type="button"
+              onClick={() => scrollCategories('left')}
+              className="flex h-10 w-10 items-center justify-center border rounded-full bg-white shadow-md hover:bg-gray-100 transition dark:bg-slate-800 dark:hover:bg-slate-700"
+              aria-label="Scroll categories left"
+            >
+              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-200" />
+            </button>
+          </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div
+            ref={categoriesRef}
+            className="flex items-center gap-2 overflow-x-auto hide-scrollbar px-12 py-2 scroll-smooth"
+          >
             <button
               onClick={() => setSelectedCategory('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
+              className={`shrink-0 px-4 py-2 rounded-full font-medium transition ${
                 selectedCategory === 'all'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
@@ -103,15 +121,26 @@ export default function Home() {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
+                className={`shrink-0 px-4 py-2 rounded-full font-medium transition shadow-sm ${
                   selectedCategory === category.id
                     ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
                 }`}
               >
                 {category.name}
               </button>
             ))}
+          </div>
+
+          <div className="absolute inset-y-0 right-0 z-10 flex items-center">
+            <button
+              type="button"
+              onClick={() => scrollCategories('right')}
+              className="flex h-10 w-10 items-center justify-center border rounded-full bg-white shadow-md hover:bg-gray-100 transition dark:bg-slate-800 dark:hover:bg-slate-700"
+              aria-label="Scroll categories right"
+            >
+              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-200" />
+            </button>
           </div>
         </div>
 

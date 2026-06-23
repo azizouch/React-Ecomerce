@@ -98,9 +98,9 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
           </div>
 
           {/* Vendor Stats - 8 Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             {/* Total Vendors */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+            <Card className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Vendors</p>
@@ -110,10 +110,10 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                   <Users className="w-7 h-7 text-orange-600 dark:text-orange-400" />
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Active Vendors */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+            <Card className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Active Vendors</p>
@@ -123,10 +123,10 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                   <Users className="w-7 h-7 text-green-600 dark:text-green-400" />
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Trial Vendors */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+            <Card className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Trial Vendors</p>
@@ -136,10 +136,10 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                   <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Expired Vendors */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+            <Card className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Expired Vendors</p>
@@ -149,10 +149,10 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                   <Users className="w-7 h-7 text-red-600 dark:text-red-400" />
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Total Products */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+            <Card className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Products</p>
@@ -162,10 +162,10 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                   <Package className="w-7 h-7 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Total Orders */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+            <Card className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Orders</p>
@@ -175,10 +175,10 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                   <ShoppingCart className="w-7 h-7 text-yellow-600 dark:text-yellow-400" />
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Total Customers */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+            <Card className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Customers</p>
@@ -188,10 +188,10 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                   <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Total Revenue */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
+            <Card className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md border border-gray-200 dark:border-gray-700">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Revenue</p>
@@ -201,14 +201,14 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                   <DollarSign className="w-7 h-7 text-green-600 dark:text-green-400" />
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* Vendor Growth Chart */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Vendor Growth</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-6">Vendor Growth</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={vendorGrowthData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
@@ -229,7 +229,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
 
             {/* Orders vs Products Chart */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Orders vs Products</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-6">Orders vs Products</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={ordersVsProductsData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
@@ -312,7 +312,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                 {/* Sales Statistic Chart */}
                 <Card className="lg:col-span-2">
                   <CardHeader className="flex-row items-center justify-between">
-                    <CardTitle>{t('salesStatistic')}</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">{t('salesStatistic')}</CardTitle>
                     <button className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium">
                       {t('monthly')}
                     </button>
@@ -432,7 +432,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                 {/* Shipment Status Pie Chart */}
                 <Card>
                   <CardHeader className="flex-row items-center justify-between">
-                    <CardTitle>{t('shipmentStatus')}</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">{t('shipmentStatus')}</CardTitle>
                     <button className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium">
                       {t('today')}
                     </button>
@@ -483,10 +483,10 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                 {/* Recent Orders Table */}
                 <Card className="lg:col-span-2">
                   <CardHeader className="flex-row items-center justify-between">
-                    <CardTitle>{t('recentOrders')}</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">{t('recentOrders')}</CardTitle>
                     <div>
                       <Select value={sortBy} onValueChange={(v) => setSortBy(v)}>
-                        <SelectTrigger className="flex items-center justify-between gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                        <SelectTrigger className="flex items-center justify-between h-8 sm:h-9 gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                           <div className="flex items-center gap-2">
                             <span>{t('sortBy')}</span>
                           </div>
@@ -599,7 +599,7 @@ const [shipmentStatus, setShipmentStatus] = useState<Array<{ status: string; cou
                 {/* Sales Overview */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>{t('salesOverview')}</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">{t('salesOverview')}</CardTitle>
                   </CardHeader>
                   <CardContent>
 
