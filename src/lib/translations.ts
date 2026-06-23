@@ -20,7 +20,7 @@ export const translations = {
     products: 'Products',
     orders: 'Orders',
     users: 'Users',
-    welcomeBack: 'Login to your account',
+    welcomeBack: 'Welcome back! Here\'s your store overview.',
     totalSales: 'Total Sales',
     totalCustomers: 'Total Customers',
     totalProducts: 'Total Products',
@@ -162,6 +162,8 @@ export const translations = {
     // Users Page Stats
     totalUsers: 'Total Users',
     adminUsers: 'Admin Users',
+    vendorUsers: 'Vendor Users',
+    customerUsers: 'Customer Users',
     addUser: 'Add User',
     manageUserAccounts: 'Manage user accounts and permissions',
     
@@ -173,7 +175,6 @@ export const translations = {
     adminProducts: 'Products',
     adminCategories: 'Categories',
     adminOrders: 'Orders',
-    adminUsers: 'Users',
     payments: 'Payments',
     shipping: 'Shipping',
     discounts: 'Discounts',

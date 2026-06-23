@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase, Profile } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Mail, Phone, MapPin, Calendar, Edit, Save, X, Camera, Trash2 } from 'lucide-react';

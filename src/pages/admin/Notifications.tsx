@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Card } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Bell, Trash2, Check, RefreshCw } from 'lucide-react';
 
@@ -121,12 +121,15 @@ export default function AdminNotifications() {
 
   return (
     <>
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-              <Bell className="h-7 w-7 text-blue-600 dark:text-blue-400" />
-              {t('notificationsPage')}
-            </h1>
+      <div className="p-5 space-y-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+                {t('notificationsPage')}
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">View all notifications.</p>
+            </div>
             <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button 
@@ -143,7 +146,7 @@ export default function AdminNotifications() {
           </div>
 
         {/* Filter and Actions */}
-        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
           <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => setFilter('all')}
@@ -176,7 +179,7 @@ export default function AdminNotifications() {
         <div className="space-y-3">
           {filteredNotifications.length > 0 ? (
             filteredNotifications.map((notification) => (
-              <SoftCard
+              <Card
                 key={notification.id}
                 className={`p-6 dark:bg-slate-800 border ${getTypeColor(notification.type)} ${
                   !notification.read ? 'border-l-4' : ''
@@ -219,17 +222,17 @@ export default function AdminNotifications() {
                     </button>
                   </div>
                 </div>
-              </SoftCard>
+              </Card>
             ))
           ) : (
-            <SoftCard className="p-6 dark:bg-slate-800 text-center py-12">
+            <Card className="p-6 dark:bg-slate-800 text-center py-12">
               <Bell className="w-12 h-12 text-gray-300 dark:text-slate-600 mx-auto mb-3" />
               <p className="text-gray-500 dark:text-gray-400">
                 {filter === 'unread'
                   ? 'No unread notifications'
                   : 'No notifications yet'}
               </p>
-            </SoftCard>
+            </Card>
           )}
         </div>
       </div>

@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { supabase, supabaseAdmin as getSupabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { t } from '../../lib/translations';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Card } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
 import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
-import { Users, Crown, Mail, Calendar, Plus, Edit, Trash2, X, Search, RefreshCw, Filter } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
+import { Users, Crown, Mail, Calendar, Plus, Edit, Trash2, X, Search, RefreshCw } from 'lucide-react';
 import { Input } from '../../components/ui/input';
 import { useToast } from '../../hooks/use-toast';
 import Swal from 'sweetalert2';
@@ -33,7 +33,7 @@ interface UserProfile {
 }
 
 export default function AdminUsers() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,24 +125,24 @@ export default function AdminUsers() {
       loadUsers();
       await Swal.fire({
         icon: 'success',
-        title: t(language, 'success'),
-        text: t(language, 'userCreatedSuccess'),
+        title: t('success'),
+        text: t('userCreatedSuccess'),
         timer: 2000,
         showConfirmButton: false
       });
     } catch (error: any) {
       console.error('Error creating user:', error);
 
-      let errorMessage = t(language, 'registrationFailed');
+      let errorMessage = t('registrationFailed');
       if (error.message) {
         if (error.message.includes('already registered') || error.message.includes('User already registered')) {
-          errorMessage = t(language, 'emailAlreadyRegistered');
+          errorMessage = t('emailAlreadyRegistered');
         } else if (error.message.includes('Email address') && error.message.includes('is invalid')) {
-          errorMessage = t(language, 'invalidEmailBlocked');
+          errorMessage = t('invalidEmailBlocked');
         } else if (error.message.includes('invalid') || error.message.includes('Invalid email')) {
-          errorMessage = t(language, 'invalidEmailFormat');
+          errorMessage = t('invalidEmailFormat');
         } else if (error.message.includes('Password should be at least') || error.message.includes('password')) {
-          errorMessage = t(language, 'passwordMinRequired');
+          errorMessage = t('passwordMinRequired');
         } else if (error.message.includes('signup is disabled')) {
           errorMessage = 'User registration is currently disabled. Please contact an administrator.';
         } else if (error.message.includes('rate limit')) {
@@ -155,7 +155,7 @@ export default function AdminUsers() {
 
       await Swal.fire({
         icon: 'error',
-        title: t(language, 'registrationFailed'),
+        title: t('registrationFailed'),
         text: errorMessage,
         confirmButtonText: 'OK'
       });
@@ -255,14 +255,7 @@ export default function AdminUsers() {
 
     setIsDeleting(true);
 
-    const adminClient = getSupabaseAdmin();
-    if (!adminClient) {
-      toast({ title: 'Configuration Error', description: 'Admin functionality is not properly configured' });
-      setIsDeleting(false);
-      setDeleteDialogOpen(false);
-      setUserToDelete(null);
-      return;
-    }
+    const adminClient = supabase;
 
     try {
       const { error } = await adminClient.auth.admin.deleteUser(userToDelete);
@@ -294,13 +287,15 @@ export default function AdminUsers() {
 
   return (
     <>
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <Users className="h-7 w-7 text-blue-600 dark:text-blue-400" />
-            {t('usersList')}
-          </h1>
+      <div className="p-5 space-y-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+              {t('usersList')}
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">View all users and their details.</p>
+          </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button onClick={() => loadUsers()} className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 w-full sm:w-auto">
@@ -319,8 +314,8 @@ export default function AdminUsers() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <SoftCard className="p-4 bg-white dark:bg-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <Card className="p-4 bg-white dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">{t('totalUsers')}</p>
@@ -328,8 +323,8 @@ export default function AdminUsers() {
               </div>
               <Users className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
-          </SoftCard>
-          <SoftCard className="p-4 bg-white dark:bg-slate-800">
+          </Card>
+          <Card className="p-4 bg-white dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">{t('adminUsers')}</p>
@@ -337,27 +332,36 @@ export default function AdminUsers() {
               </div>
               <Crown className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
-          </SoftCard>
-          <SoftCard className="p-4 bg-white dark:bg-slate-800">
+          </Card>
+          <Card className="p-4 bg-white dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Customer Users</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">{t('vendorUsers')}</p>
+                <p className="text-2xl font-semibold text-green-600 dark:text-green-400 mt-1">{users.filter(u => u.role === 'vendor').length}</p>
+              </div>
+              <Users className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+            </div>
+          </Card>
+          <Card className="p-4 bg-white dark:bg-slate-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">{t('customerUsers')}</p>
                 <p className="text-2xl font-semibold text-green-600 dark:text-green-400 mt-1">{users.filter(u => u.role === 'customer').length}</p>
               </div>
               <Users className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
-          </SoftCard>
+          </Card>
         </div>
 
         {/* Search and Filter Bar */}
         <div className="mb-6">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                 <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
               </div>
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="relative">
@@ -384,9 +388,7 @@ export default function AdminUsers() {
                   <SelectItem value="customer">Customer</SelectItem>
                 </SelectContent>
               </Select>
-
               <div />
-
               <div />
             </div>
           </div>
@@ -399,7 +401,7 @@ export default function AdminUsers() {
           <div className="space-y-3">
             <div className="space-y-3 sm:space-y-0">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('usersList') || 'List Users'}</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">List {t('usersList') || 'List Users'}</h2>
                 <div className="flex justify-between items-center sm:gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500 dark:text-gray-400">Afficher</span>
@@ -531,189 +533,154 @@ export default function AdminUsers() {
                 />
               )}
             </div>
-          </SoftCard>
+          </Card>
           </div>
         )}
 
         {/* Create User Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-lg dark:shadow-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create New User</h3>
+        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+          <DialogContent className="max-w-md w-full">
+            <DialogHeader>
+              <DialogTitle>Create New User</DialogTitle>
+              <DialogDescription>Add a new user and assign a role.</DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleCreateUser} className="space-y-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password *</label>
+                <Input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
+                <Input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
+                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value as 'customer' | 'vendor' | 'admin' })}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="vendor">Vendor</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
                 <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition"
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition font-medium"
                 >
-                  <X className="h-6 w-6" />
+                  Create User
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium"
+                >
+                  Cancel
                 </button>
               </div>
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Password *
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    minLength={6}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Role
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'customer' | 'vendor' | 'admin' })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  >
-                    <option value="customer">Customer</option>
-                    <option value="vendor">Vendor</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div className="flex space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition font-medium"
-                  >
-                    Create User
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Edit User Modal */}
-        {showEditModal && editingUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-lg dark:shadow-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit User</h3>
+        <Dialog open={showEditModal && Boolean(editingUser)} onOpenChange={(open) => { if (!open) setShowEditModal(false); }}>
+          <DialogContent className="max-w-md w-full">
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>Update user details and role.</DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleEditUser} className="space-y-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Password (leave empty to keep current)</label>
+                <Input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  minLength={6}
+                />
+              </div>
+              {formData.password && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm New Password</label>
+                  <Input
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    minLength={6}
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
+                <Input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
+                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value as 'customer' | 'vendor' | 'admin' })}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="vendor">Vendor</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
                 <button
-                  onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition"
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition font-medium"
                 >
-                  <X className="h-6 w-6" />
+                  Update User
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium"
+                >
+                  Cancel
                 </button>
               </div>
-              <form onSubmit={handleEditUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    New Password (leave empty to keep current)
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    minLength={6}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
-                </div>
-                {formData.password && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Confirm New Password
-                    </label>
-                    <input
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      minLength={6}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    />
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Role
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'customer' | 'vendor' | 'admin' })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  >
-                    <option value="customer">Customer</option>
-                    <option value="vendor">Vendor</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div className="flex space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition font-medium"
-                  >
-                    Update User
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowEditModal(false)}
-                    className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Delete Confirmation Modal */}
         <ConfirmationDialog

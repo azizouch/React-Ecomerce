@@ -28,6 +28,7 @@ import {
   Home,
   Store,
   ShoppingBag,
+  Tags,
 } from 'lucide-react';
 
 import {
@@ -45,6 +46,7 @@ import { Badge } from '../ui/badge';
 import { useIsMobile } from '../../hooks/use-mobile';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export function AppSidebar() {
   const location = useLocation();
@@ -52,6 +54,7 @@ export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
   const authState = useAuth();
   const { t, language } = useLanguage();
+  const { isDark } = useTheme();
   const sidebarSide = language === 'ar' ? 'right' : 'left';
   const isMobile = useIsMobile();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -70,7 +73,7 @@ export function AppSidebar() {
         { titleKey: 'stores', url: '/admin/stores', icon: Store },
         { titleKey: 'orders', url: '/admin/orders', icon: ShoppingBag },
         { titleKey: 'products', url: '/admin/products', icon: Package },
-        { titleKey: 'categories', url: '/admin/categories', icon: Tag },
+        { titleKey: 'categories', url: '/admin/categories', icon: Tags },
         { titleKey: 'adminUsers', url: '/admin/users', icon: Users }, 
         { titleKey: 'activityLogs', url: '/admin/activity-logs', icon: Activity },
         { titleKey: 'notificationsPage', url: '/admin/notifications', icon: Bell },
@@ -221,7 +224,7 @@ export function AppSidebar() {
       {tooltip && createPortal(
         <div
           className={`fixed px-2 py-2 text-xs rounded shadow-lg pointer-events-none whitespace-nowrap
-            ${isDarkMode ? 'bg-white text-black' : 'bg-black text-white'}
+            ${isDark ? 'bg-white text-black' : 'bg-black text-white'}
           `}
           style={{
             left: tooltip.x + 12,

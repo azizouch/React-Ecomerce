@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminCatalog } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { Input } from '../../components/ui/input';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../../components/ui/select';
@@ -84,9 +84,11 @@ export default function AdminProducts() {
       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <Package className="h-6 w-6 text-blue-600" />
             <div>
-              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Products Overview</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+                Products Overview{/* {t('ordersList')} */}
+              </h1>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Manage products with search, filters, and pagination.</p>
             </div>
           </div>
@@ -189,13 +191,13 @@ export default function AdminProducts() {
       </div> */}
 
       {loading ? (
-        <SoftCard className="p-6">
+        <Card className="p-6">
           <div className="text-center text-gray-500">Loading products...</div>
-        </SoftCard>
+        </Card>
       ) : products.length === 0 ? (
-        <SoftCard className="p-6">
+        <Card className="p-6">
           <div className="text-center text-gray-500">No products found.</div>
-        </SoftCard>
+        </Card>
       ) : (
         <div className="space-y-5">
         <div className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">

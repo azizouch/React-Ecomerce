@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../lib/translations';
 import StatCard from '../../components/ui/StatCard';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import StatusBadge from '../../components/ui/StatusBadge';
 import CircularChart from '../../components/ui/CircularChart';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';

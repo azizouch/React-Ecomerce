@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Card } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Button } from '../../components/ui/button';
@@ -32,18 +32,21 @@ export default function AdminActivityLogs() {
   }, []);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-start sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-          <Activity className="h-7 w-7 text-blue-600 dark:text-blue-400" />
-          {t('activityLogs') || 'Activity Logs'}
-        </h1>
+    <div className="p-5 space-y-5">
+      <div className="flex items-start sm:items-center justify-between gap-5">
+        <div>
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+            {t('activityLogs') || 'Activity Logs'}
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">View all activity logs.</p>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm"><RefreshCw className="mr-2 h-4 w-4" />{t('refresh') || 'Refresh'}</Button>
         </div>
       </div>
 
-      <SoftCard>
+      <Card>
         <div className="overflow-x-auto">
           <Table className="bg-transparent min-w-full">
             <TableHeader>

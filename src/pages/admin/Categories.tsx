@@ -3,10 +3,10 @@ import { adminCatalog, Category } from '../../lib/supabase';
 import { calculateTotalPages } from '../../lib/pagination';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Card } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import Pagination from '../../components/ui/Pagination';
 import CategoryDetailModal from '../../components/modals/CategoryDetailModal';
-import { Tag, Search } from 'lucide-react';
+import { Tag, Search, Tags } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -54,13 +54,14 @@ export default function AdminCategories() {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+    <div className="space-y-5 p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Tags className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
             {t('adminCategories')}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             View all categories across all vendor stores.
           </p>
         </div>

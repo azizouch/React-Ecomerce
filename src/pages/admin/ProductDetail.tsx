@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button';
 import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
 import { ArrowLeft, Edit, Trash2, Save, X, Plus, Package } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import Swal from 'sweetalert2';
 import {
   Select,

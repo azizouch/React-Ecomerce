@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Card } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter} from '../../components/ui/card';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -27,14 +27,14 @@ export default function AdminSettings() {
   }, []);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-start sm:items-center justify-between gap-4 mb-6">
+    <div className="p-5 space-y-5">
+      <div className="flex items-start sm:items-center justify-between gap-5">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
           <Cog className="h-7 w-7 text-blue-600 dark:text-blue-400" />
           {t('settings') || 'Settings'}
         </h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => {}}>
+          <Button size="md" onClick={() => {}}>
             <RefreshCw className="mr-2 h-4 w-4" />
             {t('refresh') || 'Refresh'}
           </Button>
@@ -42,19 +42,27 @@ export default function AdminSettings() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <SoftCard>
-          <h3 className="text-lg font-semibold mb-3">Store Info</h3>
-          <div className="space-y-3">
-            <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} />
-          </div>
-        </SoftCard>
+        <Card>
+          <CardHeader>
+            <CardTitle>Store Info</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} />
+            </div>
+          </CardContent>
+        </Card>
 
-        <SoftCard>
-          <h3 className="text-lg font-semibold mb-3">Payment / Shipping</h3>
-          <div className="space-y-3">
-            <div className="text-sm text-gray-600 dark:text-gray-300">Configure payment, tax and shipping settings.</div>
-          </div>
-        </SoftCard>
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment / Shipping</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="text-sm text-gray-600 dark:text-gray-300">Configure payment, tax and shipping settings.</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

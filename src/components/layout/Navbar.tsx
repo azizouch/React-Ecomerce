@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingCart, User, LogOut, Moon, Sun, ChevronDown, Bell, Search, LayoutDashboard, Package, Tag, ShoppingBag, Users, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,12 +26,35 @@ export default function Navbar() {
   const [openDropdown, setOpenDropdown] = useState<'categories' | 'language' | 'notifications' | 'profile' | 'account' | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const prevScrollY = useRef(0);
 
   useEffect(() => {
     if (profile?.role !== 'admin') {
       loadCategories();
     }
   }, [profile?.role]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      const scrollDelta = currentScrollY - prevScrollY.current;
+
+      if (currentScrollY <= 0) {
+        setIsNavbarVisible(true);
+      } else if (scrollDelta > 0) {
+        setIsNavbarVisible(false);
+      } else if (scrollDelta < 0) {
+        setIsNavbarVisible(true);
+      }
+
+      prevScrollY.current = currentScrollY;
+    };
+
+    prevScrollY.current = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const loadCategories = async () => {
     try {
@@ -62,7 +85,10 @@ export default function Navbar() {
   const shopHubColor = isDark ? 'text-blue-600' : 'text-black';
 
   return (
-    <nav className="bg-white dark:bg-slate-900 shadow-md sticky top-0 z-50 transition-colors">
+    <nav
+      className="bg-white dark:bg-slate-900 shadow-md fixed top-0 left-0 right-0 z-50 transition-transform duration-300 will-change-transform"
+      style={{ transform: isNavbarVisible ? 'translateY(0)' : 'translateY(-100%)' }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left Section - Logo + Navigation Links */}

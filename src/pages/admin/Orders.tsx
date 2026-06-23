@@ -3,10 +3,10 @@ import { supabase, Order, OrderItem } from '../../lib/supabase';
 import { getPaginationParams, calculateTotalPages } from '../../lib/pagination';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import { Card } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
-import { ChevronDown, ChevronUp, Search, Truck, RefreshCw, Filter } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Truck, RefreshCw, Filter, ShoppingBag } from 'lucide-react';
 import { Input } from '../../components/ui/input';
 import {
   Select,
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+import { Button } from '@/components/ui/button';
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
 
@@ -146,79 +147,79 @@ export default function Orders() {
 
   return (
     <>
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-              <Truck className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+      <div className="p-5 space-y-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
               {t('ordersList')}
             </h1>
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <button onClick={() => loadOrders()} className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 w-full sm:w-auto">
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Actualiser
-                </button>
-              </div>
-            </div>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">View all orders and their status</p>
           </div>
-
-        {/* Search and Filter Bar */}
-        <div className="mb-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
-                <Input
-                  placeholder="Rechercher..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-                  <SelectValue placeholder="All Orders" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                  <SelectItem value="all">All Orders</SelectItem>
-                  <SelectItem value="0">Pending</SelectItem>
-                  <SelectItem value="1">Confirmed</SelectItem>
-                  <SelectItem value="2">Processing</SelectItem>
-                  <SelectItem value="3">Shipped</SelectItem>
-                  <SelectItem value="4">Delivered</SelectItem>
-                  <SelectItem value="5">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div />
-
-              <div />
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button onClick={() => loadOrders()}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                {t('refresh')}
+              </Button>
             </div>
           </div>
         </div>
 
+        {/* Search and Filter Bar */}
+        <div className="space-y-4">
+          {/* <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">Filtres</span>
+            </div>
+          </div> */}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+              <Input
+                placeholder="Rechercher..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                <SelectValue placeholder="All Orders" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <SelectItem value="all">All Orders</SelectItem>
+                <SelectItem value="0">Pending</SelectItem>
+                <SelectItem value="1">Confirmed</SelectItem>
+                <SelectItem value="2">Processing</SelectItem>
+                <SelectItem value="3">Shipped</SelectItem>
+                <SelectItem value="4">Delivered</SelectItem>
+                <SelectItem value="5">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div />
+
+            <div />
+          </div>
+        </div>
         {loading ? (
           <SkeletonLoader count={5} height="h-20" className="space-y-3" />
         ) : orders.length === 0 ? (
-          <SoftCard className="p-6">
+          <Card className="p-6">
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 text-lg">
                 {searchQuery || selectedStatus !== 'all' ? 'No orders match your filters' : 'No orders found'}
               </p>
             </div>
-          </SoftCard>
+          </Card>
         ) : (
           <div className="space-y-3">
             {orders.map((order) => (
-              <SoftCard key={order.id} hoverable className="p-6">
+              <Card key={order.id} hoverable className="p-6">
                 <div
                   className="cursor-pointer py-1"
                   onClick={() =>
@@ -356,7 +357,7 @@ export default function Orders() {
                     </div>
                   </div>
                 )}
-              </SoftCard>
+              </Card>
             ))}
 
             {/* Pagination Controls */}
@@ -372,7 +373,7 @@ export default function Orders() {
             )}
           </div>
         )}
-        </div>
+      </div>
     </>
   );
 }

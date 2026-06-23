@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const loadProfile = async (userId: string) => {
+  const loadProfile = async (userId: string, retries = 1): Promise<void> => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -89,7 +89,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(data);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // If the request was unauthorized, try once to recover (token refresh race)
+      const isUnauthorized =
+        error && (error.status === 401 || /unauthorized/i.test(String(error.message || '')));
+
+      if (isUnauthorized && retries > 0) {
+        console.warn('AuthContext: unauthorized loading profile — retrying after refresh attempt');
+        try {
+          // Ask supabase for the current session (this may trigger internal refresh)
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData && sessionData.session) {
+            // small delay to let any background refresh complete
+            await new Promise((res) => setTimeout(res, 500));
+            return loadProfile(userId, retries - 1);
+          }
+        } catch (e) {
+          // fallthrough to clearing state below
+        }
+      }
+
       // Silently fail - profile loading errors shouldn't break the app
     } finally {
       setLoading(false);

@@ -3,6 +3,7 @@ import { adminCatalog } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { t } from '../../lib/translations';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import { MessageCircle, Send, MoreVertical, Mail, Phone, ShoppingBag, Clock, AlertCircle, Plus } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';

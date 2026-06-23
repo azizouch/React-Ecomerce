@@ -9,6 +9,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../../components/ui/select';
 import Pagination from '../../components/ui/Pagination';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 
 type StoreRow = {
   id: string;
@@ -259,7 +260,10 @@ export default function AdminStores() {
     <div className="p-5 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
         <div>
-          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">All Stores</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Store className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+            All Stores{/* {t('ordersList')} */}
+          </h1>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">View all vendor stores and their sales performance.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">

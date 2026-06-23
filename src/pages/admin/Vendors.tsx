@@ -11,6 +11,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
@@ -173,9 +174,11 @@ export default function AdminVendors() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <Truck className="h-6 w-6 text-blue-600" />
             <div>
-              <h1 className="text-lg sm:text-xl font-bold">Vendors Management</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+                Vendors Management{/* {t('ordersList')} */}
+              </h1>
               <p className="text-xs sm:text-sm text-gray-600">Manage vendor accounts and keep the vendor directory up to date.</p>
             </div>
           </div>
@@ -187,7 +190,7 @@ export default function AdminVendors() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+        <Card className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Total Vendors</p>
@@ -195,9 +198,9 @@ export default function AdminVendors() {
             </div>
             <Users className="w-8 h-8 text-blue-500 opacity-80" />
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+        <Card className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Active Vendors</p>
@@ -205,9 +208,9 @@ export default function AdminVendors() {
             </div>
             <UserCheck className="w-8 h-8 text-green-500 opacity-80" />
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+        <Card className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Pending Approval</p>
@@ -215,9 +218,9 @@ export default function AdminVendors() {
             </div>
             <AlertTriangle className="w-8 h-8 text-purple-500 opacity-80" />
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+        <Card className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">Suspended Vendors</p>
@@ -225,7 +228,7 @@ export default function AdminVendors() {
             </div>
             <AlertTriangle className="w-8 h-8 text-orange-500 opacity-80" />
           </div>
-        </div>
+        </Card>
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
