@@ -74,7 +74,7 @@ export function AppSidebar() {
         { titleKey: 'orders', url: '/admin/orders', icon: ShoppingBag },
         { titleKey: 'products', url: '/admin/products', icon: Package },
         { titleKey: 'categories', url: '/admin/categories', icon: Tags },
-        { titleKey: 'adminUsers', url: '/admin/users', icon: Users }, 
+        { titleKey: 'adminUsers', url: '/admin/users', icon: Users },
         { titleKey: 'activityLogs', url: '/admin/activity-logs', icon: Activity },
         { titleKey: 'notificationsPage', url: '/admin/notifications', icon: Bell },
         { titleKey: 'storeSettings', url: '/admin/settings', icon: Settings },

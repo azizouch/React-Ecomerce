@@ -72,18 +72,6 @@ export default function AdminVendors() {
     if (countsQuery.data) setVendorCounts(countsQuery.data as { total: number; active: number; pendingApproval: number; suspended: number });
   }, [countsQuery.data]);
 
-  const createVendor = async (vendor: {
-    email: string;
-    password: string;
-    full_name: string;
-    phone?: string | null;
-    address?: string | null;
-    city?: string | null;
-    role?: string;
-  }) => {
-    return await createUserWithAuthAdmin(vendor);
-  };
-
   const handleCreateVendor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
@@ -383,7 +371,8 @@ export default function AdminVendors() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
-              <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
+              <Input type="email" name="vendor_email"
+                autoComplete="off" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -392,7 +381,8 @@ export default function AdminVendors() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password</label>
-                <Input type="password" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} required />
+                <Input type="password" name="vendor_password"
+                  autoComplete="new-password" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} required />
               </div>
             </div>
 

@@ -25,7 +25,7 @@ function getSupabaseClient(): SupabaseClient {
 
 export const supabase = getSupabaseClient();
 
-// Create auth user + profile using RPC-only vendor creation.
+// Create auth user + profile using RPC-first vendor creation.
 export async function createUserWithAuthAdmin(userData: {
   email: string;
   password: string;
@@ -35,51 +35,73 @@ export async function createUserWithAuthAdmin(userData: {
   city?: string | null;
   role?: string;
 }) {
-  const email = String(userData.email || '').toLowerCase().trim();
-  const password = userData.password;
-  const full_name = userData.full_name || null;
-  const role = userData.role || 'vendor';
+  const email = userData.email.toLowerCase().trim();
 
-  try {
-    const { data: rpcResult, error: rpcError } = await supabase.rpc('create_auth_user_admin', {
+  const { data, error } = await supabase.rpc(
+    'create_auth_user_admin',
+    {
       user_email: email,
-      user_password: password,
-      user_metadata: { full_name },
-      profile_full_name: full_name,
+      user_password: userData.password,
+
+      user_metadata: {
+        full_name: userData.full_name || null,
+        role: userData.role || 'vendor',
+      },
+
+      profile_full_name: userData.full_name || null,
       profile_phone: userData.phone || null,
       profile_address: userData.address || null,
       profile_city: userData.city || null,
-      profile_role: role,
-    } as any);
+      profile_role: userData.role || 'vendor',
+    }
+  );
 
-    if (rpcError) {
-      throw rpcError;
+  if (error) {
+    console.error('RPC Error:', error);
+
+    if (
+      error.message?.includes('duplicate') ||
+      error.message?.includes('already exists') ||
+      error.code === '23505'
+    ) {
+      throw new Error('A user with this email already exists.');
     }
 
-    const parsedResult = typeof rpcResult === 'string' ? JSON.parse(rpcResult) : rpcResult;
-    if (parsedResult && typeof parsedResult === 'object' && 'error' in parsedResult) {
-      const rawMessage = (parsedResult as any).error || 'Unknown RPC error';
-      const code = (parsedResult as any).code || '';
-      const message = code === '23505' || /duplicate key/i.test(rawMessage)
-        ? 'A user with this email already exists.'
-        : rawMessage;
-      throw new Error(`RPC create_auth_user_admin failed: ${message}${code ? ` (${code})` : ''}`);
-    }
-
-    const createdId =
-      (parsedResult as any)?.id ||
-      (Array.isArray(parsedResult) && (parsedResult as any)[0]?.id) ||
-      (Array.isArray(parsedResult) && (parsedResult as any)[0]?.result?.id);
-
-    if (!createdId) {
-      throw new Error(`RPC did not return a user id. Response: ${JSON.stringify(parsedResult)}`);
-    }
-
-    return { user: { id: createdId }, profile: (parsedResult as any)?.profile ?? null, authCreated: true };
-  } catch (err) {
-    throw err;
+    throw new Error(error.message || 'Failed to create vendor.');
   }
+
+  const result = typeof data === 'string' ? JSON.parse(data) : data;
+
+  if (!result) {
+    throw new Error('No response returned from create_auth_user_admin.');
+  }
+
+  if (result.error) {
+    if (
+      result.code === '23505' ||
+      String(result.error).includes('duplicate')
+    ) {
+      throw new Error('A user with this email already exists.');
+    }
+
+    throw new Error(result.error);
+  }
+
+  const userId = result.user_id || result.id;
+
+  if (!userId) {
+    throw new Error('User ID was not returned by create_auth_user_admin.');
+  }
+
+  return {
+    user: {
+      id: userId,
+      email,
+    },
+    authCreated: true,
+  };
 }
+
 
 // Update auth user + profile using RPC-only flow
 export async function updateUserWithAuthAdmin(userData: {
@@ -119,6 +141,81 @@ export async function updateUserWithAuthAdmin(userData: {
   } catch (err) {
     throw err;
   }
+}
+
+export async function deleteAuthUserById(authId: string) {
+  let lastError: Error | null = null;
+
+  const isUuidV4Like = (value: string) => {
+    // Accept any RFC4122 UUID, not just v4.
+    // Example: 550e8400-e29b-41d4-a716-446655440000
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  };
+
+  if (!authId || typeof authId !== 'string') {
+    return {
+      success: false,
+      error: new Error(`Invalid authId (expected uuid string), got: ${String(authId)}`),
+    };
+  }
+
+  if (!isUuidV4Like(authId)) {
+    return {
+      success: false,
+      error: new Error(`authId is not a valid UUID: ${authId}`),
+    };
+  }
+
+  const deleteAuthUserAttempts = [
+    // delete_auth_user(user_id uuid)
+    { name: 'delete_auth_user', args: { user_id: authId } },
+  ];
+
+  for (const attempt of deleteAuthUserAttempts) {
+    try {
+      const { error } = await supabase.rpc(attempt.name, attempt.args as any);
+      if (!error) {
+        return { success: true, error: null };
+      }
+      lastError = error;
+      console.warn(`${attempt.name} RPC failed:`, error);
+    } catch (err) {
+      lastError = err as Error;
+      console.warn(`${attempt.name} RPC threw:`, err);
+    }
+  }
+
+  const deleteSimpleAttempts = [
+    // delete_auth_user_simple(user_id uuid)
+    { name: 'delete_auth_user_simple', args: { user_id: authId } },
+  ];
+
+
+  for (const attempt of deleteSimpleAttempts) {
+    try {
+      const { error } = await supabase.rpc(attempt.name, attempt.args as any);
+      if (!error) {
+        return { success: true, error: null };
+      }
+      lastError = error;
+      console.warn(`${attempt.name} RPC failed:`, error);
+    } catch (err) {
+      lastError = err as Error;
+      console.warn(`${attempt.name} RPC threw:`, err);
+    }
+  }
+
+  return {
+    success: false,
+    error: lastError || new Error('Unable to delete auth user'),
+  };
+}
+
+
+export async function deleteVendorById(vendorId: string) {
+  const authDelete = await deleteAuthUserById(vendorId);
+  const { error } = await supabase.from('profiles').delete().eq('id', vendorId);
+  return { authDelete, profileError: error };
 }
 
 export type Profile = {

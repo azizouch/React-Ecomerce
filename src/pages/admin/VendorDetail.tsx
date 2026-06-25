@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, deleteVendorById } from '../../lib/supabase';
 import { useProfile } from '../../hooks/useProfile';
+import { useToast } from '../../hooks/use-toast';
+import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
 import { Button } from '../../components/ui/button';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
-import StatusBadge from '../../components/ui/StatusBadge';
 
 export default function VendorDetail() {
   const { id } = useParams<{ id: string }>();
@@ -13,9 +14,12 @@ export default function VendorDetail() {
 
   const [vendor, setVendor] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const { data: cachedVendor, isLoading: isProfileLoading } = useProfile(id);
+  const { data: cachedVendor } = useProfile(id);
   const [stores, setStores] = useState<any[]>([]);
   const [stats, setStats] = useState({ products: 0, orders: 0, categories: 0 });
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!id) {
@@ -78,17 +82,40 @@ export default function VendorDetail() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!vendor) return;
-    const ok = window.confirm('Delete this vendor? This action cannot be undone.');
-    if (!ok) return;
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!vendor) return;
+    setIsDeleting(true);
+
     try {
-      const { error } = await supabase.from('profiles').delete().eq('id', vendor.id);
-      if (error) throw error;
+      const { authDelete, profileError } = await deleteVendorById(vendor.id);
+      if (profileError) throw profileError;
+
+      if (!authDelete.success) {
+        toast({
+          title: 'Vendor deleted',
+          description: 'Profile removed but auth cleanup failed. Verify server logs.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: 'Vendor deleted successfully' });
+      }
+
       navigate('/admin/vendors');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete vendor', err);
-      alert('Failed to delete vendor');
+      toast({
+        title: 'Failed to delete vendor',
+        description: err?.message || 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteOpen(false);
     }
   };
 
@@ -119,6 +146,16 @@ export default function VendorDetail() {
           </Button>
         </div>
       </div>
+      <ConfirmationDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete vendor"
+        description="This will permanently delete the vendor and their profile. This action cannot be undone."
+        confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        variant="destructive"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2">

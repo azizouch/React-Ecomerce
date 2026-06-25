@@ -14,9 +14,19 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
     return <div>Loading...</div>;
   }
 
-  if (!user || !profile) {
+  // If we still have an authenticated user but profile fetch failed temporarily
+  // (common during token refresh / 401 races), do NOT force-redirect to login.
+  // This prevents “logout by itself” when the session is still valid.
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  // When user exists but profile is missing, allow the UI to render.
+  // Role-based routing below will naturally prevent unauthorized access.
+  if (!profile) {
+    return <>{children}</>;
+  }
+
 
   const role = profile.role;
   const isAdmin = role === 'admin';

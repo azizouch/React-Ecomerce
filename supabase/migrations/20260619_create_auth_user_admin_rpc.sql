@@ -48,18 +48,20 @@ BEGIN
     created_at,
     updated_at,
     raw_user_meta_data,
+    raw_app_meta_data,
     is_super_admin,
     role,
     aud
   ) VALUES (
     new_user_id,
     instance_uuid,
-    user_email,
+    lower(user_email),
     crypt(user_password, gen_salt('bf')),
     now(),
     now(),
     now(),
-    user_metadata,
+    COALESCE(user_metadata, '{}'::json),
+    '{}'::json,
     false,
     'authenticated',
     'authenticated'
@@ -79,8 +81,8 @@ BEGIN
     gen_random_uuid(),
     new_user_id,
     'email',
-    user_email,
-    json_build_object('sub', new_user_id::text, 'email', user_email),
+    lower(user_email),
+    json_build_object('sub', new_user_id::text, 'email', lower(user_email)),
     now(),
     now(),
     now()

@@ -25,6 +25,8 @@ const VendorCategories = lazy(() => import('./pages/vendor/Categories'));
 const AdminCategories = lazy(() => import('./pages/admin/Categories'));
 const AdminOrders = lazy(() => import('./pages/admin/Orders'));
 const AdminUsers = lazy(() => import('./pages/admin/Users'));
+
+
 const AdminProfile = lazy(() => import('./pages/admin/Profile'));
 const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
 const AdminProductDetail = lazy(() => import('./pages/admin/ProductDetail'));
@@ -224,6 +226,7 @@ function AppContent() {
           }
         />
         <Route
+
           path="/admin/profile"
           element={
             <ProtectedRoute>
