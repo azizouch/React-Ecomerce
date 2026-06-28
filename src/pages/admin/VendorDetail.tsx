@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase, deleteVendorById } from '../../lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase, deleteAuthUserById } from '../../lib/supabase';
 import { useProfile } from '../../hooks/useProfile';
 import { useToast } from '../../hooks/use-toast';
 import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
@@ -20,6 +21,7 @@ export default function VendorDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (!id) {
@@ -92,19 +94,13 @@ export default function VendorDetail() {
     setIsDeleting(true);
 
     try {
-      const { authDelete, profileError } = await deleteVendorById(vendor.id);
-      if (profileError) throw profileError;
-
-      if (!authDelete.success) {
-        toast({
-          title: 'Vendor deleted',
-          description: 'Profile removed but auth cleanup failed. Verify server logs.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({ title: 'Vendor deleted successfully' });
-      }
-
+      await deleteAuthUserById(vendor.id);
+      qc.invalidateQueries({ queryKey: ['vendors'] });
+      qc.invalidateQueries({ queryKey: ['vendorCounts'] });
+      toast({
+        title: 'Succès',
+        description: 'Vendor deleted successfully',
+      });
       navigate('/admin/vendors');
     } catch (err: any) {
       console.error('Failed to delete vendor', err);

@@ -276,7 +276,7 @@ export default function AdminUsers() {
 
       toast({
         title: 'Succès',
-        description: 'Client supprimé avec succès',
+        description: 'User deleted with success',
       });
     } catch (error: any) {
       console.error("Error deleting user:", error);

@@ -48,41 +48,68 @@ serve(async (req) => {
       } = payload;
 
       if (!email || !password) {
-        return jsonResponse(
-          { error: "Email and password are required." },
-          400
-        );
-      }
+    return jsonResponse(
+      { error: "Email and password are required." },
+      400
+    );
+  }
 
-      console.log("Creating user...");
+  // ==========================================
+  // CHECK IF EMAIL ALREADY EXISTS
+  // ==========================================
 
-      const { data: authData, error: authError } =
-        await admin.auth.admin.createUser({
-          email,
-          password,
-          email_confirm: true,
-          user_metadata: {
-            full_name,
-            phone,
-            address,
-            city,
-            role,
-          },
-          app_metadata: {
-            role,
-          },
-        });
+  const { data: usersData, error: usersError } =
+    await admin.auth.admin.listUsers();
 
-      if (authError || !authData?.user) {
-        return jsonResponse(
-          {
-            error:
-              authError?.message ??
-              "Unable to create authentication user.",
-          },
-          409
-        );
-      }
+  if (usersError) {
+    return jsonResponse(
+      { error: usersError.message },
+      500
+    );
+  }
+
+  const existingUser = usersData.users.find(
+    (user) => user.email?.toLowerCase() === email.toLowerCase()
+  );
+
+  if (existingUser) {
+    return jsonResponse(
+      {
+        error: "A user with this email already exists.",
+      },
+      409
+    );
+  }
+
+  // ==========================================
+  // CREATE USER
+  // ==========================================
+
+  const { data: authData, error: authError } =
+    await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        full_name,
+        phone,
+        address,
+        city,
+        role,
+      },
+      app_metadata: {
+        role,
+      },
+    });
+
+  if (authError) {
+    return jsonResponse(
+      {
+        error: authError.message,
+      },
+      500
+    );
+  }
 
       const { error: profileError } = await admin
         .from("profiles")

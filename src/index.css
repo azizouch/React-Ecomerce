@@ -50,6 +50,14 @@ body[style*="margin-right"] {
   margin-right: 0 !important;
 }
 
+.swal-popup {
+  z-index: 999999 !important;
+}
+
+.swal2-container {
+  z-index: 999999 !important;
+}
+
 /* Center notification dropdown for all small screens */
 @media (max-width: 639px) {
   [data-radix-popper-content-wrapper]:has(.mobile-centered-dropdown) {

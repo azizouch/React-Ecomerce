@@ -6,17 +6,18 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { useQueryClient } from '@tanstack/react-query';
 import { useVendors, useVendorCounts } from '../../hooks/useVendors';
 import { Button } from '../../components/ui/button';
-import { createUserWithAuthAdmin } from '../../lib/supabase';
+import { createVendorWithAuthAdmin } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../../components/ui/card';
+import { Card } from '../../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../../components/ui/select';
 import { Plus, Eye, Edit, Phone, MapPin, UserCheck, Users, AlertTriangle, Search, Truck } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 interface VendorProfile {
   id: string;
@@ -62,14 +63,18 @@ export default function AdminVendors() {
   useEffect(() => {
     setLoading(vendorsQuery.isLoading);
     if (vendorsQuery.data) {
-      setVendors(vendorsQuery.data.data);
-      setFilteredCount(vendorsQuery.data.count);
+      const response = vendorsQuery.data as unknown as { data: VendorProfile[]; count: number };
+      setVendors(response.data);
+      setFilteredCount(response.count);
     }
   }, [vendorsQuery.data, vendorsQuery.isLoading]);
 
   const countsQuery = useVendorCounts();
   useEffect(() => {
-    if (countsQuery.data) setVendorCounts(countsQuery.data as { total: number; active: number; pendingApproval: number; suspended: number });
+    if (countsQuery.data) {
+      const counts = countsQuery.data as unknown as { total: number; active: number; pendingApproval: number; suspended: number };
+      setVendorCounts(counts);
+    }
   }, [countsQuery.data]);
 
   const handleCreateVendor = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -125,14 +130,13 @@ export default function AdminVendors() {
       }
 
       if (currentProfile?.role === 'admin') {
-        await createUserWithAuthAdmin({
+        await createVendorWithAuthAdmin({
           email: normalizedEmail,
           password: formData.password,
           full_name: formData.full_name,
           phone: formData.phone || null,
           address: formData.address || null,
           city: formData.city || null,
-          role: 'vendor',
         });
       }
 
@@ -141,14 +145,14 @@ export default function AdminVendors() {
       qc.invalidateQueries({ queryKey: ['vendors'] });
       qc.invalidateQueries({ queryKey: ['vendorCounts'] });
     } catch (error: any) {
-      console.error('Error creating vendor:', error, { stack: error?.stack });
-      const rawMessage = error?.message || (error?.status ? `Server error ${error.status}` : 'Failed to create vendor.');
-      const friendly = /A user with this email already exists/i.test(rawMessage)
-        ? 'A user with this email already exists.'
-        : rawMessage;
-
-      setErrorMessage(friendly + (error?.details ? ` — ${error.details}` : ''));
-    } finally {
+      setCreateOpen(false);
+      await Swal.fire({
+        icon: "error",
+        title: "Cannot create vendor",
+        text: error.message,
+      });
+    }
+    finally {
       setSaving(false);
     }
   };

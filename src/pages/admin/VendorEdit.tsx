@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { supabase, updateUserWithAuthAdmin } from '../../lib/supabase';
+import { supabase, updateVendorWithAuthAdmin } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
@@ -99,7 +99,7 @@ export default function VendorEdit() {
         city: formData.city || null,
       };
 
-      const result = await updateUserWithAuthAdmin({
+      const result = await updateVendorWithAuthAdmin({
         id: String(payload.id),
         email: payload.email ?? null,
         password: payload.password ?? null,

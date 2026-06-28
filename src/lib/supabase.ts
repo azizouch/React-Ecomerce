@@ -71,10 +71,32 @@ export async function createUserWithAuthAdmin(userData: {
     }
   );
 
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
+  if (error) {
+    if ("context" in error && error.context instanceof Response) {
+      const body = await error.context.json();
+
+      throw new Error(body.error ?? body.message ?? "Unknown error");
+    }
+
+    throw error;
+  }
 
   return data;
+}
+
+export async function createVendorWithAuthAdmin(vendorData: {
+  email: string;
+  password: string;
+  full_name?: string;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  role?: string;
+}) {
+  return createUserWithAuthAdmin({
+    ...vendorData,
+    role: 'vendor',
+  });
 }
 
 // Update auth user + profile via the admin edge function.
@@ -116,6 +138,21 @@ export async function updateUserWithAuthAdmin(userData: {
   return data;
 }
 
+export async function updateVendorWithAuthAdmin(vendorData: {
+  id: string;
+  email?: string | null;
+  password?: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+}) {
+  return updateUserWithAuthAdmin({
+    ...vendorData,
+    role: 'vendor',
+  });
+}
+
 export async function deleteAuthUserById(authId: string) {
   const { data, error } = await supabase.functions.invoke("create-vendor", {
     body: {
@@ -137,32 +174,25 @@ export async function deleteAuthUserById(authId: string) {
 
   return data;
 }
-// export async function deleteVendorById(vendorId: string) {
-//   try {
-//     const { data, error } = await supabase.functions.invoke(
-//       'create-vendor',
-//       {
-//         body: {
-//           action: 'delete',
-//           id: vendorId,
-//         },
-//       }
-//     );
 
-//     if (error) throw error;
-//     if (data?.error) throw new Error(data.error);
+export async function deleteVendorById(vendorId: string) {
+  try {
+    await deleteAuthUserById(vendorId);
 
-//     return { authDelete: { success: true, error: null }, profileError: null };
-//   } catch (error) {
-//     return {
-//       authDelete: {
-//         success: false,
-//         error: error instanceof Error ? error : new Error(String(error)),
-//       },
-//       profileError: error instanceof Error ? error : new Error(String(error)),
-//     };
-//   }
-// }
+    return {
+      authDelete: { success: true, error: null },
+      profileError: null,
+    };
+  } catch (error) {
+    return {
+      authDelete: {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error)),
+      },
+      profileError: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
+}
 
 // ============================================================================
 // CUSTOMER HELPERS - for customer pages (Home, Shop, ProductDetail, Cart, etc)
@@ -305,12 +335,11 @@ export const customerCatalog = {
       const uniqueSizes = [...new Set((sizesData || []).map(s => s.size))].sort();
 
       // Load available colors
-      const { data: colorsData, error: colorsError } = await supabase
+      const { data: colorsData } = await supabase
         .from('product_colors')
         .select('id, name, hex_code')
         .neq('hex_code', null);
 
-      if (colorsError) throw colorsError;
       const uniqueColors = [...new Set((colorsData || []).map(c => JSON.stringify({ id: c.id, name: c.name, hex: c.hex_code })))].map(c => JSON.parse(c));
 
       return { sizes: uniqueSizes, colors: uniqueColors, error: null };
@@ -383,7 +412,7 @@ export const customerCatalog = {
     if (error) return { data: null, error };
 
     // load colors with images and sizes
-    const { data: colorsData, error: colorsError } = await supabase
+    const { data: colorsData } = await supabase
       .from('product_colors')
       .select('*')
       .eq('product_id', id);
@@ -634,7 +663,7 @@ export const adminCatalog = {
     if (error) return { data: null, error };
 
     // load colors with images and sizes
-    const { data: colorsData, error: colorsError } = await supabase
+    const { data: colorsData } = await supabase
       .from('product_colors')
       .select('*')
       .eq('product_id', id);
