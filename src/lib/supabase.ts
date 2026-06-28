@@ -1,4 +1,29 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type {
+  Profile,
+  Category,
+  Product,
+  ProductImage,
+  ProductColor,
+  ProductColorImage,
+  ProductColorSize,
+  CartItem,
+  Order,
+  OrderItem,
+} from '../types';
+
+export type {
+  Profile,
+  Category,
+  Product,
+  ProductImage,
+  ProductColor,
+  ProductColorImage,
+  ProductColorSize,
+  CartItem,
+  Order,
+  OrderItem,
+};
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -25,7 +50,7 @@ function getSupabaseClient(): SupabaseClient {
 
 export const supabase = getSupabaseClient();
 
-// Create auth user + profile using RPC-first vendor creation.
+// Create auth user + profile via the admin edge function.
 export async function createUserWithAuthAdmin(userData: {
   email: string;
   password: string;
@@ -35,75 +60,24 @@ export async function createUserWithAuthAdmin(userData: {
   city?: string | null;
   role?: string;
 }) {
-  const email = userData.email.toLowerCase().trim();
-
-  const { data, error } = await supabase.rpc(
-    'create_auth_user_admin',
+  const { data, error } = await supabase.functions.invoke(
+    "create-vendor",
     {
-      user_email: email,
-      user_password: userData.password,
-
-      user_metadata: {
-        full_name: userData.full_name || null,
-        role: userData.role || 'vendor',
+      body: {
+        action: "create",
+        ...userData,
+        role: userData.role ?? "vendor",
       },
-
-      profile_full_name: userData.full_name || null,
-      profile_phone: userData.phone || null,
-      profile_address: userData.address || null,
-      profile_city: userData.city || null,
-      profile_role: userData.role || 'vendor',
     }
   );
 
-  if (error) {
-    console.error('RPC Error:', error);
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
 
-    if (
-      error.message?.includes('duplicate') ||
-      error.message?.includes('already exists') ||
-      error.code === '23505'
-    ) {
-      throw new Error('A user with this email already exists.');
-    }
-
-    throw new Error(error.message || 'Failed to create vendor.');
-  }
-
-  const result = typeof data === 'string' ? JSON.parse(data) : data;
-
-  if (!result) {
-    throw new Error('No response returned from create_auth_user_admin.');
-  }
-
-  if (result.error) {
-    if (
-      result.code === '23505' ||
-      String(result.error).includes('duplicate')
-    ) {
-      throw new Error('A user with this email already exists.');
-    }
-
-    throw new Error(result.error);
-  }
-
-  const userId = result.user_id || result.id;
-
-  if (!userId) {
-    throw new Error('User ID was not returned by create_auth_user_admin.');
-  }
-
-  return {
-    user: {
-      id: userId,
-      email,
-    },
-    authCreated: true,
-  };
+  return data;
 }
 
-
-// Update auth user + profile using RPC-only flow
+// Update auth user + profile via the admin edge function.
 export async function updateUserWithAuthAdmin(userData: {
   id: string;
   email?: string | null;
@@ -114,41 +88,31 @@ export async function updateUserWithAuthAdmin(userData: {
   city?: string | null;
   role?: string | null;
 }) {
-  const payload: any = {
-    p_user_id: userData.id,
-    p_new_email: userData.email ?? null,
-    p_new_password: userData.password ?? null,
-    p_user_metadata: userData.full_name ? { full_name: userData.full_name } : {},
-    p_profile_full_name: userData.full_name ?? null,
-    p_profile_phone: userData.phone ?? null,
-    p_profile_address: userData.address ?? null,
-    p_profile_city: userData.city ?? null,
-    p_profile_role: userData.role ?? null,
-  };
-
-  try {
-    const { data: rpcResult, error: rpcError } = await supabase.rpc('update_auth_user_admin', payload as any);
-    if (rpcError) throw rpcError;
-
-    const parsed = typeof rpcResult === 'string' ? JSON.parse(rpcResult) : rpcResult;
-    if (parsed && parsed.error) {
-      const code = (parsed as any).code || '';
-      const message = (parsed as any).error || 'Unknown RPC error';
-      throw new Error(`${message}${code ? ` (${code})` : ''}`);
+  const { data, error } = await supabase.functions.invoke(
+    "create-vendor",
+    {
+      body: {
+        action: "update",
+        id: userData.id,
+        email: userData.email ?? undefined,
+        password: userData.password ?? undefined,
+        full_name: userData.full_name ?? undefined,
+        phone: userData.phone ?? undefined,
+        address: userData.address ?? undefined,
+        city: userData.city ?? undefined,
+        role: userData.role ?? undefined,
+      },
     }
+  );
 
-    return { profile: (parsed as any)?.profile ?? null };
-  } catch (err) {
-    throw err;
-  }
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+
+  return { profile: data?.profile ?? null };
 }
 
 export async function deleteAuthUserById(authId: string) {
-  let lastError: Error | null = null;
-
   const isUuidV4Like = (value: string) => {
-    // Accept any RFC4122 UUID, not just v4.
-    // Example: 550e8400-e29b-41d4-a716-446655440000
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   };
 
@@ -166,154 +130,53 @@ export async function deleteAuthUserById(authId: string) {
     };
   }
 
-  const deleteAuthUserAttempts = [
-    // delete_auth_user(user_id uuid)
-    { name: 'delete_auth_user', args: { user_id: authId } },
-  ];
+  try {
+    const { data, error } = await supabase.functions.invoke('create-vendor', {
+      body: {
+        action: 'delete',
+        id: authId,
+      },
+    });
 
-  for (const attempt of deleteAuthUserAttempts) {
-    try {
-      const { error } = await supabase.rpc(attempt.name, attempt.args as any);
-      if (!error) {
-        return { success: true, error: null };
-      }
-      lastError = error;
-      console.warn(`${attempt.name} RPC failed:`, error);
-    } catch (err) {
-      lastError = err as Error;
-      console.warn(`${attempt.name} RPC threw:`, err);
-    }
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    return { success: true, error: null };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error : new Error(String(error)),
+    };
   }
-
-  const deleteSimpleAttempts = [
-    // delete_auth_user_simple(user_id uuid)
-    { name: 'delete_auth_user_simple', args: { user_id: authId } },
-  ];
-
-
-  for (const attempt of deleteSimpleAttempts) {
-    try {
-      const { error } = await supabase.rpc(attempt.name, attempt.args as any);
-      if (!error) {
-        return { success: true, error: null };
-      }
-      lastError = error;
-      console.warn(`${attempt.name} RPC failed:`, error);
-    } catch (err) {
-      lastError = err as Error;
-      console.warn(`${attempt.name} RPC threw:`, err);
-    }
-  }
-
-  return {
-    success: false,
-    error: lastError || new Error('Unable to delete auth user'),
-  };
 }
 
 
 export async function deleteVendorById(vendorId: string) {
-  const authDelete = await deleteAuthUserById(vendorId);
-  const { error } = await supabase.from('profiles').delete().eq('id', vendorId);
-  return { authDelete, profileError: error };
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      'create-vendor',
+      {
+        body: {
+          action: 'delete',
+          id: vendorId,
+        },
+      }
+    );
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    return { authDelete: { success: true, error: null }, profileError: null };
+  } catch (error) {
+    return {
+      authDelete: {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error)),
+      },
+      profileError: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
 }
-
-export type Profile = {
-  id: string;
-  email: string;
-  full_name: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
-  address: string | null;
-  city: string | null;
-  role: 'customer' | 'vendor' | 'admin';
-  created_at: string;
-};
-
-export type Category = {
-  id: string;
-  name: string;
-  description: string | null;
-  created_at: string;
-};
-
-export type Product = {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  image_url: string | null;
-  category_id: string | null;
-  stock: number;
-  size: string | null;
-  // Optional relations
-  images?: ProductImage[];
-  colors?: ProductColor[];
-  created_at: string;
-};
-
-export type ProductImage = {
-  id: string;
-  product_id: string;
-  image_url: string;
-  color: string;
-  sort_order: number;
-  created_at: string;
-};
-
-export type ProductColor = {
-  id: string;
-  product_id: string;
-  name: string;
-  hex_code: string | null;
-  created_at: string;
-  images?: ProductColorImage[];
-  sizes?: ProductColorSize[];
-};
-
-export type ProductColorImage = {
-  id: string;
-  color_id: string;
-  image_url: string;
-  sort_order: number;
-  created_at: string;
-};
-
-export type ProductColorSize = {
-  id: string;
-  color_id: string;
-  size: string;
-  stock: number;
-  created_at: string;
-};
-
-export type CartItem = {
-  id: string;
-  user_id: string;
-  product_id: string;
-  quantity: number;
-  created_at: string;
-  products?: Product;
-};
-
-export type Order = {
-  id: string;
-  user_id: string;
-  total_amount: number;
-  status: number | string;
-  created_at: string;
-};
-
-export type OrderItem = {
-  id: string;
-  order_id: string;
-  product_id: string;
-  quantity: number;
-  price: number;
-  created_at: string;
-  products?: Product;
-};
 
 // ============================================================================
 // CUSTOMER HELPERS - for customer pages (Home, Shop, ProductDetail, Cart, etc)
