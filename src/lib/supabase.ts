@@ -88,95 +88,81 @@ export async function updateUserWithAuthAdmin(userData: {
   city?: string | null;
   role?: string | null;
 }) {
-  const { data, error } = await supabase.functions.invoke(
-    "create-vendor",
-    {
-      body: {
-        action: "update",
-        id: userData.id,
-        email: userData.email ?? undefined,
-        password: userData.password ?? undefined,
-        full_name: userData.full_name ?? undefined,
-        phone: userData.phone ?? undefined,
-        address: userData.address ?? undefined,
-        city: userData.city ?? undefined,
-        role: userData.role ?? undefined,
-      },
-    }
-  );
+  const { data, error } = await supabase.functions.invoke("create-vendor", {
+    body: {
+      action: "update",
+      id: userData.id,
+      email: userData.email ?? undefined,
+      password: userData.password || undefined,
+      full_name: userData.full_name ?? undefined,
+      phone: userData.phone ?? undefined,
+      address: userData.address ?? undefined,
+      city: userData.city ?? undefined,
+      role: userData.role ?? undefined,
+    },
+  });
 
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
+  console.log("Update response:", data);
+  console.log("Update error:", error);
 
-  return { profile: data?.profile ?? null };
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
 }
 
 export async function deleteAuthUserById(authId: string) {
-  const isUuidV4Like = (value: string) => {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-  };
+  const { data, error } = await supabase.functions.invoke("create-vendor", {
+    body: {
+      action: "delete",
+      id: authId,
+    },
+  });
 
-  if (!authId || typeof authId !== 'string') {
-    return {
-      success: false,
-      error: new Error(`Invalid authId (expected uuid string), got: ${String(authId)}`),
-    };
+  console.log("Delete response:", data);
+  console.log("Delete error:", error);
+
+  if (error) {
+    throw new Error(error.message);
   }
 
-  if (!isUuidV4Like(authId)) {
-    return {
-      success: false,
-      error: new Error(`authId is not a valid UUID: ${authId}`),
-    };
+  if (data?.error) {
+    throw new Error(data.error);
   }
 
-  try {
-    const { data, error } = await supabase.functions.invoke('create-vendor', {
-      body: {
-        action: 'delete',
-        id: authId,
-      },
-    });
-
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-
-    return { success: true, error: null };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error : new Error(String(error)),
-    };
-  }
+  return data;
 }
+// export async function deleteVendorById(vendorId: string) {
+//   try {
+//     const { data, error } = await supabase.functions.invoke(
+//       'create-vendor',
+//       {
+//         body: {
+//           action: 'delete',
+//           id: vendorId,
+//         },
+//       }
+//     );
 
+//     if (error) throw error;
+//     if (data?.error) throw new Error(data.error);
 
-export async function deleteVendorById(vendorId: string) {
-  try {
-    const { data, error } = await supabase.functions.invoke(
-      'create-vendor',
-      {
-        body: {
-          action: 'delete',
-          id: vendorId,
-        },
-      }
-    );
-
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-
-    return { authDelete: { success: true, error: null }, profileError: null };
-  } catch (error) {
-    return {
-      authDelete: {
-        success: false,
-        error: error instanceof Error ? error : new Error(String(error)),
-      },
-      profileError: error instanceof Error ? error : new Error(String(error)),
-    };
-  }
-}
+//     return { authDelete: { success: true, error: null }, profileError: null };
+//   } catch (error) {
+//     return {
+//       authDelete: {
+//         success: false,
+//         error: error instanceof Error ? error : new Error(String(error)),
+//       },
+//       profileError: error instanceof Error ? error : new Error(String(error)),
+//     };
+//   }
+// }
 
 // ============================================================================
 // CUSTOMER HELPERS - for customer pages (Home, Shop, ProductDetail, Cart, etc)

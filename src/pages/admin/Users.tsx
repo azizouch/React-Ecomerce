@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { deleteAuthUserById, supabase, updateUserWithAuthAdmin } from '../../lib/supabase';
 import { calculateTotalPages, getPaginationParams } from '../../lib/pagination';
 import { useLanguage } from '../../contexts/LanguageContext';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
@@ -103,25 +103,23 @@ export default function AdminUsers() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate password confirmation
+
     if (formData.password !== formData.confirmPassword) {
       await Swal.fire({
-        icon: 'error',
-        title: 'Validation Error!',
-        text: 'Passwords do not match!'
+        icon: "error",
+        title: "Validation Error",
+        text: "Passwords do not match!",
       });
       return;
     }
 
     try {
-      // Call edge function to create user
-      const { data, error } = await supabase.functions.invoke('create-vendor', {
+      const { data, error } = await supabase.functions.invoke("create-vendor", {
         body: {
-          action: 'create',
-          email: formData.email,
+          action: "create",
+          email: formData.email.trim(),
           password: formData.password,
-          full_name: formData.full_name,
+          full_name: formData.full_name.trim(),
           phone: formData.phone || null,
           address: formData.address || null,
           city: formData.city || null,
@@ -129,133 +127,134 @@ export default function AdminUsers() {
         },
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error) {
+        throw new Error(error.message);
+      }
 
-      setShowCreateModal(false);
-      setFormData({ email: '', password: '', confirmPassword: '', full_name: '', phone: '', address: '', city: '', role: 'customer' });
-      loadUsers();
-      await Swal.fire({
-        icon: 'success',
-        title: t('success'),
-        text: t('userCreatedSuccess'),
-        timer: 2000,
-        showConfirmButton: false
-      });
-    } catch (error: any) {
-      console.error('Error creating user:', error);
-
-      let errorMessage = t('registrationFailed');
-      if (error.message) {
-        if (error.message.includes('already registered') || error.message.includes('User already registered') || error.message.includes('already exists')) {
-          errorMessage = t('emailAlreadyRegistered');
-        } else if (error.message.includes('Email address') && error.message.includes('is invalid')) {
-          errorMessage = t('invalidEmailBlocked');
-        } else if (error.message.includes('invalid') || error.message.includes('Invalid email')) {
-          errorMessage = t('invalidEmailFormat');
-        } else if (error.message.includes('Password should be at least') || error.message.includes('password')) {
-          errorMessage = t('passwordMinRequired');
-        } else if (error.message.includes('signup is disabled')) {
-          errorMessage = 'User registration is currently disabled. Please contact an administrator.';
-        } else if (error.message.includes('rate limit')) {
-          errorMessage = 'Too many requests. Please wait a moment and try again.';
-        } else {
-          console.error('Unknown error details:', error.message);
-          errorMessage = error.message || 'An unexpected error occurred. Please check your input and try again.';
-        }
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       await Swal.fire({
-        icon: 'error',
-        title: t('registrationFailed'),
+        icon: "success",
+        title: t("success"),
+        text: t("userCreatedSuccess"),
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      setShowCreateModal(false);
+
+      setFormData({
+        email: "",
+        password: "",
+        confirmPassword: "",
+        full_name: "",
+        phone: "",
+        address: "",
+        city: "",
+        role: "customer",
+      });
+
+      await loadUsers();
+    } catch (err: any) {
+      console.error(err);
+
+      const message = err?.message ?? "";
+
+      let errorMessage = t("registrationFailed");
+
+      if (
+        message.includes("already registered") ||
+        message.includes("already exists") ||
+        message.includes("duplicate")
+      ) {
+        errorMessage = t("emailAlreadyRegistered");
+      } else if (
+        message.includes("Invalid email") ||
+        message.includes("Email address")
+      ) {
+        errorMessage = t("invalidEmailFormat");
+      } else if (
+        message.includes("Password") ||
+        message.includes("password")
+      ) {
+        errorMessage = t("passwordMinRequired");
+      } else if (message.includes("signup is disabled")) {
+        errorMessage = t("signupDisabled");
+      } else if (message.includes("rate limit")) {
+        errorMessage = t("tooManyRequests");
+      } else if (message.length > 0) {
+        errorMessage = message;
+      }
+
+      await Swal.fire({
+        icon: "error",
+        title: t("registrationFailed"),
         text: errorMessage,
-        confirmButtonText: 'OK'
       });
     }
   };
 
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!editingUser) return;
 
-    if (formData.password && formData.password !== formData.confirmPassword) {
+    if (
+      formData.password &&
+      formData.password !== formData.confirmPassword
+    ) {
       await Swal.fire({
-        icon: 'error',
-        title: 'Validation Error!',
-        text: 'Passwords do not match!'
+        icon: "error",
+        title: "Validation Error!",
+        text: "Passwords do not match!",
       });
       return;
     }
 
     try {
-      if (formData.password) {
-        const { error: passwordError } = await supabase.auth.admin.updateUserById(editingUser.id, {
-          password: formData.password,
-        });
-        if (passwordError) throw passwordError;
-      }
-
-      if (formData.email !== editingUser.email) {
-        const { error: emailError } = await supabase.auth.admin.updateUserById(editingUser.id, {
-          email: formData.email,
-        });
-        if (emailError) throw emailError;
-      }
-
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', editingUser.id)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
-      }
-
-      const updateData = {
+      await updateUserWithAuthAdmin({
+        id: editingUser.id,
+        email: formData.email,
+        password: formData.password || undefined,
         full_name: formData.full_name,
         phone: formData.phone,
         address: formData.address,
         city: formData.city,
         role: formData.role,
-        email: formData.email,
-      };
-
-      if (existingProfile) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update(updateData)
-          .eq('id', editingUser.id);
-
-        if (profileError) throw profileError;
-      } else {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: editingUser.id,
-            ...updateData,
-          });
-
-        if (profileError) throw profileError;
-      }
+      });
 
       setShowEditModal(false);
       setEditingUser(null);
-      setFormData({ email: '', password: '', confirmPassword: '', full_name: '', phone: '', address: '', city: '', role: 'customer' });
+
+      setFormData({
+        email: "",
+        password: "",
+        confirmPassword: "",
+        full_name: "",
+        phone: "",
+        address: "",
+        city: "",
+        role: "customer",
+      });
+
       await loadUsers();
+
       await Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: 'User updated successfully!',
+        icon: "success",
+        title: "Success!",
+        text: "User updated successfully!",
         timer: 2000,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
     } catch (error: any) {
-      console.error('Error updating user:', error);
+      console.error("Error updating user:", error);
+
       await Swal.fire({
-        icon: 'error',
-        title: 'Error!',
-        text: 'Failed to update user: ' + (error.message || 'Unknown error')
+        icon: "error",
+        title: "Error!",
+        text: error.message || "Failed to update user.",
       });
     }
   };
@@ -270,17 +269,23 @@ export default function AdminUsers() {
 
     setIsDeleting(true);
 
-    const adminClient = supabase;
-
     try {
-      const { error } = await adminClient.auth.admin.deleteUser(userToDelete);
-      if (error) throw error;
+      await deleteAuthUserById(userToDelete);
 
-      loadUsers();
-      toast({ title: 'User deleted successfully' });
+      await loadUsers();
+
+      toast({
+        title: 'Succès',
+        description: 'Client supprimé avec succès',
+      });
     } catch (error: any) {
-      console.error('Error deleting user:', error);
-      toast({ title: 'Failed to delete user', description: error.message || 'Please try again' });
+      console.error("Error deleting user:", error);
+
+      toast({
+        title: "Failed to delete user",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
     } finally {
       setIsDeleting(false);
       setDeleteDialogOpen(false);

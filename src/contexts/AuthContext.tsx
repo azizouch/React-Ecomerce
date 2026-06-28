@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, Profile } from '../lib/supabase';
+import { supabase, Profile, createUserWithAuthAdmin } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -116,24 +116,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      const createdUser = await createUserWithAuthAdmin({
+        email,
+        password,
+        full_name: fullName,
+        role: 'customer',
+      });
 
-    if (error) throw error;
+      if (!createdUser?.user?.id) {
+        throw new Error('Account creation did not return a user.');
+      }
 
-    if (data.user) {
-      const { error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .insert({
-          id: data.user.id,
+        .select('id')
+        .eq('id', createdUser.user.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      if (!profileData) {
+        const { error: insertError } = await supabase.from('profiles').insert({
+          id: createdUser.user.id,
           email,
           full_name: fullName,
           role: 'customer',
         });
 
-      if (profileError) throw profileError;
+        if (insertError) throw insertError;
+      }
+    } catch (error: any) {
+      throw error;
     }
   };
 
@@ -145,6 +159,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
+        const message = error.message || '';
+        const needsRecovery = /email not confirmed|email_not_confirmed|confirm your email/i.test(message);
+
+        if (needsRecovery) {
+          try {
+            await createUserWithAuthAdmin({
+              email,
+              password,
+              role: 'customer',
+            });
+
+            const { data: recoveredData, error: recoveredError } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+
+            if (recoveredError) {
+              throw recoveredError;
+            }
+
+            if (recoveredData.user) {
+              await loadProfile(recoveredData.user.id);
+              return;
+            }
+          } catch (recoveryError) {
+            throw recoveryError;
+          }
+        }
+
         throw error;
       }
 
