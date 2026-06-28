@@ -161,7 +161,7 @@ export const translations = {
     
     // Users Page Stats
     totalUsers: 'Total Users',
-    adminUsers: 'Users',
+    adminUsers: 'Admin Users',
     vendorUsers: 'Vendor Users',
     customerUsers: 'Customer Users',
     addUser: 'Add User',

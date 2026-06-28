@@ -8,9 +8,10 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import StatusBadge from '../../components/ui/StatusBadge';
 import Pagination from '../../components/ui/Pagination';
 import { ConfirmationDialog } from '../../components/ui/confirmation-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../components/ui/dialog';
 import { Users, Crown, Mail, Calendar, Plus, Edit, Trash2, X, Search, RefreshCw } from 'lucide-react';
 import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
 import { useToast } from '../../hooks/use-toast';
 import Swal from 'sweetalert2';
 import {
@@ -53,6 +54,9 @@ export default function AdminUsers() {
     password: '',
     confirmPassword: '',
     full_name: '',
+    phone: '',
+    address: '',
+    city: '',
     role: 'customer' as 'customer' | 'vendor' | 'admin',
   });
 
@@ -99,29 +103,37 @@ export default function AdminUsers() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate password confirmation
+    if (formData.password !== formData.confirmPassword) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Validation Error!',
+        text: 'Passwords do not match!'
+      });
+      return;
+    }
+
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
+      // Call edge function to create user
+      const { data, error } = await supabase.functions.invoke('create-vendor', {
+        body: {
+          action: 'create',
+          email: formData.email,
+          password: formData.password,
+          full_name: formData.full_name,
+          phone: formData.phone || null,
+          address: formData.address || null,
+          city: formData.city || null,
+          role: formData.role,
+        },
       });
 
       if (error) throw error;
-
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            email: formData.email,
-            full_name: formData.full_name,
-            role: formData.role,
-          });
-
-        if (profileError) throw profileError;
-      }
+      if (data?.error) throw new Error(data.error);
 
       setShowCreateModal(false);
-      setFormData({ email: '', password: '', confirmPassword: '', full_name: '', role: 'customer' });
+      setFormData({ email: '', password: '', confirmPassword: '', full_name: '', phone: '', address: '', city: '', role: 'customer' });
       loadUsers();
       await Swal.fire({
         icon: 'success',
@@ -135,7 +147,7 @@ export default function AdminUsers() {
 
       let errorMessage = t('registrationFailed');
       if (error.message) {
-        if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+        if (error.message.includes('already registered') || error.message.includes('User already registered') || error.message.includes('already exists')) {
           errorMessage = t('emailAlreadyRegistered');
         } else if (error.message.includes('Email address') && error.message.includes('is invalid')) {
           errorMessage = t('invalidEmailBlocked');
@@ -149,7 +161,7 @@ export default function AdminUsers() {
           errorMessage = 'Too many requests. Please wait a moment and try again.';
         } else {
           console.error('Unknown error details:', error.message);
-          errorMessage = 'An unexpected error occurred. Please check your input and try again.';
+          errorMessage = error.message || 'An unexpected error occurred. Please check your input and try again.';
         }
       }
 
@@ -202,6 +214,9 @@ export default function AdminUsers() {
 
       const updateData = {
         full_name: formData.full_name,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
         role: formData.role,
         email: formData.email,
       };
@@ -226,7 +241,7 @@ export default function AdminUsers() {
 
       setShowEditModal(false);
       setEditingUser(null);
-      setFormData({ email: '', password: '', confirmPassword: '', full_name: '', role: 'customer' });
+      setFormData({ email: '', password: '', confirmPassword: '', full_name: '', phone: '', address: '', city: '', role: 'customer' });
       await loadUsers();
       await Swal.fire({
         icon: 'success',
@@ -280,6 +295,9 @@ export default function AdminUsers() {
       password: '',
       confirmPassword: '',
       full_name: user.full_name || '',
+      phone: (user as any).phone || '',
+      address: (user as any).address || '',
+      city: (user as any).city || '',
       role: user.role,
     });
     setShowEditModal(true);
@@ -539,13 +557,58 @@ export default function AdminUsers() {
 
         {/* Create User Modal */}
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-          <DialogContent className="max-w-md w-full">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Create New User</DialogTitle>
-              <DialogDescription>Add a new user and assign a role.</DialogDescription>
+              <DialogDescription>Add a new user with profile information and assign a role.</DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleCreateUser} className="space-y-4 mt-4">
+            <form onSubmit={handleCreateUser} className="space-y-3">
+              {/* Full Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name *</label>
+                <Input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  placeholder="Full name"
+                />
+              </div>
+
+              {/* Phone and City */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone</label>
+                  <Input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="Phone number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">City</label>
+                  <Input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="City"
+                  />
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address</label>
+                <Input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Street address"
+                />
+              </div>
+
+              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
                 <Input
@@ -553,28 +616,39 @@ export default function AdminUsers() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
+                  placeholder="user@example.com"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password *</label>
-                <Input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  minLength={6}
-                />
+
+              {/* Password and Confirm Password */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password *</label>
+                  <Input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={6}
+                    placeholder="Enter password (min 6 characters)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password *</label>
+                  <Input
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    required
+                    minLength={6}
+                    placeholder="Confirm password"
+                  />
+                </div>
               </div>
+
+              {/* Role */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
-                <Input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role *</label>
                 <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value as 'customer' | 'vendor' | 'admin' })}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select role" />
@@ -586,34 +660,73 @@ export default function AdminUsers() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition font-medium"
-                >
-                  Create User
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium"
-                >
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" type="button" onClick={() => setShowCreateModal(false)}>
                   Cancel
-                </button>
-              </div>
+                </Button>
+                <Button type="submit">
+                  Create User
+                </Button>
+              </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
 
         {/* Edit User Modal */}
         <Dialog open={showEditModal && Boolean(editingUser)} onOpenChange={(open) => { if (!open) setShowEditModal(false); }}>
-          <DialogContent className="max-w-md w-full">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
               <DialogDescription>Update user details and role.</DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleEditUser} className="space-y-4 mt-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
+                <Input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  placeholder="Full name"
+                />
+              </div>
+
+              {/* Phone and City */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone</label>
+                  <Input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="Phone number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">City</label>
+                  <Input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="City"
+                  />
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address</label>
+                <Input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Street address"
+                />
+              </div>
+
+              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
                 <Input
@@ -622,34 +735,33 @@ export default function AdminUsers() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Password (leave empty to keep current)</label>
-                <Input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  minLength={6}
-                />
-              </div>
-              {formData.password && (
+
+              {/* Password and Confirm Password */}
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm New Password</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Password (leave empty to keep current)</label>
                   <Input
                     type="password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     minLength={6}
+                    placeholder="Leave empty if no change"
                   />
                 </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
-                <Input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                />
+                {formData.password && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm New Password</label>
+                    <Input
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      minLength={6}
+                    />
+                  </div>
+                )}
               </div>
+
+              {/* Role */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
                 <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value as 'customer' | 'vendor' | 'admin' })}>
@@ -663,21 +775,15 @@ export default function AdminUsers() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition font-medium"
-                >
-                  Update User
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="flex-1 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium"
-                >
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" type="button" onClick={() => setShowEditModal(false)}>
                   Cancel
-                </button>
-              </div>
+                </Button>
+                <Button type="submit">
+                  Update User
+                </Button>
+              </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>

@@ -63,27 +63,22 @@ serve(async (req) => {
         return jsonResponse({ error: createUserError?.message || "Failed to create auth user." }, 409);
       }
 
-      const { data: profileData, error: profileError } = await admin.from("profiles").upsert(
-        {
-          id: createdUserData.user.id,
-          email: createdUserData.user.email,
-          full_name: full_name ?? null,
-          phone: phone ?? null,
-          address: address ?? null,
-          city: city ?? null,
-          role,
-          is_admin: false,
-          created_at: new Date().toISOString(),
-        },
-        { onConflict: "id" }
-      ).select().single();
+      const { error: profileError } = await admin.from("profiles").insert({
+        id: createdUserData.user.id,
+        email: createdUserData.user.email,
+        full_name: full_name ?? null,
+        phone: phone ?? null,
+        address: address ?? null,
+        city: city ?? null,
+        role,
+      });
 
       if (profileError) {
         await admin.auth.admin.deleteUser(createdUserData.user.id);
         return jsonResponse({ error: profileError.message }, 500);
       }
 
-      return jsonResponse({ success: true, user: createdUserData.user, profile: profileData });
+      return jsonResponse({ success: true, user: createdUserData.user });
     }
 
     if (action === "update") {
